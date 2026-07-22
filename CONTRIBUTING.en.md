@@ -63,14 +63,22 @@ Automation can only cover **static and hermetic** checks (skill structure, front
 - Codex: in a fresh session, run `$sdd-workflow 提案 …` through the same three phases; also confirm natural-language implicit invocation.
 - A skill change may require a new conversation/restart to load; never mistake "not loaded" for "passed".
 
-Verify at least these behaviors in each tool:
+### Fresh-session acceptance matrix
 
-- A new proposal persists `draft` and stops. Saying only `實作` for a `draft` asks for approval; `開始實作` persists `approved`.
-- An implementation request with no active proposal or a missing `proposal.md` / `tasks.md` stops without changing product code.
-- A revision preserves checked tasks, appends new numbers, resets to `draft`, and waits for approval again.
-- Completed archive checks only task checkboxes before the acceptance criteria, obtains the date from the execution environment, persists `completed`, and appends an `archive/INDEX.md` summary.
-- `放棄` / `取消` creates an `-abandoned` archive with `abandoned` status and an INDEX summary.
-- The workflow creates no git commit unless the user asks.
+"Statically provable" means the rule can be proven from the text of `SKILL.md`/docs or a fixture simulation; "fresh-session interactive acceptance" is behavior a human must confirm by operating a brand-new session. **Passing the static column never implies the interactive column passed** — both are required.
+
+| Item | Statically provable | Fresh-session interactive acceptance |
+| --- | --- | --- |
+| Proposal creation | Template contains `## 狀態` with value `draft` | Stops for approval after creation; no product code touched |
+| Approval semantics | Rule text present | `實作` on a `draft` asks; `開始實作` persists and verifies `approved` |
+| Missing-artifact guard | Rule text present | Missing directory or artifact demands `提案` first; no code changes |
+| Revision | Rule text present | Preserves checked tasks, keeps at most 10 unchecked tasks, resets `draft` and waits again; a goal-changing amendment is redirected to a new change |
+| Task scanner | Rule text present; scan result reproducible on a fixture | Malformed checkboxes — indented, nested, `- [X]`, `- [xx]`, `- []`, `1. [ ]` — stop implementation (before the approval gate), preflight, revision, and archive with line numbers |
+| Abandonment preflight | Rule text present | `放棄` / `取消提案` only reports progress, warns code is not reverted, records hashes, then stops; status, directory, and INDEX all unchanged |
+| Abandonment confirmation | Rule text present | Only the exact `確認放棄 <short-name>` with unchanged recomputed hashes executes; mismatched name, missing snapshot (incl. new session), or changed hash re-runs the preflight |
+| Bare `取消` | Rule text present | Always asks whether to revert code or abandon the proposal; never does either directly |
+| Completed archive | Rule text present | Date from the execution environment, terminal `completed`; the directory move is verified first, and only then is the summary appended to `archive/INDEX.md` |
+| Git behavior | Rule text present | No commit is created unless the user asks |
 
 ### Optional: Codex sub-agent assisted acceptance
 
@@ -118,6 +126,6 @@ Confirm it stops at the proposal waiting for approval, then reply `開始實作`
 
 - Claude Code: `/sdd-workflow`
 - Codex: `$sdd-workflow`
-- Both accept the Traditional Chinese natural triggers 提案 / 開始實作 / 實作 / 歸檔 / 放棄 / 取消.
+- Both accept the Traditional Chinese natural triggers 提案 / 開始實作 / 實作 / 歸檔 / 放棄; executing abandonment additionally requires the exact reply `確認放棄 <short-name>`, and a bare `取消` only asks what to cancel.
 
 Install, update, and remove commands differ per channel — see the README; never mix one channel's paths or ownership assumptions into another.
