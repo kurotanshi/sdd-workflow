@@ -18,6 +18,41 @@ All artifacts are plain text under your project's `sdd/` directory, version-cont
 
 > The trigger words above (`提案` / `實作` / `歸檔`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. The skill instructions themselves are written in English for cross-tool maintainability.
 
+## 30-second quick start
+
+Codex:
+
+```text
+$skill-installer install kurotanshi/sdd-workflow path skills/sdd-workflow from GitHub
+```
+
+Then open a fresh Codex conversation and say:
+
+```text
+$sdd-workflow 提案 Add a health-check API to my project
+```
+
+Claude Code:
+
+```bash
+rm -rf /tmp/sdd-workflow
+git clone https://github.com/kurotanshi/sdd-workflow.git /tmp/sdd-workflow
+mkdir -p ~/.claude/skills
+cp -R /tmp/sdd-workflow/skills/sdd-workflow ~/.claude/skills/sdd-workflow
+```
+
+> If `~/.claude/skills/sdd-workflow` already exists (reinstall), delete the old folder before copying — see "Update and remove" below.
+
+Then open a fresh Claude Code session and say:
+
+```text
+/sdd-workflow 提案 Add a health-check API to my project
+```
+
+Normally it will only create `sdd/<short-name>/proposal.md` and `tasks.md`, then stop and wait for your confirmation; product code is only touched after you reply `開始實作`.
+
+See "Installation" below for the full install, update, and removal instructions.
+
 ## Supported tools and trigger syntax
 
 | Tool | Explicit trigger | Natural-language trigger |
@@ -41,8 +76,8 @@ $sdd-workflow 提案 Create a test text file
 
 The normal workflow has three steps:
 
-1. **Propose**: the agent creates `sdd/<short-name>/proposal.md` and `sdd/<short-name>/tasks.md`, then stops for your approval. It should not change product code in this step.
-2. **Implement**: after reviewing the proposal, explicitly reply with `開始實作` or `實作`. The agent works through `tasks.md` one item at a time, checks off each completed item, and reports progress. If the spec turns out wrong, it should stop and ask.
+1. **Propose**: the agent creates `sdd/<short-name>/proposal.md` and `sdd/<short-name>/tasks.md` (a task checklist plus acceptance criteria), then stops for your approval. It should not change product code in this step.
+2. **Implement**: after reviewing the proposal, explicitly reply with `開始實作` or `實作`. The agent works through `tasks.md` one item at a time, checks off each completed item, and reports progress. If the spec turns out wrong, it should stop and ask. Once every task is done, it reports completion and asks you to verify the acceptance criteria.
 3. **Archive**: after you accept the result, reply with `歸檔`. The agent verifies every task is complete, then moves `sdd/<short-name>/` to `sdd/archive/<date>-<short-name>/`.
 
 Natural-language triggering is also supported, for example `提案: Create a test text file`. If your tool does not automatically pick the skill, use the explicit syntax in the table above.
@@ -95,19 +130,23 @@ cp -R skills/sdd-workflow ~/.codex/skills/sdd-workflow
 
 ## Authors / contributors: local development
 
-To **edit this repo's skill** and have changes take effect live, use the dev-link script to symlink the repo's canonical skill folder into a tool's skills directory (**this is an author tool, not an end-user install path**):
+> This section is only for people **editing this repo's skill itself**. Regular users should install via "Installation" above.
+
+Normal installation is a **copy**: your tool reads the copy under `~/.claude/skills/` or `~/.codex/skills/`. Editing `SKILL.md` in this repo does not change that copy, so you would have to re-copy after every edit to test anything.
+
+`scripts/link-dev.sh` replaces the copy with a symlink, pointing the tool's skills directory straight at this repo's `skills/sdd-workflow/`. From then on, any edit in the repo takes effect in the next fresh session:
 
 ```bash
 scripts/link-dev.sh                # link into Claude Code and Codex
 scripts/link-dev.sh --claude-only  # Claude only
 scripts/link-dev.sh --codex-only   # Codex only
-scripts/link-dev.sh --unlink       # remove dev links this repo created
+scripts/link-dev.sh --unlink       # remove the symlinks when done
 scripts/link-dev.sh --help
 ```
 
-It only creates a symlink at a **non-existing** destination, and only removes a symlink that **resolves to this repo**; any other existing file / directory / symlink is left untouched. Override target dirs with `CLAUDE_SKILLS_DIR` / `CODEX_SKILLS_DIR` (for hermetic testing or a verified Codex skill root).
+The script is deliberately conservative: if the destination already holds a file / directory / other symlink, it stops and touches nothing (it will never overwrite an installed copy); `--unlink` only removes symlinks that provably resolve to this repo. Target directories can be overridden with the `CLAUDE_SKILLS_DIR` / `CODEX_SKILLS_DIR` environment variables (for hermetic testing or a verified Codex skill root).
 
-> Before relying on a symlinked skill, confirm it actually loads in a **fresh session** of both Claude Code and Codex.
+> After linking, confirm the skill actually loads in a **fresh session** of both Claude Code and Codex.
 
 ## Acknowledgements
 

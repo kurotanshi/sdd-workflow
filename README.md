@@ -16,6 +16,41 @@
 
 **這個 repo 唯一維護的流程來源是 [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md)。** 安裝到各工具的副本只是可重新產生的安裝產物，不是第二份來源。
 
+## 30 秒上手
+
+Codex：
+
+```text
+$skill-installer 從 GitHub 安裝 kurotanshi/sdd-workflow 的 skills/sdd-workflow
+```
+
+安裝完成後，開一個新的 Codex 對話，直接說：
+
+```text
+$sdd-workflow 提案 幫我的專案加一個健康檢查 API
+```
+
+Claude Code：
+
+```bash
+rm -rf /tmp/sdd-workflow
+git clone https://github.com/kurotanshi/sdd-workflow.git /tmp/sdd-workflow
+mkdir -p ~/.claude/skills
+cp -R /tmp/sdd-workflow/skills/sdd-workflow ~/.claude/skills/sdd-workflow
+```
+
+> 若 `~/.claude/skills/sdd-workflow` 已存在（重裝），請先刪除舊資料夾再複製，見下方〈更新與移除〉。
+
+安裝完成後，開一個新的 Claude Code session，直接說：
+
+```text
+/sdd-workflow 提案 幫我的專案加一個健康檢查 API
+```
+
+正常情況下，它只會先建立 `sdd/<短名稱>/proposal.md` 和 `tasks.md`，然後停下來等你確認；你回「開始實作」後才會動產品程式碼。
+
+完整安裝方式、更新與移除方式見下方〈安裝〉。
+
 ## 支援的工具與觸發語法
 
 | 工具 | 顯式觸發 | 也可自然語言觸發 |
@@ -41,8 +76,8 @@ $sdd-workflow 提案 建立一個測試文字檔
 
 正常流程會分三步走：
 
-1. **提案**：agent 只會建立 `sdd/<短名稱>/proposal.md` 與 `sdd/<短名稱>/tasks.md`，然後停下來等你確認。這一步不應該修改產品程式碼。
-2. **實作**：你看完提案後，明確回覆「開始實作」或「實作」。agent 會一次完成 `tasks.md` 的一條任務，做完打勾並回報；如果發現規格不對，應停下來問。
+1. **提案**：agent 只會建立 `sdd/<短名稱>/proposal.md` 與 `sdd/<短名稱>/tasks.md`（內含逐條任務清單與「驗收條件」），然後停下來等你確認。這一步不應該修改產品程式碼。
+2. **實作**：你看完提案後，明確回覆「開始實作」或「實作」。agent 會一次完成 `tasks.md` 的一條任務，做完打勾並回報；如果發現規格不對，應停下來問。全部做完後會回報「全部完成」，並請你依驗收條件驗收。
 3. **歸檔**：你驗收完成後，回覆「歸檔」。agent 會確認 tasks 全部完成，再把 `sdd/<短名稱>/` 移到 `sdd/archive/<日期>-<短名稱>/`。
 
 自然語言也可觸發，例如「提案：建立一個測試文字檔」。若工具沒有自動選到 skill，請改用上表的顯式語法。
@@ -95,19 +130,23 @@ cp -R skills/sdd-workflow ~/.codex/skills/sdd-workflow
 
 ## 作者／貢獻者：本機開發
 
-若你要**修改這個 repo 的 skill** 並即時生效，用 dev-link 腳本把 repo 的 canonical skill 資料夾 symlink 進工具的 skills 目錄（**這是作者工具，不是一般使用者的安裝方式**）：
+> 這一段只給要**修改這個 repo 的 skill 本身**的人看，一般使用者請用上方〈安裝〉的方式。
+
+一般安裝是「複製」：工具讀的是 `~/.claude/skills/` 或 `~/.codex/skills/` 裡的副本，你在 repo 改了 `SKILL.md`，副本不會跟著變，每次都要重新複製才能測試。
+
+`scripts/link-dev.sh` 用 symlink 取代複製，讓工具的 skills 目錄直接指向本 repo 的 `skills/sdd-workflow/`。之後在 repo 的任何修改，開新 session 就會直接生效：
 
 ```bash
 scripts/link-dev.sh                # link 進 Claude Code 與 Codex
 scripts/link-dev.sh --claude-only  # 只 Claude
 scripts/link-dev.sh --codex-only   # 只 Codex
-scripts/link-dev.sh --unlink       # 移除本 repo 建立的 dev link
+scripts/link-dev.sh --unlink       # 收工時移除 symlink
 scripts/link-dev.sh --help
 ```
 
-它只在**目的地不存在**時建立 symlink，只移除**解析後正好指向本 repo** 的 symlink；遇到其他既有檔案／目錄／symlink 一律停止不動。目標目錄可用 `CLAUDE_SKILLS_DIR`、`CODEX_SKILLS_DIR` 覆寫（供 hermetic 測試或指定已驗證的 Codex skill root）。
+腳本是防呆的：目的地已有檔案／資料夾／別的 symlink 時一律停止不動（不會蓋掉你已安裝的版本）；`--unlink` 也只移除確定指向本 repo 的 symlink。目標目錄可用 `CLAUDE_SKILLS_DIR`、`CODEX_SKILLS_DIR` 環境變數覆寫（供 hermetic 測試或指定已驗證的 Codex skill root）。
 
-> symlinked skill 在使用前，請分別在 Claude Code 與 Codex 的**新 session** 確認真的被載入。
+> symlink 好之後，記得分別在 Claude Code 與 Codex 開**新 session** 確認 skill 真的有載入。
 
 ## 致謝
 
