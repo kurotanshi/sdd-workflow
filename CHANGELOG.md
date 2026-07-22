@@ -2,7 +2,7 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
-## Unreleased
+## v0.2.2 — 2026-07-22
 
 ### Changed
 - 放棄 preflight 必須把兩份檔案的 SHA-256 hash 直接列在回報中：印出的值即為 preflight snapshot，成為 transcript 裡的持久文字，避免長對話 context 壓縮後 snapshot 只存在於工具輸出記憶而遺失（遺失時仍安全回退為重跑 preflight）。
