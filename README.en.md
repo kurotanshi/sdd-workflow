@@ -11,13 +11,13 @@ Every request is split into three phases, with revision and abandonment paths. T
 | 1. Propose | `提案` | Pick a short name and type, produce `proposal.md` and `tasks.md` with status `draft`, then **stop and wait — no code yet**; use the same trigger to revise a proposal |
 | 2. Implement | `開始實作` / `實作` | `開始實作` approves a `draft` as `approved`; `實作` only continues an approved proposal. Then implement, validate, check off, and report one task at a time |
 | 3. Archive | `歸檔` | After acceptance and full task completion, obtain the system date, archive as `completed`, and update `sdd/archive/INDEX.md` |
-| Abandon | `放棄` / `取消` | Mark the active proposal `abandoned`, move it to an archive directory with an `-abandoned` suffix, and update the index |
+| Abandon | `放棄` / `取消提案` → `確認放棄 <short-name>` | Run a read-only preflight first: report progress, warn that working-tree code is not reverted, record content hashes. Only an exact `確認放棄 <short-name>` reply with unchanged content marks the proposal `abandoned`, moves it to an `-abandoned` archive directory, and updates the index; a bare `取消` only asks what to cancel |
 
 All artifacts are plain text under your project's `sdd/` directory, version-controlled with git.
 
 The **single maintained source** of the workflow is [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md). Copies installed into each tool are reproducible install artifacts, not a second source of truth.
 
-> The trigger words (`提案` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. The skill instructions themselves are written in English for cross-tool maintainability.
+> The trigger words (`提案` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消` / `確認放棄 <short-name>`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. The skill instructions themselves are written in English for cross-tool maintainability.
 
 ## Workflow
 
@@ -32,7 +32,7 @@ sequenceDiagram
     Agent->>Files: Create draft proposal.md & tasks.md
     Agent->>User: Display proposal spec, checklist, and acceptance criteria
     Note over Agent: Stop and wait — no code modification yet
-    Note over User, Files: Other paths: revision resets draft; abandonment archives as abandoned and updates INDEX.md
+    Note over User, Files: Other paths: revision resets draft; abandonment runs a preflight and archives as abandoned only after "確認放棄 <short-name>", then updates INDEX.md
 
     Note over User, Agent: 2. Implement Phase
     User->>Agent: "開始實作" (Approve and start)
@@ -60,7 +60,7 @@ Project Root/
 └── sdd/
     ├── <short-name>/         # Active change proposal (e.g., sdd/add-health-check/)
     │   ├── proposal.md       # Status, type, rationale, and impact area
-    │   └── tasks.md          # Up to 10 independently verifiable tasks plus acceptance criteria
+    │   └── tasks.md          # Top-level checkbox task list (up to 10 for a new proposal) plus acceptance criteria
     └── archive/              # Completed and abandoned history
         ├── INDEX.md          # Date, short name, terminal status, and one-line summary
         ├── YYYY-MM-DD-<short-name>/
@@ -176,18 +176,18 @@ Trigger syntax for both tools:
 
 | Tool | Explicit trigger | Natural-language trigger |
 | --- | --- | --- |
-| [Claude Code](https://claude.com/claude-code) (Anthropic) | `/sdd-workflow 提案 …` | Say `提案: …` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消` |
-| [Codex](https://github.com/openai/codex) (OpenAI/GPT) | `$sdd-workflow 提案 …` | Say `提案: …` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消` |
+| [Claude Code](https://claude.com/claude-code) (Anthropic) | `/sdd-workflow 提案 …` | Say `提案: …` / `開始實作` / `實作` / `歸檔` / `放棄` (executing abandonment also needs `確認放棄 <short-name>`) |
+| [Codex](https://github.com/openai/codex) (OpenAI/GPT) | `$sdd-workflow 提案 …` | Say `提案: …` / `開始實作` / `實作` / `歸檔` / `放棄` (executing abandonment also needs `確認放棄 <short-name>`) |
 
 Explicit syntax is preferred (clear and predictable); natural-language triggering is a convenience that relies on the model selecting the skill from its description. If your tool does not automatically pick the skill, use the explicit syntax.
 
 The normal workflow has three steps:
 
-1. **Propose**: the agent creates `proposal.md` and `tasks.md` with status `draft`. Each task represents one independently verifiable behavior change, with at most 10 tasks in the full checklist. The agent then stops for approval without changing product code.
-2. **Implement**: after reviewing the proposal, reply with `開始實作`. The agent persists `approved`, re-reads it, then completes one task at a time. If a proposal is still `draft` and you say only `實作`, the agent asks for approval instead of changing code. If the specification must change, it stops, preserves completed history, revises the artifacts, resets to `draft`, and waits for approval again.
-3. **Archive**: after accepting the result, reply with `歸檔`. The agent counts only task checkboxes before the acceptance criteria, requires at least one and all completed, obtains the date from the execution environment, marks the proposal `completed`, moves it to `sdd/archive/<date>-<short-name>/`, and appends its summary to `INDEX.md`.
+1. **Propose**: the agent creates `proposal.md` and `tasks.md` with status `draft`. Each task represents one independently verifiable behavior change, with at most 10 tasks in the full checklist; every task checkbox sits at the first column in one top-level list, with no checkbox subtasks. The agent then stops for approval without changing product code.
+2. **Implement**: after reviewing the proposal, reply with `開始實作`. The agent persists `approved`, re-reads it, then completes one task at a time. If a proposal is still `draft` and you say only `實作`, the agent asks for approval instead of changing code. If the specification must change, it stops, preserves completed history, revises the artifacts, resets to `draft`, and waits for approval again; checked tasks are history and do not count against the quota, a revision keeps at most 10 unchecked tasks, and an amendment that materially changes the goal is redirected to a new change.
+3. **Archive**: after accepting the result, reply with `歸檔`. The agent counts only first-column, top-level task checkboxes before the acceptance criteria and requires at least one with all completed; any malformed checkbox line — indented, nested, or variants like `- [X]` — stops the archive with its line number reported. It then obtains the date from the execution environment, marks the proposal `completed`, moves it to `sdd/archive/<date>-<short-name>/`, and appends its summary to `INDEX.md`.
 
-For an active proposal that will not proceed, reply with `放棄` or `取消`. The agent marks it `abandoned`, moves it to `sdd/archive/<date>-<short-name>-abandoned/`, and records it in the same `INDEX.md`. The workflow does not create git commits unless you ask.
+For an active proposal that will not proceed, reply with `放棄`, `放棄 <short-name>`, or `取消提案`. The agent first runs a **read-only preflight**: it reports the short name, status, completed/uncompleted task counts, and the list of completed tasks, explicitly warns that abandonment only archives the `sdd/` artifacts — implementation code and git changes already in the working tree are **never reverted automatically** — and computes SHA-256 hashes of both files with a system command, keeping them in the conversation. Only when you reply with the exact phrase `確認放棄 <short-name>` (e.g. `確認放棄 add-todo`) and both files are unchanged since the preflight does the agent mark the proposal `abandoned`, move it to `sdd/archive/<date>-<short-name>-abandoned/`, and record it in the same `INDEX.md`; a mismatched name, changed hash, or missing snapshot (such as a new session) re-runs the preflight instead. A bare `取消` always makes the agent ask whether you want to revert code or abandon the proposal — it never does either directly. The workflow does not create git commits unless you ask.
 
 ## Update and remove
 

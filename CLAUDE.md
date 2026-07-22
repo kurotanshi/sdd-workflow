@@ -18,7 +18,7 @@ A cross-tool **Agent Skill** package: a Spec-Driven Development (SDD) workflow (
 ## Language conventions
 
 - The skill body (`SKILL.md` instructions) is written in **English** for cross-tool maintainability.
-- Trigger words (`提案`, `開始實作`, `實作`, `歸檔`, `放棄`, `取消`) and all user-facing output of the workflow stay in **Traditional Chinese**.
+- Trigger words (`提案`, `開始實作`, `實作`, `歸檔`, `放棄`, `取消`, `確認放棄 <short-name>`) and all user-facing output of the workflow stay in **Traditional Chinese**.
 - `README.md` (zh-TW) and `README.en.md` are a bilingual pair — keep them in sync when changing either.
 
 ## Commands
@@ -41,7 +41,7 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/s
 
 ## Verification model
 
-Automation can only cover static and hermetic checks (skill structure, frontmatter, docs, link-dev.sh behavior). **Actual workflow acceptance must be done by a human in fresh interactive sessions** of each tool — a skill change may require a new session to load, and "not loaded" must not be mistaken for "passed". Acceptance must cover `draft → approved`, missing-artifact guards, revision back to `draft`, `completed` and `abandoned` archives, environment-derived dates, archive INDEX updates, and the no-auto-commit rule. See CONTRIBUTING.md for the full checklist.
+Automation can only cover static and hermetic checks (skill structure, frontmatter, docs, link-dev.sh behavior). **Actual workflow acceptance must be done by a human in fresh interactive sessions** of each tool — a skill change may require a new session to load, and "not loaded" must not be mistaken for "passed". Acceptance must cover `draft → approved`, missing-artifact guards, revision back to `draft` (with the unchecked-tasks-only quota), the two-step abandonment (read-only preflight, exact `確認放棄 <short-name>` confirmation with hash re-verification, never auto-reverting code), bare `取消` disambiguation, shared task-scanner format errors, `completed` and `abandoned` archives, environment-derived dates, archive INDEX updates, and the no-auto-commit rule. See CONTRIBUTING.md for the acceptance matrix distinguishing statically provable rules from human-verified interactive behavior.
 
 ## Repo's own `sdd/` directory
 

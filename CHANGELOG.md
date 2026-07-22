@@ -2,6 +2,19 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## Unreleased
+
+### Fixed
+- 放棄改為兩階段安全操作：`放棄`／`放棄 <短名稱>`／`取消提案` 只執行唯讀 preflight（回報短名稱、狀態與任務進度、警告工作區程式碼不會復原、以系統指令計算 SHA-256 hash snapshot 留在對話中）；只有一字不差的 `確認放棄 <短名稱>` 且重新計算的 hash 未變，才標記 `abandoned`、搬移目錄並更新 INDEX。裸 `取消` 一律先詢問要復原程式碼還是放棄提案。
+- 觸發防呆：階段詞必須是指向 SDD workflow 或特定提案的明確指令，描述性文字不啟動任何 phase。
+- 共用 task scanner 補上完成度漏洞：Phase 1、Phase 2、修訂、abandonment preflight 與歸檔只認行首頂層 `- [ ] `／`- [x] `；checkbox-like 判定涵蓋 `-`/`*`/`+` 與有序清單 marker、任意方括號內容，掃描區域內縮排、巢狀、`- [X]`、`* [ ]`、`-[ ]`、`- [xx]`、`- []`、`1. [ ]` 等行都是格式錯誤，回報行號並停止（修正巢狀或變體 checkbox 可無聲通過完成度檢查的問題）。Phase 2 在 approval gate 之前即執行 scanner，格式錯誤不會寫入 `approved`。
+- 放棄執行與完成歸檔固定步驟順序為「狀態驗證 → 搬移整個活動目錄並驗證 → 才追加 INDEX → 最終驗證」，修正 v0.2.0 以來 INDEX 可能先於搬移寫入、留下不一致狀態的缺口。
+
+### Changed
+- 放棄流程明確永不自動 revert 工作區程式碼；復原是需另行明確要求並確認範圍的獨立操作。
+- 修訂配額改為「未勾任務最多 10 條」；已勾任務為歷史紀錄不占配額，修訂實質改變原目標時要求另開新變更。
+- 中英 README、CONTRIBUTING 與 `CLAUDE.md` 同步兩階段放棄、scanner 與修訂配額規則；CONTRIBUTING 的驗收清單改為 fresh-session 人工驗收矩陣，明確區分靜態可證明與需人工互動驗證的項目。
+
 ## v0.2.0 — 2026-07-22
 
 ### Added

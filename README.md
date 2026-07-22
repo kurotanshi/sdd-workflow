@@ -11,7 +11,7 @@
 | 1. 提案 | `提案` | 取短名稱、判斷類型，產出狀態為 `draft` 的 `proposal.md` 與 `tasks.md`，然後**停下等確認，不寫程式**；修訂既有提案也使用這個觸發詞 |
 | 2. 實作 | `開始實作`／`實作` | `開始實作` 會把 `draft` 核准為 `approved`；`實作` 只會繼續已核准提案。之後逐條完成任務、驗證、打勾並回報 |
 | 3. 歸檔 | `歸檔` | 驗收且任務全數完成後，從系統取得日期，歸檔為 `completed` 並更新 `sdd/archive/INDEX.md` |
-| 放棄 | `放棄`／`取消` | 將活動提案標記為 `abandoned`，移到帶有 `-abandoned` 後綴的歸檔目錄並更新索引 |
+| 放棄 | `放棄`／`取消提案` → `確認放棄 <短名稱>` | 先執行唯讀 preflight：回報進度、警告工作區程式碼不會復原、記錄內容 hash。收到一字不差的 `確認放棄 <短名稱>` 且內容未變，才標記 `abandoned` 歸檔並更新索引；單獨說「取消」只會先詢問目標 |
 
 產出物都是純文字，留在你的專案 `sdd/` 目錄，跟著 git 一起版控。
 
@@ -30,7 +30,7 @@ sequenceDiagram
     Agent->>Files: 建立 draft proposal.md & tasks.md
     Agent->>User: 顯示提案規格、工作清單與驗收條件
     Note over Agent: 停下等待確認，不修改任何程式碼
-    Note over User, Files: 其他路徑：修訂會重設 draft；放棄/取消會歸檔為 abandoned 並更新 INDEX.md
+    Note over User, Files: 其他路徑：修訂會重設 draft；放棄先 preflight，回覆「確認放棄 <短名稱>」才歸檔為 abandoned 並更新 INDEX.md
 
     Note over User, Agent: 2. 實作階段 (Implementation Phase)
     User->>Agent: 「開始實作」
@@ -58,7 +58,7 @@ sequenceDiagram
 └── sdd/
     ├── <短名稱>/             # 活動中的變更提案 (例如: sdd/add-health-check/)
     │   ├── proposal.md       # 提案狀態、類型、原因與影響範圍
-    │   └── tasks.md          # 最多 10 個可獨立驗證的任務與驗收條件
+    │   └── tasks.md          # 頂層 checkbox 任務清單（新提案最多 10 條）與驗收條件
     └── archive/              # 已完成或放棄的歷史紀錄
         ├── INDEX.md          # 日期、短名稱、終態與單句摘要
         ├── YYYY-MM-DD-<短名稱>/
@@ -170,8 +170,8 @@ npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
 
 | 工具 | 明確指令觸發 | 也可自然語言觸發 |
 | --- | --- | --- |
-| [Claude Code](https://claude.com/claude-code)（Anthropic） | `/sdd-workflow 提案 …` | 直接說「提案：…」／「開始實作」／「實作」／「歸檔」／「放棄」／「取消」 |
-| [Codex](https://github.com/openai/codex)（OpenAI/GPT） | `$sdd-workflow 提案 …` | 直接說「提案：…」／「開始實作」／「實作」／「歸檔」／「放棄」／「取消」 |
+| [Claude Code](https://claude.com/claude-code)（Anthropic） | `/sdd-workflow 提案 …` | 直接說「提案：…」／「開始實作」／「實作」／「歸檔」／「放棄」（執行放棄需再回覆「確認放棄 <短名稱>」） |
+| [Codex](https://github.com/openai/codex)（OpenAI/GPT） | `$sdd-workflow 提案 …` | 直接說「提案：…」／「開始實作」／「實作」／「歸檔」／「放棄」（執行放棄需再回覆「確認放棄 <短名稱>」） |
 
 明確指令是首選（可預期、不靠模型猜）；自然語言觸發是便利功能，靠模型依 skill 描述自動選用。若工具沒有自動選到 skill，請改用明確指令語法。
 
@@ -179,11 +179,11 @@ npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
 
 正常流程會分三步走：
 
-1. **提案**：agent 建立狀態為 `draft` 的 `proposal.md` 與 `tasks.md`。每條任務都應對應一個可獨立驗證的行為改變，完整清單最多 10 條；建立後停下等待確認，不修改產品程式碼。
-2. **實作**：看完提案後回覆「開始實作」，agent 會先把狀態寫成 `approved` 並重新讀取確認，再一次完成一條任務。若提案仍是 `draft` 而你只說「實作」，agent 會先詢問是否核准，不會直接動碼。發現規格不對時會停止，修訂提案、保留已完成紀錄並回到 `draft` 等待重新核准。
-3. **歸檔**：驗收完成後回覆「歸檔」。agent 只計算「驗收條件」之前的 task checkbox，確認至少一條且全部完成，再由執行環境取得日期、標記為 `completed`、移到 `sdd/archive/<日期>-<短名稱>/`，並把摘要追加到 `INDEX.md`。
+1. **提案**：agent 建立狀態為 `draft` 的 `proposal.md` 與 `tasks.md`。每條任務都應對應一個可獨立驗證的行為改變，完整清單最多 10 條；任務 checkbox 一律置於行首、維持頂層清單，不使用 checkbox 子任務。建立後停下等待確認，不修改產品程式碼。
+2. **實作**：看完提案後回覆「開始實作」，agent 會先把狀態寫成 `approved` 並重新讀取確認，再一次完成一條任務。若提案仍是 `draft` 而你只說「實作」，agent 會先詢問是否核准，不會直接動碼。發現規格不對時會停止，修訂提案、保留已完成紀錄並回到 `draft` 等待重新核准；已勾任務屬歷史紀錄不占配額，修訂後未勾任務最多 10 條，若修訂實質改變原目標會建議另開新變更。
+3. **歸檔**：驗收完成後回覆「歸檔」。agent 只計算「驗收條件」之前、行首頂層的 task checkbox，確認至少一條且全部完成；若出現縮排、巢狀或 `- [X]` 等格式異常的 checkbox 行，會指出行號並停止歸檔。通過後再由執行環境取得日期、標記為 `completed`、移到 `sdd/archive/<日期>-<短名稱>/`，並把摘要追加到 `INDEX.md`。
 
-不再進行的活動提案可回覆「放棄」或「取消」。agent 會標記為 `abandoned`，移到 `sdd/archive/<日期>-<短名稱>-abandoned/`，並在同一份 `INDEX.md` 留下摘要。未經你要求，workflow 不會自行建立 git commit。
+不再進行的活動提案可回覆「放棄」、「放棄 <短名稱>」或「取消提案」。agent 會先執行**唯讀的 preflight**：回報短名稱、狀態、已完成／未完成任務數與已完成任務清單，明確提醒放棄只歸檔 `sdd/` 產出物——已寫入工作區的程式碼與 git 變更**不會自動復原**——並以系統指令計算兩份檔案的 SHA-256 hash 留在對話中。你必須回覆一字不差的「確認放棄 <短名稱>」（例如 `確認放棄 add-todo`），且兩份檔案自 preflight 後未改變，agent 才會標記 `abandoned`、移到 `sdd/archive/<日期>-<短名稱>-abandoned/` 並在同一份 `INDEX.md` 留下摘要；名稱不符、hash 不符或跨 session 沒有 snapshot 時會重新 preflight。單獨說「取消」時，agent 一律先詢問你要復原程式碼還是放棄提案，不會直接執行任一種。未經你要求，workflow 不會自行建立 git commit。
 
 ## 更新與移除
 
