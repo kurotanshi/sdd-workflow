@@ -1,5 +1,7 @@
 # Contributing to sdd-workflow
 
+> [English](./CONTRIBUTING.en.md)
+
 感謝貢獻！這份文件說明這個 repo 的維護規則。
 
 ## 唯一的來源：canonical skill
@@ -15,7 +17,7 @@
 ```
 sdd-workflow/
 ├── README.md / README.en.md    # 中英雙語使用說明
-├── CONTRIBUTING.md
+├── CONTRIBUTING.md / CONTRIBUTING.en.md
 ├── CHANGELOG.md
 ├── LICENSE
 ├── scripts/
