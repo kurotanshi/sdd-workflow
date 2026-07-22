@@ -2,6 +2,14 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## Unreleased
+
+### Changed
+- 放棄 preflight 必須把兩份檔案的 SHA-256 hash 直接列在回報中：印出的值即為 preflight snapshot，成為 transcript 裡的持久文字，避免長對話 context 壓縮後 snapshot 只存在於工具輸出記憶而遺失（遺失時仍安全回退為重跑 preflight）。
+- Task scanner 明文化任務區清單規則：掃描區內只允許合法任務行、空行與非清單文字，其他清單項——包含以 Markdown 連結開頭的項目（如 `- [參考](https://…)`）——一律視為格式錯誤，回報行號並停止。把原本 checkbox-like 判定誤傷連結清單項的隱性副作用改為 documented 規則。
+- 放寬「取消」語意：明確指向程式碼的取消請求（如「取消剛才的程式碼修改」）直接視為 workflow 之外的一般復原請求——先確認範圍才執行、絕不觸碰提案；只有裸「取消」或指涉不明時才反問要復原程式碼還是放棄提案。
+- 中英 README 與 CONTRIBUTING 驗收矩陣同步以上三項。
+
 ## v0.2.1 — 2026-07-22
 
 ### Fixed
