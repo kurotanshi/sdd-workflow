@@ -2,7 +2,7 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
-## Unreleased
+## v0.2.1 — 2026-07-22
 
 ### Fixed
 - 放棄改為兩階段安全操作：`放棄`／`放棄 <短名稱>`／`取消提案` 只執行唯讀 preflight（回報短名稱、狀態與任務進度、警告工作區程式碼不會復原、以系統指令計算 SHA-256 hash snapshot 留在對話中）；只有一字不差的 `確認放棄 <短名稱>` 且重新計算的 hash 未變，才標記 `abandoned`、搬移目錄並更新 INDEX。裸 `取消` 一律先詢問要復原程式碼還是放棄提案。
