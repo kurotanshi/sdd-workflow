@@ -109,6 +109,10 @@ scripts/link-dev.sh --help
 
 > symlinked skill 在使用前，請分別在 Claude Code 與 Codex 的**新 session** 確認真的被載入。
 
+## 致謝
+
+本 repo / skill 受到 @kaochenlong 在 2026 AI 年會分享的 [SimpleSDD](https://gist.github.com/kaochenlong/27ade9a6218244c2584777fa276d1214) 啟發。
+
 ## License
 
 MIT（見 [LICENSE](./LICENSE)）

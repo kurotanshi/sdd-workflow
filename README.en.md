@@ -109,6 +109,10 @@ It only creates a symlink at a **non-existing** destination, and only removes a 
 
 > Before relying on a symlinked skill, confirm it actually loads in a **fresh session** of both Claude Code and Codex.
 
+## Acknowledgements
+
+This repo / skill is inspired by [SimpleSDD](https://gist.github.com/kaochenlong/27ade9a6218244c2584777fa276d1214), shared by @kaochenlong at the 2026 AI conference.
+
 ## License
 
 MIT (see [LICENSE](./LICENSE))
