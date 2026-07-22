@@ -1,0 +1,4 @@
+interface:
+  display_name: "SDD Workflow"
+  short_description: "Proposal-first, step-by-step SDD workflow"
+  default_prompt: "Use $sdd-workflow to manage this request through proposal, implementation, and archive phases."
