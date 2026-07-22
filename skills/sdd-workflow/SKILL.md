@@ -34,7 +34,7 @@ Interpret the user's explicit phase word as follows:
 - `確認放棄 <short-name>`: execute abandonment, only when a preflight snapshot from the current conversation matches (see Abandonment execution).
 - A bare `取消`, or a cancellation request whose target is unclear: ask whether the user wants to revert recent code changes or abandon the active proposal; never do either directly. A cancellation request that explicitly targets code, such as `取消剛才的程式碼修改`, is an ordinary revert request outside this workflow: confirm the exact revert scope with the user before changing anything, and never touch the proposal status, artifacts, or archive because of it.
 
-If the user invokes this skill or describes a change without naming a phase, ask them to choose `提案`, `開始實作`, `實作`, `歸檔`, `放棄`, or `取消`. Do not start coding from an ordinary feature request.
+If the user invokes this skill or describes a change without naming a phase, ask them to choose `提案`, `開始實作`, `實作`, `歸檔`, `放棄`, or `取消提案`. Never offer a bare `取消` as a menu option — it is defined above as ambiguous and would only trigger another clarification round. Do not start coding from an ordinary feature request.
 
 Keep the current change name in context across turns. If an implementation, archive, or abandonment request does not identify it, inspect `sdd/` for active directories containing `proposal.md` and `tasks.md`. Continue automatically only when exactly one active change is unambiguous; otherwise ask the user for the short name. Never use a directory under `sdd/archive/` as an active change.
 
@@ -46,7 +46,7 @@ Every operation that reads or counts tasks — Phase 1 creation, Phase 2 impleme
 - Valid task line: begins at the first column with exactly `- [ ] ` or `- [x] ` followed by the task text. Tasks form one top-level list; checkbox subtasks are not allowed.
 - Checkbox-like line: any line in the scan region that begins with optional leading whitespace, then a list marker — `-`, `*`, `+`, or an ordered-list marker such as `1.` or `1)` — then optional whitespace, then `[`, any run of characters other than `]` (including none), and `]`. This includes indented or nested checkboxes and variants such as `- [X]`, `* [ ]`, `-[ ]`, `- [xx]`, `- []`, and `1. [ ]`.
 - Other list items: the scan region may contain only valid task lines, blank lines, and non-list text. Any other line that begins with optional leading whitespace and a list marker — including an item whose text starts with a markdown link, such as `- [參考文件](https://example.com)` — is not allowed, even when it is not checkbox-like.
-- Every checkbox-like line or other list item that is not a valid task line is a format error. Report each offending line number and stop the current operation. Never proceed by skipping or silently ignoring such lines.
+- Every checkbox-like line or other list item that is not a valid task line is a format error. Report each offending line number and stop the current operation. Never proceed by skipping or silently ignoring such lines. Single exception: the abandonment preflight never stops on format errors — it continues in degraded mode as specified in its own section, because a broken checklist must never lock the user out of abandoning a proposal. Phase 1, Phase 2, proposal revisions, and the Phase 3 completion check always stay strict.
 
 ## Phase 1: 提案
 
@@ -128,8 +128,8 @@ Never mark a task complete merely because code was written. A task is complete o
 When the user says `放棄`, `放棄 <short-name>`, or `取消提案`:
 
 1. Resolve the active short name and verify that its directory contains `proposal.md` and `tasks.md`. Read both files completely; if either artifact is missing, stop and report the problem.
-2. Run the shared task scanner on `tasks.md`. On any format error, report the offending line numbers and stop without producing a preflight snapshot.
-3. Report the short name, the current `## 狀態` value, the number of completed and uncompleted tasks, and the list of completed tasks. State explicitly that abandonment archives only the SDD artifacts: implementation code and git changes made for completed tasks stay in the working tree and will not be reverted.
+2. Run the shared task scanner on `tasks.md`. On any format error, do not stop: report each offending line number, state that the task counts and the completed-task list are unreliable (`任務計數不可靠`), and continue the preflight in degraded mode. This is the single documented exception to the shared scanner's stop rule — a broken checklist must never lock the user out of abandonment, and the preflight snapshot does not depend on scanner results. Never repair or edit `tasks.md` during preflight.
+3. Report the short name, the current `## 狀態` value, the number of completed and uncompleted tasks, and the list of completed tasks; in degraded mode derive them best-effort and label both as unreliable. State explicitly that abandonment archives only the SDD artifacts: implementation code and git changes made for completed tasks stay in the working tree and will not be reverted.
 4. Compute a SHA-256 content hash of `proposal.md` and of `tasks.md` from the current execution environment. On POSIX systems run `shasum -a 256` or `sha256sum`; otherwise use an equivalent system command. Print both hash values in the preflight report, each labeled with its file name: the printed values are the preflight snapshot, and they must appear as report text so they persist in the transcript rather than only in tool-output memory. Do not write any confirmation file and do not modify any artifact.
 5. Ask the user to reply exactly `確認放棄 <short-name>` with the real short name and no angle brackets, for example `確認放棄 add-todo`, then stop. The preflight never changes the proposal status, moves a directory, or updates `sdd/archive/INDEX.md`.
 
@@ -137,19 +137,38 @@ When the user says `放棄`, `放棄 <short-name>`, or `取消提案`:
 
 When the user says `確認放棄 <short-name>`:
 
-1. Execute only when all of the following hold: the current conversation contains a preflight snapshot — the hash values printed in a preflight report — for the same proposal; the short name in the confirmation matches that snapshot exactly; and re-reading `proposal.md` and `tasks.md` and recomputing both SHA-256 hashes yields values identical to the snapshot.
-2. If the user says only `確認放棄` without a name, the name does not match, the current conversation has no preflight snapshot for that proposal — including any new session — or either recomputed hash differs, do not execute. Run the preflight again and stop. Never reuse a stale confirmation and never persist confirmation state to a file.
-3. Obtain the real local date from the current execution environment in `YYYY-MM-DD` format. On POSIX systems run `date +%F`; otherwise use an equivalent system command. Never infer the date from model knowledge or conversation context.
-4. Use `sdd/archive/YYYY-MM-DD-<short-name>-abandoned/` as the destination. Create `sdd/archive/` if necessary. If the destination exists, stop and ask; never overwrite, merge, or delete archive contents silently.
-5. Change the proposal status to `abandoned` and re-read `proposal.md` to verify the persisted value.
-6. Move the whole active directory to the destination. Verify the move succeeded — the source directory is gone and the destination contains `proposal.md` and `tasks.md` with status `abandoned` — before touching the archive index.
-7. Only after the verified move, create `sdd/archive/INDEX.md` with the heading `# SDD Archive` if it does not exist, preserving existing content. Append one lookup line in this format, using a factual one-sentence summary derived from the proposal:
+1. Execute only when all of the following hold: the current conversation contains a preflight snapshot — the hash values printed in a preflight report — for the same proposal; the short name in the confirmation matches that snapshot exactly; and both files pass the machine hash verification below. Take both expected values verbatim from the snapshot text in the transcript. Before any substitution, verify that each expected value matches `^[0-9a-f]{64}$` — exactly 64 lowercase hexadecimal characters; if either value does not, treat the conversation as having no valid snapshot: run no comparison, re-run the preflight, and stop. Only then let the execution environment perform the comparison: on POSIX systems substitute each expected value into a shell equality test such as `[ "<expected-hash>" = "$(shasum -a 256 <file> | cut -d' ' -f1)" ]` (or the `sha256sum` equivalent) and act only on its exit code; on other systems use an equivalent machine string-equality check. Never compare hex strings by eye, never substitute a freshly recomputed value for the expected snapshot side, and treat a failed or unavailable comparison command as a mismatch.
+2. If the user says only `確認放棄` without a name, the name does not match, the current conversation has no preflight snapshot for that proposal — including any new session — either snapshot value fails the `^[0-9a-f]{64}$` format check, or the machine verification reports a mismatch for either file, do not execute. Run the preflight again and stop. Never reuse a stale confirmation and never persist confirmation state to a file.
+3. Run the Terminal archive procedure with the abandonment execution parameters from its table.
+
+## Terminal archive procedure
+
+Abandonment execution and Phase 3 archiving both finish through this single procedure. Never re-implement its steps separately, and never start it before every precondition check in the calling section has passed. The behavior differences between the two paths are selected only through this table; the final report contents referenced here are defined immediately below it:
+
+| Parameter | Abandonment execution | Phase 3: 歸檔 |
+| --- | --- | --- |
+| terminal status | `abandoned` | `completed` |
+| destination | `sdd/archive/YYYY-MM-DD-<short-name>-abandoned/` | `sdd/archive/YYYY-MM-DD-<short-name>/` |
+| final report | `已放棄` report, defined below | `歸檔完成` report, defined below |
+
+Final report definitions:
+
+- `已放棄` report: report `已放棄` with the summary, list the completed tasks again — when the preflight ran in degraded mode, repeat that the task counts and the completed-task list are unreliable — and repeat that their implementation code and git changes remain in the working tree and were not reverted. Never revert automatically; a revert is a separate operation that needs an explicit user request and a confirmed scope.
+- `歸檔完成` report: report `歸檔完成` and include the same one-sentence summary for future lookup.
+
+Steps:
+
+1. Obtain the real local date from the current execution environment in `YYYY-MM-DD` format. On POSIX systems run `date +%F`; otherwise use an equivalent system command. Never infer the date from model knowledge or conversation context.
+2. Resolve the destination from the parameter table. Create `sdd/archive/` if necessary. If the destination exists, stop and ask; never overwrite, merge, or delete archive contents silently.
+3. Change the proposal status to the terminal status and re-read `proposal.md` to verify the persisted value.
+4. Move the whole active directory to the destination. Verify the move succeeded — the source directory is gone and the destination contains `proposal.md` and `tasks.md` with the terminal status — before touching the archive index.
+5. Only after the verified move, create `sdd/archive/INDEX.md` with the heading `# SDD Archive` if it does not exist, preserving existing content. Append one lookup line in this format, using the terminal status and a factual one-sentence summary derived from the proposal:
 
    ```markdown
-   - YYYY-MM-DD | <short-name> | abandoned | <summary>
+   - YYYY-MM-DD | <short-name> | <terminal-status> | <summary>
    ```
 
-8. Verify that `INDEX.md` contains the appended line. Report `已放棄` with the summary, list the completed tasks again, and repeat that their implementation code and git changes remain in the working tree and were not reverted. Never revert automatically; a revert is a separate operation that needs an explicit user request and a confirmed scope.
+6. Verify that `INDEX.md` contains the appended line, then give the final report from the parameter table.
 
 ## Phase 3: 歸檔
 
@@ -157,18 +176,7 @@ When the user confirms acceptance and says `歸檔`:
 
 1. Read `sdd/<short-name>/proposal.md` and `sdd/<short-name>/tasks.md` completely. Run the shared task scanner on `tasks.md`. On any format error, report the offending line numbers and stop without archiving; never proceed by ignoring the problem lines.
 2. Require at least one valid task line and require every valid task line to be `- [x]`. If there are no valid tasks or any are unchecked, report the problem and the unchecked task number(s), then stop without archiving. Checkboxes under acceptance conditions never affect completion.
-3. Obtain the real local date from the current execution environment in `YYYY-MM-DD` format. On POSIX systems run `date +%F`; otherwise use an equivalent system command. Never infer the date from model knowledge or conversation context.
-4. Use `sdd/archive/YYYY-MM-DD-<short-name>/` as the destination. Create `sdd/archive/` if necessary. If the destination exists, stop and ask; never overwrite, merge, or delete archive contents silently.
-5. Change the proposal status to `completed` and re-read `proposal.md` to verify the persisted value.
-6. Move the whole active directory to the destination. Verify the move succeeded — the source directory is gone and the destination contains `proposal.md` and `tasks.md` with status `completed` — before touching the archive index.
-7. Only after the verified move, create `sdd/archive/INDEX.md` with the heading `# SDD Archive` if it does not exist, preserving existing content. Append one lookup line in this format, using a factual one-sentence summary derived from the proposal:
-
-   ```markdown
-   - YYYY-MM-DD | <short-name> | completed | <summary>
-   ```
-
-8. Verify that `INDEX.md` contains the appended line.
-9. Report `歸檔完成` and include the same one-sentence summary for future lookup.
+3. Run the Terminal archive procedure with the Phase 3 parameters from its table.
 
 ## Progress reporting
 
