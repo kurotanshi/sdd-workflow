@@ -1,0 +1,3 @@
+# 本 repo dogfood 自己的 SDD workflow，但 sdd/ 產出物只留在本機，不進版控
+# （已於 2026-07-22 自 git 歷史中移除）
+sdd/

@@ -45,4 +45,4 @@ Automation can only cover static and hermetic checks (skill structure, frontmatt
 
 ## Repo's own `sdd/` directory
 
-This repo dogfoods its own workflow: `sdd/archive/` holds completed change proposals (e.g. `sdd/archive/2026-07-22-shareable-v1/`). Active changes would live at `sdd/<short-name>/` with `proposal.md` + `tasks.md`. Never treat archived directories as active changes, and never delete or merge archive contents silently.
+This repo dogfoods its own workflow, but its `sdd/` directory is **local-only**: it is gitignored and was removed from git history on 2026-07-22 — never commit or push it. Locally, `sdd/archive/` holds completed change proposals (e.g. `sdd/archive/2026-07-22-shareable-v1/`) and active changes would live at `sdd/<short-name>/` with `proposal.md` + `tasks.md`. Never treat archived directories as active changes, and never delete or merge archive contents silently.
