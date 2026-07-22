@@ -18,7 +18,91 @@ The **single maintained source** of the workflow is [`skills/sdd-workflow/SKILL.
 
 > The trigger words (`提案` / `實作` / `歸檔`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. The skill instructions themselves are written in English for cross-tool maintainability.
 
+## Workflow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Agent as AI Coding Agent
+    participant Files as sdd/ Directory
+
+    Note over User, Agent: 1. Propose Phase
+    User->>Agent: "提案: Add OOO feature"
+    Agent->>Files: Inspect project, create proposal.md & tasks.md
+    Agent->>User: Display proposal spec, checklist, and acceptance criteria
+    Note over Agent: Stop and wait — no code modification yet
+
+    Note over User, Agent: 2. Implement Phase
+    User->>Agent: "開始實作" / "實作" (Start implementation)
+    loop Execute tasks one by one
+        Agent->>Files: Implement the first unchecked task in tasks.md
+        Agent->>Agent: Run tests/validation
+        Agent->>Files: Check off task ( [ ] -> [x] )
+        Agent->>User: Report "Task N completed"
+    end
+    Agent->>User: All tasks completed, request verification
+
+    Note over User, Agent: 3. Archive Phase
+    User->>Agent: "歸檔" (Archive)
+    Agent->>Files: Verify all tasks are checked
+    Agent->>Files: Move sdd/<short-name>/ to sdd/archive/YYYY-MM-DD-<short-name>/
+    Agent->>User: Report "Archive complete" with one-line summary
+```
+
+### Directory Structure
+
+```text
+Project Root/
+└── sdd/
+    ├── <short-name>/         # Active change proposal (e.g., sdd/add-health-check/)
+    │   ├── proposal.md       # Change proposal details (Type, Why, Scope)
+    │   └── tasks.md          # Checklist & acceptance criteria (max 10 tasks, unchecked)
+    └── archive/              # Archived history
+        └── YYYY-MM-DD-<short-name>/
+            ├── proposal.md
+            └── tasks.md      # All tasks checked ([x])
+```
+
+### Preview of Generated Artifacts
+
+`sdd/<short-name>/proposal.md` Example:
+
+```markdown
+# add-health-check
+
+## 類型 (Type)
+新功能 (New Feature)
+
+## 為什麼做 (Why)
+為了讓監控系統能確認服務是否正常運作。
+(Allow monitoring systems to verify service availability.)
+
+## 要改什麼 (Scope of Changes)
+- 新增 `/api/health` 路由，回傳 JSON `{"status": "ok"}`。
+
+## 影響範圍 (Impact Area)
+- 新增 (New): `src/routes/health.js`
+- 修改 (Modified): `src/app.js`
+```
+
+`sdd/<short-name>/tasks.md` Example:
+
+```markdown
+- [ ] 1. Create health check route file handling GET /api/health
+- [ ] 2. Register route in main app.js
+- [ ] 3. Add unit test to verify status ok response
+
+## 驗收條件 (Acceptance Criteria)
+- 情境：當發送 GET 請求至 /api/health，應收到 200 狀態碼與 JSON `{"status": "ok"}`
+  (Scenario: send a GET request to /api/health, expect a 200 status code and JSON `{"status": "ok"}`)
+```
+
+> In the real artifacts, headings and content are Traditional Chinese (per the skill's template, regardless of tool); the English in these two examples is added for readability only.
+
 ## Install and get started
+
+> [!IMPORTANT]
+> **Post-installation note**: After installing or updating the skill, you usually need to **start a fresh conversation session** (e.g., restart Claude Code) for it to be loaded; in an already-open session the agent may not recognize the newly installed skill. Exception: when installed via Codex's built-in skill-installer, the skill becomes available on the **next turn** of the same conversation.
 
 Pick the path for your tool. Each channel's installer manages its own destination; this repo does not ship its own end-user installer.
 
@@ -27,7 +111,7 @@ Pick the path for your tool. Each channel's installer manages its own destinatio
 Ask Codex's built-in skill-installer to install from this repo:
 
 ```text
-$skill-installer install kurotanshi/sdd-workflow path skills/sdd-workflow from GitHub
+$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow
 ```
 
 This runs `install-skill-from-github.py --repo kurotanshi/sdd-workflow --path skills/sdd-workflow`, installs into `~/.codex/skills/sdd-workflow/`, and becomes available on the **next turn**. (Manual install: copy the whole `skills/sdd-workflow/` folder to `~/.codex/skills/sdd-workflow`.)

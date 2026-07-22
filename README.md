@@ -16,7 +16,87 @@
 
 這個 repo **唯一維護的流程來源**是 [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md)。安裝到各工具的副本只是可重新產生的安裝產物，不是第二份來源。
 
+## 工作流程
+
+```mermaid
+sequenceDiagram
+    actor User as 使用者
+    participant Agent as AI Coding Agent
+    participant Files as sdd/ 目錄
+
+    Note over User, Agent: 1. 提案階段 (Proposal Phase)
+    User->>Agent: 「提案：幫專案新增 OOO 功能」
+    Agent->>Files: 讀取專案，建立 proposal.md & tasks.md
+    Agent->>User: 顯示提案規格、工作清單與驗收條件
+    Note over Agent: 停下等待確認，不修改任何程式碼
+
+    Note over User, Agent: 2. 實作階段 (Implementation Phase)
+    User->>Agent: 「開始實作」 / 「實作」
+    loop 逐條任務執行
+        Agent->>Files: 檢查並實作 tasks.md 中第一條未勾選任務
+        Agent->>Agent: 執行測試/驗證
+        Agent->>Files: 勾選任務 ( [ ] -> [x] )
+        Agent->>User: 回報「第 N 條完成」
+    end
+    Agent->>User: 全部完成，請使用者驗收
+
+    Note over User, Agent: 3. 歸檔階段 (Archive Phase)
+    User->>Agent: 「歸檔」
+    Agent->>Files: 檢查 tasks.md 是否全數完成
+    Agent->>Files: 移動 sdd/<短名稱>/ 至 sdd/archive/YYYY-MM-DD-<短名稱>/
+    Agent->>User: 回報「歸檔完成」與單句變更摘要
+```
+
+### 目錄結構
+
+```text
+專案根目錄/
+└── sdd/
+    ├── <短名稱>/             # 活動中的變更提案 (例如: sdd/add-health-check/)
+    │   ├── proposal.md       # 變更提案說明（類型、為什麼做、影響範圍）
+    │   └── tasks.md          # 任務清單與驗收條件（最多 10 條，[ ] 狀態）
+    └── archive/             # 已歸檔的歷史紀錄
+        └── YYYY-MM-DD-<短名稱>/
+            ├── proposal.md
+            └── tasks.md      # 任務皆為 [x] 狀態
+```
+
+### 產出物範本預覽
+
+`sdd/<短名稱>/proposal.md` 範例：
+
+```markdown
+# add-health-check
+
+## 類型
+新功能
+
+## 為什麼做
+為了讓監控系統能確認服務是否正常運作。
+
+## 要改什麼
+- 新增 `/api/health` 路由，回傳 JSON `{"status": "ok"}`。
+
+## 影響範圍
+- 新增：`src/routes/health.js`
+- 修改：`src/app.js`
+```
+
+`sdd/<短名稱>/tasks.md` 範例：
+
+```markdown
+- [ ] 1. 新增健康檢查路由檔案，處理 GET /api/health
+- [ ] 2. 在主程式 app.js 註冊該路由
+- [ ] 3. 新增單元測試確保回傳 status ok
+
+## 驗收條件
+- 情境：當發送 GET 請求至 /api/health，應收到 200 狀態碼與 JSON `{"status": "ok"}`
+```
+
 ## 安裝與上手
+
+> [!IMPORTANT]
+> **安裝後注意事項**：安裝或更新 Skill 後，通常需要**開新的對話 session**（例如重啟 Claude Code）才會載入；在已開啟的舊對話中輸入指令，Agent 可能無法辨識新安裝的 Skill。例外：用 Codex 內建 skill-installer 安裝時，同一對話的**下一個 turn** 就會生效。
 
 依你使用的工具擇一安裝。各通路的目的地由該安裝工具自己管理，本 repo 不另外提供給一般使用者用的自製 installer。
 
