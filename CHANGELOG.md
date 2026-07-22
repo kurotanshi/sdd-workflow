@@ -2,6 +2,17 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v0.2.3 — 2026-07-22
+
+### Fixed
+- 放棄不再被 `tasks.md` 格式錯誤鎖死：abandonment preflight 成為共用 task scanner 停止規則的唯一例外——格式錯誤時回報行號、標明任務計數與已完成清單不可靠，仍照常計算並印出 hash snapshot、允許進入 `確認放棄 <短名稱>` 流程；實作（approval gate 前）、修訂與歸檔維持嚴格擋下。降級情況下，確認放棄執行後的回報同步標明計數與清單不可靠。
+- 確認放棄的 hash 比對改由機器執行：把 transcript 中的 snapshot 值逐一代入系統指令做等值判斷（POSIX 例如 `[ "<expected-hash>" = "$(shasum -a 256 <file> | cut -d' ' -f1)" ]`），agent 只依比對結果／exit code 行動；代入前先驗證每個 snapshot 值符合 `^[0-9a-f]{64}$`（64 位小寫十六進位），格式不符視為無有效 snapshot、不執行比對直接重跑 preflight；禁止目視比對 hex 字串、禁止以現場重算值取代 expected snapshot，比對指令失敗或不可用一律視為不符。
+- Phase selection 未指名階段的選項清單改列 `取消提案`，移除會觸發再次反問的裸 `取消`。
+
+### Changed
+- 抽出共用 Terminal archive procedure：放棄執行與完成歸檔在各自前置檢查通過後，走同一份參數化程序（終態字串、目錄後綴、最終回報文字等行為差異僅由參數表選擇，回報內容定義於表下方），消除兩份幾乎相同步驟未來只修一邊的 drift 風險（v0.2.1 的 INDEX 順序修正曾需兩處各修一次）。
+- 中英 README（版本 v0.2.3）、中英 CONTRIBUTING 驗收矩陣與 CLAUDE.md 驗證模型同步以上變更；驗收矩陣新增「共用歸檔程序」項目。
+
 ## v0.2.2 — 2026-07-22
 
 ### Changed
