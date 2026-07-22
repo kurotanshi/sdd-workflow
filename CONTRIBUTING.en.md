@@ -8,7 +8,7 @@ Thanks for contributing! This document explains the maintenance rules of this re
 
 **All workflow behavior may only be changed in one file: [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md).**
 
-- The three phases (提案 / 實作 / 歸檔), trigger words, artifact formats, and progress-reporting rules all live there.
+- The three phases (提案 / 實作 / 歸檔), revision/abandonment paths, state transitions, artifact formats, and progress-reporting rules all live there.
 - Copies installed into `~/.claude/skills/`, `~/.codex/skills/`, or `~/.agents/skills/` are **reproducible install artifacts**, never a second source of truth. **Never** edit only the copy inside a tool's directory — that causes divergence.
 - Do not add per-tool command/prompt variants. Cross-tool differences appear only in *how the skill is invoked* (the trigger-syntax table in the README), never in workflow rules.
 
@@ -63,6 +63,15 @@ Automation can only cover **static and hermetic** checks (skill structure, front
 - Codex: in a fresh session, run `$sdd-workflow 提案 …` through the same three phases; also confirm natural-language implicit invocation.
 - A skill change may require a new conversation/restart to load; never mistake "not loaded" for "passed".
 
+Verify at least these behaviors in each tool:
+
+- A new proposal persists `draft` and stops. Saying only `實作` for a `draft` asks for approval; `開始實作` persists `approved`.
+- An implementation request with no active proposal or a missing `proposal.md` / `tasks.md` stops without changing product code.
+- A revision preserves checked tasks, appends new numbers, resets to `draft`, and waits for approval again.
+- Completed archive checks only task checkboxes before the acceptance criteria, obtains the date from the execution environment, persists `completed`, and appends an `archive/INDEX.md` summary.
+- `放棄` / `取消` creates an `-abandoned` archive with `abandoned` status and an INDEX summary.
+- The workflow creates no git commit unless the user asks.
+
 ### Optional: Codex sub-agent assisted acceptance
 
 Codex can spawn sub-agents to help with **non-interactive** acceptance. This suits noisy, parallelizable checks that you want out of the main thread — document/command verification, static validation, hermetic dev-link tests, repo structure scans. It cannot replace fresh Codex TUI acceptance, because sub-agents inherit the current session, sandbox, and workspace — they are not a brand-new interactive Codex CLI session.
@@ -109,6 +118,6 @@ Confirm it stops at the proposal waiting for approval, then reply `開始實作`
 
 - Claude Code: `/sdd-workflow`
 - Codex: `$sdd-workflow`
-- Both accept the Traditional Chinese natural triggers 提案 / 開始實作 / 歸檔.
+- Both accept the Traditional Chinese natural triggers 提案 / 開始實作 / 實作 / 歸檔 / 放棄 / 取消.
 
 Install, update, and remove commands differ per channel — see the README; never mix one channel's paths or ownership assumptions into another.

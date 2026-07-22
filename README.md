@@ -4,13 +4,14 @@
 
 一份跨 AI coding agent 共用的 **SDD（Spec-Driven Development，規格驅動開發）** skill。核心理念一句話：**動手寫程式之前，先把要做什麼寫清楚、讓人確認，再開始做。**
 
-它把每個需求切成三個階段，各階段結束都會停下來等你確認，不會一路暴衝：
+它把每個需求切成三個階段，另有修訂與放棄路徑；需要核准的地方都會停下來等你確認：
 
 | 階段 | 觸發詞 | 做什麼 |
 | --- | --- | --- |
-| 1. 提案 | `提案` | 取短名稱、判斷類型（新功能／修 bug／重構），產出 `sdd/<短名稱>/proposal.md` 與 `tasks.md`，然後**停下等確認，不寫程式** |
-| 2. 實作 | `實作`／`開始實作` | 逐條完成 `tasks.md`，一次一條、做完打勾回報；發現規格不對就停下來問 |
-| 3. 歸檔 | `歸檔` | 確認全部打勾後，把 `sdd/<短名稱>/` 移到 `sdd/archive/<日期>-<短名稱>/` |
+| 1. 提案 | `提案` | 取短名稱、判斷類型，產出狀態為 `draft` 的 `proposal.md` 與 `tasks.md`，然後**停下等確認，不寫程式**；修訂既有提案也使用這個觸發詞 |
+| 2. 實作 | `開始實作`／`實作` | `開始實作` 會把 `draft` 核准為 `approved`；`實作` 只會繼續已核准提案。之後逐條完成任務、驗證、打勾並回報 |
+| 3. 歸檔 | `歸檔` | 驗收且任務全數完成後，從系統取得日期，歸檔為 `completed` 並更新 `sdd/archive/INDEX.md` |
+| 放棄 | `放棄`／`取消` | 將活動提案標記為 `abandoned`，移到帶有 `-abandoned` 後綴的歸檔目錄並更新索引 |
 
 產出物都是純文字，留在你的專案 `sdd/` 目錄，跟著 git 一起版控。
 
@@ -26,12 +27,14 @@ sequenceDiagram
 
     Note over User, Agent: 1. 提案階段 (Proposal Phase)
     User->>Agent: 「提案：幫專案新增 OOO 功能」
-    Agent->>Files: 讀取專案，建立 proposal.md & tasks.md
+    Agent->>Files: 建立 draft proposal.md & tasks.md
     Agent->>User: 顯示提案規格、工作清單與驗收條件
     Note over Agent: 停下等待確認，不修改任何程式碼
+    Note over User, Files: 其他路徑：修訂會重設 draft；放棄/取消會歸檔為 abandoned 並更新 INDEX.md
 
     Note over User, Agent: 2. 實作階段 (Implementation Phase)
-    User->>Agent: 「開始實作」 / 「實作」
+    User->>Agent: 「開始實作」
+    Agent->>Files: 將提案狀態更新為 approved 並重新讀取確認
     loop 逐條任務執行
         Agent->>Files: 檢查並實作 tasks.md 中第一條未勾選任務
         Agent->>Agent: 執行測試/驗證
@@ -43,7 +46,8 @@ sequenceDiagram
     Note over User, Agent: 3. 歸檔階段 (Archive Phase)
     User->>Agent: 「歸檔」
     Agent->>Files: 檢查 tasks.md 是否全數完成
-    Agent->>Files: 移動 sdd/<短名稱>/ 至 sdd/archive/YYYY-MM-DD-<短名稱>/
+    Agent->>Files: 由系統取得日期，標記 completed 並移至 archive
+    Agent->>Files: 追加一行至 sdd/archive/INDEX.md
     Agent->>User: 回報「歸檔完成」與單句變更摘要
 ```
 
@@ -53,12 +57,16 @@ sequenceDiagram
 專案根目錄/
 └── sdd/
     ├── <短名稱>/             # 活動中的變更提案 (例如: sdd/add-health-check/)
-    │   ├── proposal.md       # 變更提案說明（類型、為什麼做、影響範圍）
-    │   └── tasks.md          # 任務清單與驗收條件（最多 10 條，[ ] 狀態）
-    └── archive/             # 已歸檔的歷史紀錄
-        └── YYYY-MM-DD-<短名稱>/
-            ├── proposal.md
-            └── tasks.md      # 任務皆為 [x] 狀態
+    │   ├── proposal.md       # 提案狀態、類型、原因與影響範圍
+    │   └── tasks.md          # 最多 10 個可獨立驗證的任務與驗收條件
+    └── archive/              # 已完成或放棄的歷史紀錄
+        ├── INDEX.md          # 日期、短名稱、終態與單句摘要
+        ├── YYYY-MM-DD-<短名稱>/
+        │   ├── proposal.md   # 狀態為 completed
+        │   └── tasks.md      # 任務皆為 [x] 狀態
+        └── YYYY-MM-DD-<短名稱>-abandoned/
+            ├── proposal.md   # 狀態為 abandoned
+            └── tasks.md
 ```
 
 ### 產出物範本預覽
@@ -67,6 +75,9 @@ sequenceDiagram
 
 ```markdown
 # add-health-check
+
+## 狀態
+draft
 
 ## 類型
 新功能
@@ -159,8 +170,8 @@ npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
 
 | 工具 | 明確指令觸發 | 也可自然語言觸發 |
 | --- | --- | --- |
-| [Claude Code](https://claude.com/claude-code)（Anthropic） | `/sdd-workflow 提案 …` | 直接說「提案：…」／「開始實作」／「歸檔」 |
-| [Codex](https://github.com/openai/codex)（OpenAI/GPT） | `$sdd-workflow 提案 …` | 直接說「提案：…」／「開始實作」／「歸檔」 |
+| [Claude Code](https://claude.com/claude-code)（Anthropic） | `/sdd-workflow 提案 …` | 直接說「提案：…」／「開始實作」／「實作」／「歸檔」／「放棄」／「取消」 |
+| [Codex](https://github.com/openai/codex)（OpenAI/GPT） | `$sdd-workflow 提案 …` | 直接說「提案：…」／「開始實作」／「實作」／「歸檔」／「放棄」／「取消」 |
 
 明確指令是首選（可預期、不靠模型猜）；自然語言觸發是便利功能，靠模型依 skill 描述自動選用。若工具沒有自動選到 skill，請改用明確指令語法。
 
@@ -168,9 +179,11 @@ npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
 
 正常流程會分三步走：
 
-1. **提案**：agent 只會建立 `sdd/<短名稱>/proposal.md` 與 `sdd/<短名稱>/tasks.md`（內含逐條任務清單與「驗收條件」），然後停下來等你確認。這一步不應該修改產品程式碼。
-2. **實作**：你看完提案後，明確回覆「開始實作」或「實作」。agent 會一次完成 `tasks.md` 的一條任務，做完打勾並回報；如果發現規格不對，應停下來問。全部做完後會回報「全部完成」，並請你依驗收條件驗收。
-3. **歸檔**：你驗收完成後，回覆「歸檔」。agent 會確認 tasks 全部完成，再把 `sdd/<短名稱>/` 移到 `sdd/archive/<日期>-<短名稱>/`。
+1. **提案**：agent 建立狀態為 `draft` 的 `proposal.md` 與 `tasks.md`。每條任務都應對應一個可獨立驗證的行為改變，完整清單最多 10 條；建立後停下等待確認，不修改產品程式碼。
+2. **實作**：看完提案後回覆「開始實作」，agent 會先把狀態寫成 `approved` 並重新讀取確認，再一次完成一條任務。若提案仍是 `draft` 而你只說「實作」，agent 會先詢問是否核准，不會直接動碼。發現規格不對時會停止，修訂提案、保留已完成紀錄並回到 `draft` 等待重新核准。
+3. **歸檔**：驗收完成後回覆「歸檔」。agent 只計算「驗收條件」之前的 task checkbox，確認至少一條且全部完成，再由執行環境取得日期、標記為 `completed`、移到 `sdd/archive/<日期>-<短名稱>/`，並把摘要追加到 `INDEX.md`。
+
+不再進行的活動提案可回覆「放棄」或「取消」。agent 會標記為 `abandoned`，移到 `sdd/archive/<日期>-<短名稱>-abandoned/`，並在同一份 `INDEX.md` 留下摘要。未經你要求，workflow 不會自行建立 git commit。
 
 ## 更新與移除
 

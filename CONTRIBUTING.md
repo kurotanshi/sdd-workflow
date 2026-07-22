@@ -8,7 +8,7 @@
 
 **所有流程行為只能改一個檔案：[`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md)。**
 
-- 三階段（提案／實作／歸檔）的規則、觸發詞、產出格式、進度回報方式，全部住在這裡。
+- 三階段（提案／實作／歸檔）、修訂／放棄路徑、狀態轉移、產出格式與進度回報方式，全部住在這裡。
 - 安裝到 `~/.claude/skills/`、`~/.codex/skills/`、`~/.agents/skills/` 的副本都是**可重新產生的安裝產物**，不是第二份來源。**絕對不要**只改某個工具目錄裡的副本——那會造成分歧。
 - 不要為了單一工具再開 command／prompt 變體。跨工具差異只反映在「怎麼呼叫」（README 的觸發語法表），不反映在流程規則。
 
@@ -63,6 +63,15 @@ sdd-workflow/
 - Codex：新 session 用 `$sdd-workflow 提案 …` 走完相同三階段；另確認自然語言 implicit invocation。
 - Skill 變更後可能需要開新對話／重啟才會載入；不要把「沒載入」誤判為「通過」。
 
+每個工具至少驗證以下行為：
+
+- 新提案寫入 `draft` 並停下；對 `draft` 只說「實作」會詢問核准，「開始實作」才會持久化為 `approved`。
+- 沒有活動提案或缺少 `proposal.md`／`tasks.md` 時要求實作會停止，不修改產品程式碼。
+- 修訂會保留已勾任務、追加新編號、重設為 `draft` 並再次等待核准。
+- 完成歸檔只掃描「驗收條件」前的 task checkbox，日期來自執行環境，終態為 `completed`，且 `archive/INDEX.md` 新增摘要。
+- 「放棄」／「取消」會產生 `-abandoned` 歸檔、寫入 `abandoned` 狀態與 INDEX 摘要。
+- 未經使用者要求不會建立 git commit。
+
 ### Codex 子代理輔助驗收（可選）
 
 Codex 可以建立子代理協助跑**非互動式**驗收。這適合把 noisy、可並行的檢查移出主 thread，例如文件命令核對、靜態驗證、hermetic dev-link 測試、repo 結構掃描。它不適合取代 fresh Codex TUI 驗收，因為子代理繼承目前 session、sandbox 與 workspace，不是一個全新的互動式 Codex CLI session。
@@ -109,6 +118,6 @@ $sdd-workflow 提案 建立一個測試文字檔
 
 - Claude Code：`/sdd-workflow`
 - Codex：`$sdd-workflow`
-- 兩邊都可用繁中「提案／開始實作／歸檔」自然觸發。
+- 兩邊都可用繁中「提案／開始實作／實作／歸檔／放棄／取消」自然觸發。
 
 安裝、更新、移除指令依安裝通路而不同，見 README；不要混用某一通路的路徑或 ownership 假設。
