@@ -2,6 +2,21 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## Unreleased
+
+### Added
+- 提案持久化狀態：新提案以 `draft` 建立，明確核准後寫入 `approved`，歸檔時寫入 `completed` 或 `abandoned`。
+- 提案修訂與放棄路徑：修訂保留已完成任務並重新等待核准；`放棄`／`取消` 會建立帶 `-abandoned` 後綴的歷史紀錄。
+- `sdd/archive/INDEX.md`：完成或放棄歸檔時追加日期、短名稱、終態與單句摘要。
+- Phase 2 缺少活動目錄、`proposal.md` 或 `tasks.md` 時的停止防呆，以及舊提案缺少狀態時的未核准處理。
+- Git 行為規則：未經使用者要求不自動 commit；被要求時建議 message 對應短名稱與任務編號。
+
+### Changed
+- 收緊核准語意：`開始實作` 可核准 `draft`；單獨的 `實作` 只會繼續 `approved`，否則先詢問確認。
+- 任務粒度從約一小時改為一個可獨立驗證的行為改變，仍維持最多 10 條。
+- 歸檔日期必須由目前執行環境取得；完成度只計算 `## 驗收條件` 前的 task checkbox，且空 checklist 不視為完成。
+- 中英 README、CONTRIBUTING 與 repo 維護規範同步新的狀態、修訂、放棄、歸檔索引與驗收規則。
+
 ## v0.1.0 — 2026-07-22
 
 首個版本：把個人用的 SDD 三階段指令收斂成一份跨工具、可分享的 canonical Agent Skill。

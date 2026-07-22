@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A cross-tool **Agent Skill** package: a Spec-Driven Development (SDD) workflow (`提案 → 實作 → 歸檔`) shared by Claude Code (`/sdd-workflow`) and Codex (`$sdd-workflow`). There is no application code, build system, or test suite — the deliverables are the skill itself and its documentation.
+A cross-tool **Agent Skill** package: a Spec-Driven Development (SDD) workflow (`提案 → 實作 → 歸檔`, with revision and abandonment paths) shared by Claude Code (`/sdd-workflow`) and Codex (`$sdd-workflow`). There is no application code, build system, or test suite — the deliverables are the skill itself and its documentation.
 
 ## Single source of truth (most important rule)
 
@@ -18,7 +18,7 @@ A cross-tool **Agent Skill** package: a Spec-Driven Development (SDD) workflow (
 ## Language conventions
 
 - The skill body (`SKILL.md` instructions) is written in **English** for cross-tool maintainability.
-- Trigger words (`提案`, `實作`/`開始實作`, `歸檔`) and all user-facing output of the workflow stay in **Traditional Chinese**.
+- Trigger words (`提案`, `開始實作`, `實作`, `歸檔`, `放棄`, `取消`) and all user-facing output of the workflow stay in **Traditional Chinese**.
 - `README.md` (zh-TW) and `README.en.md` are a bilingual pair — keep them in sync when changing either.
 
 ## Commands
@@ -41,8 +41,8 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/s
 
 ## Verification model
 
-Automation can only cover static and hermetic checks (skill structure, frontmatter, docs, link-dev.sh behavior). **Actual workflow acceptance must be done by a human in fresh interactive sessions** of each tool — a skill change may require a new session to load, and "not loaded" must not be mistaken for "passed". See CONTRIBUTING.md for the full acceptance checklist.
+Automation can only cover static and hermetic checks (skill structure, frontmatter, docs, link-dev.sh behavior). **Actual workflow acceptance must be done by a human in fresh interactive sessions** of each tool — a skill change may require a new session to load, and "not loaded" must not be mistaken for "passed". Acceptance must cover `draft → approved`, missing-artifact guards, revision back to `draft`, `completed` and `abandoned` archives, environment-derived dates, archive INDEX updates, and the no-auto-commit rule. See CONTRIBUTING.md for the full checklist.
 
 ## Repo's own `sdd/` directory
 
-This repo dogfoods its own workflow, but its `sdd/` directory is **local-only**: it is gitignored and was removed from git history on 2026-07-22 — never commit or push it. Locally, `sdd/archive/` holds completed change proposals (e.g. `sdd/archive/2026-07-22-shareable-v1/`) and active changes would live at `sdd/<short-name>/` with `proposal.md` + `tasks.md`. Never treat archived directories as active changes, and never delete or merge archive contents silently.
+This repo dogfoods its own workflow, but its `sdd/` directory is **local-only**: it is gitignored and was removed from git history on 2026-07-22 — never commit or push it. Active changes live at `sdd/<short-name>/` with `proposal.md` + `tasks.md`; `proposal.md` persists `draft` or `approved`. Locally, `sdd/archive/` holds completed directories, `-abandoned` directories, and `INDEX.md`; archived proposals persist the terminal status `completed` or `abandoned`. Never treat archived directories as active changes, and never overwrite, delete, or merge archive contents silently.
