@@ -2,7 +2,7 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
-## Unreleased
+## v0.2.0 — 2026-07-22
 
 ### Added
 - 提案持久化狀態：新提案以 `draft` 建立，明確核准後寫入 `approved`，歸檔時寫入 `completed` 或 `abandoned`。

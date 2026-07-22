@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v0.1.0 ｜ [繁體中文](./README.md)
+> Version v0.2.0 ｜ [繁體中文](./README.md)
 
 A cross-agent **SDD (Spec-Driven Development)** skill. One idea: **before writing any code, state clearly what will be done, get it approved, then build.**
 
