@@ -230,6 +230,7 @@
         "tests.test_composition_example",
         "tests.test_hermetic_adapter",
         "tests.test_protocol_draft",
+        "tests.test_sample_web_api",
         "tests.test_runtime_conformance"
       ]
     }
