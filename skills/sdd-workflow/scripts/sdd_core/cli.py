@@ -39,7 +39,11 @@ from .managed_state import ManagedStateError, compare_attested_state
 from .task_identity import task_digest
 from .archive_model import load_archive_records
 from .archive_index import rebuild_archive_index, validate_archive_index
-from .doctor import diagnose_project
+from .doctor import (
+    collect_environment_evidence,
+    diagnose_project,
+    diagnose_runtime_package,
+)
 from .summary_input import SummaryInputError
 from .summary_input import read_summary
 from .terminal_transitions import (
@@ -513,7 +517,12 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             data={"record_count": len(scan.records), "valid": True},
         )
     if namespace.command == "doctor":
-        findings = diagnose_project(root.path)
+        findings = tuple(
+            sorted(
+                (*diagnose_project(root.path), *diagnose_runtime_package()),
+                key=lambda item: item.sort_key,
+            )
+        )
         issues = tuple(
             CliIssue(
                 item.code, item.action, item.message, "error", path=item.path
@@ -525,6 +534,7 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             data={
                 "healthy": not findings,
                 "findings": [item.to_dict() for item in findings],
+                "environment": collect_environment_evidence(root.path, findings),
             },
             errors=tuple(sorted(issues, key=lambda item: item.sort_key)),
             exit_code=1 if findings else 0,

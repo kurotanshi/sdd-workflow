@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 import subprocess
@@ -49,6 +50,7 @@ def load_identity(package_root: Path) -> dict[str, Any]:
         "compatible_engine_generation",
         "minimum_schema_version",
         "maximum_schema_version",
+        "skill_sha256",
         "required_capabilities",
     }
     if not isinstance(value, dict) or set(value) != required:
@@ -71,6 +73,7 @@ def load_identity(package_root: Path) -> dict[str, Any]:
         or type(value["minimum_schema_version"]) is not int
         or type(value["maximum_schema_version"]) is not int
         or value["minimum_schema_version"] > value["maximum_schema_version"]
+        or _HEX64.fullmatch(str(value["skill_sha256"])) is None
         or not isinstance(value["required_capabilities"], list)
         or not all(
             isinstance(item, str) and item
@@ -84,6 +87,7 @@ def load_identity(package_root: Path) -> dict[str, Any]:
             "reinstall_runtime",
             "Runtime identity manifest values are unsupported",
         )
+    value["manifest_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
     return value
 
 
@@ -192,8 +196,8 @@ def _validate_handshake(
         and capabilities == sorted(set(capabilities))
         and set(identity["required_capabilities"]).issubset(capabilities)
         and isinstance(data.get("artifact_versions"), dict)
-        and _HEX64.fullmatch(str(data.get("runtime_identity_sha256"))) is not None
-        and _HEX64.fullmatch(str(data.get("skill_sha256"))) is not None
+        and data.get("runtime_identity_sha256") == identity["manifest_sha256"]
+        and data.get("skill_sha256") == identity["skill_sha256"]
     )
     if not valid:
         raise _error(
