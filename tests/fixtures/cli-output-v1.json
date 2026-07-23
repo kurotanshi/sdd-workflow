@@ -1,0 +1,132 @@
+{
+  "fixture_version": 1,
+  "output_version": 1,
+  "public_commands": [
+    "version",
+    "validate",
+    "list",
+    "status",
+    "abandon-preflight",
+    "approve",
+    "begin-revision",
+    "complete-task",
+    "rebuild-index",
+    "validate-index",
+    "doctor",
+    "archive",
+    "abandon"
+  ],
+  "cases": [
+    {
+      "id": "version-success",
+      "argv": ["--json", "--version"],
+      "exit_code": 0,
+      "envelope": {
+        "command": "version",
+        "data": {
+          "engine_version": "0.6.0",
+          "maximum_schema_version": 2,
+          "minimum_schema_version": 1
+        },
+        "errors": [],
+        "ok": true,
+        "output_version": 1,
+        "warnings": []
+      }
+    },
+    {
+      "id": "status-success",
+      "setup_fixture": "baseline/valid-simple",
+      "argv": ["--root", "{root}", "--json", "status", "valid-simple"],
+      "exit_code": 0,
+      "envelope": {
+        "command": "status",
+        "data": {
+          "abandonment_readable": true,
+          "acceptance_conditions": [
+            "情境：task order and completion state remain stable"
+          ],
+          "adapter": "v1",
+          "change_type": "新功能",
+          "completed_count": 1,
+          "mutation_safe": true,
+          "readable": true,
+          "short_name": "valid-simple",
+          "snapshot": {
+            "proposal_sha256": "cd54efc69d02c244f87cc1f4c4fba402a56be51e59d81df11968b07509440e69",
+            "snapshot_digest": "eb22265f1ac304cbcc658e06ae4983309e9b22af4f19e550d057cf4c3b90de91",
+            "snapshot_version": 1,
+            "tasks_sha256": "c9302d30a99cf3fa490121cf3f2dbcc617a4c175d532edd59db9553aeb09b82a"
+          },
+          "status": "draft",
+          "task_count": 2,
+          "task_counts_reliable": true,
+          "tasks": [
+            {
+              "canonical_text": "Preserve one completed task",
+              "completed": true,
+              "ordinal": 1,
+              "source_line": 3,
+              "source_text": "- [x] Preserve one completed task",
+              "task_digest": "d69c378375815bb48c13a32ae1303accbfb27791a36137a1daf4c9cb6dac4dd3",
+              "text": "Preserve one completed task"
+            },
+            {
+              "canonical_text": "Preserve one pending task",
+              "completed": false,
+              "ordinal": 2,
+              "source_line": 4,
+              "source_text": "- [ ] Preserve one pending task",
+              "task_digest": "f0ccc65b42b51b8768ad1cad6855a75cf3a7a57533ccde60ed7a1c929fc358c9",
+              "text": "Preserve one pending task"
+            }
+          ]
+        },
+        "errors": [],
+        "ok": true,
+        "output_version": 1,
+        "warnings": []
+      }
+    },
+    {
+      "id": "invalid-short-name",
+      "argv": ["--root", "{root}", "--json", "status", "../escape"],
+      "exit_code": 1,
+      "envelope": {
+        "command": "status",
+        "data": {},
+        "errors": [
+          {
+            "action": "choose_short_name",
+            "code": "ERROR_INVALID_SHORT_NAME",
+            "message": "Invalid proposal short name: '../escape'",
+            "severity": "error"
+          }
+        ],
+        "ok": false,
+        "output_version": 1,
+        "warnings": []
+      }
+    },
+    {
+      "id": "usage-error",
+      "argv": ["--json", "status"],
+      "exit_code": 2,
+      "envelope": {
+        "command": "usage",
+        "data": {},
+        "errors": [
+          {
+            "action": "fix_command_arguments",
+            "code": "ERROR_USAGE",
+            "message": "the following arguments are required: short_name",
+            "severity": "error"
+          }
+        ],
+        "ok": false,
+        "output_version": 1,
+        "warnings": []
+      }
+    }
+  ]
+}
