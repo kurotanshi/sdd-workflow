@@ -21,13 +21,65 @@ Deterministic parser、transaction engine 與後續 schema 的分階段工程計
 
 > 裸 `取消` 不是直接 Skill trigger；只有使用者明指 SDD proposal 或已明確進入 workflow 時，才套用 Skill 內的取消消歧規則。明確的 code-revert 請求屬於 workflow 外操作，但在改檔前仍必須確認精確範圍，且不得因此改動 proposal state。
 
-## v0.6 Schema、runtime 與團隊契約
+## 安裝與上手
 
-v0.6.0 必須有 **CPython 3.11 以上**；macOS 與 Linux 為支援平台，Windows 目前只提供 best-effort Python core。v0.3.0 引入 runtime 時是 `0.x` 的 **breaking minor**；此要求延續至今。新提案使用明確的 Schema v2，類型可為 `新功能`、`修 bug`、`重構`、`維運`、`文件` 或 `研究`；研究沿用相同 lifecycle，並以 `## 結論` 保存輸出。既有 v1/legacy artifacts 不會原地 migration。CLI 或 runtime 不可用時一律 fail closed，不回退到 agent 直接解析或修改 managed state。完整契約見 [`docs/schema-v2.md`](./docs/schema-v2.md)、[`docs/runtime.md`](./docs/runtime.md)、[`docs/cli-contract.md`](./docs/cli-contract.md) 與 [`docs/transaction-protocol.md`](./docs/transaction-protocol.md)。
+> [!IMPORTANT]
+> **安裝後注意事項**：安裝或更新 Skill 後，通常需要**開新的對話 session**（例如重啟 Claude Code）才會載入；在已開啟的舊對話中輸入指令，Agent 可能無法辨識新安裝的 Skill。例外：用 Codex 內建 skill-installer 安裝時，同一對話的**下一個 turn** 就會生效。
 
-安裝或升級後，先在 package 內執行 `skills/sdd-workflow/scripts/sdd.py --version`（安裝副本使用對應路徑）。v1 proposals 可繼續由 v0.6 engine 管理；Schema v2 proposal 不可交給只支援 v1 的 engine。已有 `.sdd` machine metadata 的進行中 proposal 必須以相容 engine 完成或放棄，刪除 metadata 或 schema marker 不構成受支援的降級。
+依你使用的工具擇一安裝。各通路的目的地由該安裝工具自己管理，本 repo 不另外提供給一般使用者用的自製 installer。
 
-團隊並行時，每個 proposal 同一時間只交由一位 owner；獨立工作使用不同 short name，修改可能互相干擾時再搭配不同 Git worktree。Archive directories 是 authoritative，`INDEX.md` 是可由 `validate-index`／`rebuild-index` 檢查與重建的 derived artifact。v0.6.0 的 contention tests 沒有發現 authoritative data loss，因此沒有預先加入 lock 或 INDEX CAS。完整交接、worktree、version-skew 與 stale INDEX 程序見 [`docs/team-operations.md`](./docs/team-operations.md) 與 [`docs/compatibility.md`](./docs/compatibility.md)。
+### Codex
+
+在 Codex 對話中請內建的 skill-installer 從本 repo 安裝：
+
+```text
+$skill-installer 從 GitHub 安裝 kurotanshi/sdd-workflow 的 skills/sdd-workflow
+```
+
+底層等同 `install-skill-from-github.py --repo kurotanshi/sdd-workflow --path skills/sdd-workflow`，會裝進 `~/.codex/skills/sdd-workflow/`，並在**下一個 turn** 生效。（手動安裝：把整個 `skills/sdd-workflow/` 資料夾複製到 `~/.codex/skills/sdd-workflow`。）
+
+開一個新的 Codex 對話驗證：
+
+```text
+$sdd-workflow 提案 幫我的專案加一個健康檢查 API
+```
+
+### Claude Code
+
+Claude Code 沒有內建的「從 GitHub 裝 skill」指令，最快的方式是直接請它自己裝：
+
+```text
+幫我把 https://github.com/kurotanshi/sdd-workflow 的 skills/sdd-workflow 安裝到 ~/.claude/skills/sdd-workflow
+```
+
+不想讓 agent 動手，就手動安裝：
+
+```bash
+rm -rf /tmp/sdd-workflow
+git clone https://github.com/kurotanshi/sdd-workflow.git /tmp/sdd-workflow
+mkdir -p ~/.claude/skills
+cp -R /tmp/sdd-workflow/skills/sdd-workflow ~/.claude/skills/sdd-workflow
+```
+
+> 要複製**整個 `skills/sdd-workflow/` 資料夾**（含 `agents/`，不是只複製 `SKILL.md`）。若 `~/.claude/skills/sdd-workflow` 已存在（重裝），請先刪掉舊資料夾。Claude Code v2.1.203+ 亦支援 symlinked skill。
+
+開一個新的 Claude Code session 驗證：
+
+```text
+/sdd-workflow 提案 幫我的專案加一個健康檢查 API
+```
+
+### 其他通路：跨 agent Skills CLI（第三方）
+
+[`npx skills`](https://skills.sh/) 是開放 agent skills 生態的套件管理器，可一次餵給多種 agent：
+
+```bash
+npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
+```
+
+`-g` 裝在使用者層、`-y` 略過確認。安裝來源會記錄在該工具的 lock file。
+
+> ⚠️ 這是第三方工具（skills.sh），不是 OpenAI 或 Anthropic 官方 installer。它把 skill 放進共用的 `~/.agents/skills/`。**請自行確認你的 agent 真的會載入該目錄**——不同工具讀取的 skill 路徑不同（例如 Codex 內建工具鏈使用 `~/.codex/skills`）；若沒被載入，請改用上方各工具的原生安裝方式。
 
 ## 工作流程
 
@@ -120,66 +172,6 @@ draft
 - 情境：當發送 GET 請求至 /api/health，應收到 200 狀態碼與 JSON `{"status": "ok"}`
 ```
 
-## 安裝與上手
-
-> [!IMPORTANT]
-> **安裝後注意事項**：安裝或更新 Skill 後，通常需要**開新的對話 session**（例如重啟 Claude Code）才會載入；在已開啟的舊對話中輸入指令，Agent 可能無法辨識新安裝的 Skill。例外：用 Codex 內建 skill-installer 安裝時，同一對話的**下一個 turn** 就會生效。
-
-依你使用的工具擇一安裝。各通路的目的地由該安裝工具自己管理，本 repo 不另外提供給一般使用者用的自製 installer。
-
-### Codex
-
-在 Codex 對話中請內建的 skill-installer 從本 repo 安裝：
-
-```text
-$skill-installer 從 GitHub 安裝 kurotanshi/sdd-workflow 的 skills/sdd-workflow
-```
-
-底層等同 `install-skill-from-github.py --repo kurotanshi/sdd-workflow --path skills/sdd-workflow`，會裝進 `~/.codex/skills/sdd-workflow/`，並在**下一個 turn** 生效。（手動安裝：把整個 `skills/sdd-workflow/` 資料夾複製到 `~/.codex/skills/sdd-workflow`。）
-
-開一個新的 Codex 對話驗證：
-
-```text
-$sdd-workflow 提案 幫我的專案加一個健康檢查 API
-```
-
-### Claude Code
-
-Claude Code 沒有內建的「從 GitHub 裝 skill」指令，最快的方式是直接請它自己裝：
-
-```text
-幫我把 https://github.com/kurotanshi/sdd-workflow 的 skills/sdd-workflow 安裝到 ~/.claude/skills/sdd-workflow
-```
-
-不想讓 agent 動手，就手動安裝：
-
-```bash
-rm -rf /tmp/sdd-workflow
-git clone https://github.com/kurotanshi/sdd-workflow.git /tmp/sdd-workflow
-mkdir -p ~/.claude/skills
-cp -R /tmp/sdd-workflow/skills/sdd-workflow ~/.claude/skills/sdd-workflow
-```
-
-> 要複製**整個 `skills/sdd-workflow/` 資料夾**（含 `agents/`，不是只複製 `SKILL.md`）。若 `~/.claude/skills/sdd-workflow` 已存在（重裝），請先刪掉舊資料夾。Claude Code v2.1.203+ 亦支援 symlinked skill。
-
-開一個新的 Claude Code session 驗證：
-
-```text
-/sdd-workflow 提案 幫我的專案加一個健康檢查 API
-```
-
-### 其他通路：跨 agent Skills CLI（第三方）
-
-[`npx skills`](https://skills.sh/) 是開放 agent skills 生態的套件管理器，可一次餵給多種 agent：
-
-```bash
-npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
-```
-
-`-g` 裝在使用者層、`-y` 略過確認。安裝來源會記錄在該工具的 lock file。
-
-> ⚠️ 這是第三方工具（skills.sh），不是 OpenAI 或 Anthropic 官方 installer。它把 skill 放進共用的 `~/.agents/skills/`。**請自行確認你的 agent 真的會載入該目錄**——不同工具讀取的 skill 路徑不同（例如 Codex 內建工具鏈使用 `~/.codex/skills`）；若沒被載入，請改用上方各工具的原生安裝方式。
-
 ## 使用方式
 
 兩個工具的觸發語法：
@@ -199,7 +191,28 @@ npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
 2. **實作**：看完提案後回覆「開始實作」，agent 會先把狀態寫成 `approved` 並重新讀取確認，再一次完成一條任務。若提案仍是 `draft` 而你只說「實作」，agent 會先詢問是否核准，不會直接動碼。發現規格不對時會停止，修訂提案、保留已完成紀錄並回到 `draft` 等待重新核准；已勾任務屬歷史紀錄不占配額，修訂後未勾任務最多 10 條，若修訂實質改變原目標會建議另開新變更。
 3. **歸檔**：驗收完成後回覆「歸檔」。agent 只計算「驗收條件」之前、行首頂層的 task checkbox，確認至少一條且全部完成；若出現縮排、巢狀或 `- [X]` 等格式異常的 checkbox 行，或任務區內混入其他清單項——包含以 Markdown 連結開頭的項目，如 `- [參考](https://…)`——會指出行號並停止歸檔。通過後再由執行環境取得日期、標記為 `completed`、移到 `sdd/archive/<日期>-<短名稱>/`，並把摘要追加到 `INDEX.md`。
 
-不再進行的活動提案可回覆「放棄」、「放棄 <短名稱>」或「取消提案」。agent 會先呼叫內附 CLI 執行**唯讀的 preflight**：回報狀態、進度與 snapshot，並明確提醒放棄只歸檔 `sdd/` 產出物，已寫入工作區的程式碼與 git 變更**不會自動復原**。`tasks.md` 格式錯誤不會擋下 preflight，但計數會明確標為不可靠。你回覆一字不差的「確認放棄 <短名稱>」後，agent 會重跑 CLI preflight，由執行環境機器比對對話中與最新的兩個 hash，不目視比對長字串。內容未變才會標記 `abandoned`、移至 `sdd/archive/<日期>-<短名稱>-abandoned/` 並更新 `INDEX.md`；名稱不符、snapshot 不符或跨 session 沒有 snapshot 時會重新 preflight。單獨說「取消」或指涉不明時只會先詢問目標；明確指向程式碼的取消屬於 workflow 外復原，要先確認範圍且不得改動提案。未經你要求，workflow 不會自行建立 git commit。
+**放棄與消歧說明**：
+
+- **放棄提案（兩階段流程）**：
+  1. **請求放棄**：回覆「放棄」、「放棄 <短名稱>」或「`取消提案`」。Agent 會呼叫 CLI 執行**唯讀 preflight**，回報狀態、進度與 snapshot hash，並提醒工作區程式碼與 Git 變更**不會自動復原**（`tasks.md` 格式錯誤不會擋下 preflight，但計數會標為不可靠）。
+  2. **確認放棄**：回覆一字不差的「確認放棄 <短名稱>」後，Agent 重跑 CLI preflight 並由執行環境**機器比對** snapshot hash。確認未變後才標記為 `abandoned`、移至 `sdd/archive/<日期>-<短名稱>-abandoned/` 並全量重建 `INDEX.md`。若 snapshot 不符或跨 session 則會提示重新 preflight。
+- **消歧與復原邊界**：
+  - **裸「取消」**：若單獨說「取消」或目標不明，Agent 只會先詢問目標，避免誤動。
+  - **程式碼復原**：明確指向程式碼的取消（如「取消剛才的修改」）屬於 workflow 外的 code-revert 操作，變更前必須先確認精確範圍，且**不得改動提案狀態**。
+  - **Git Commit**：未經你要求，workflow 不會自行建立 git commit。
+
+## v0.6 Schema、runtime 與團隊契約
+
+- **系統與 Runtime 要求**：
+  - **Python 版本**：必須 **CPython 3.11 以上**（v0.3.0 引入 runtime 時為 `0.x` 的 **breaking minor**，此要求延續至今）。
+  - **支援平台**：macOS 與 Linux 為完整支援平台；Windows 目前僅提供 best-effort Python core。
+- **Schema v2 與提案規範**：
+  - **提案類型**：新提案採用明確 Schema v2，包含 `新功能`、`修 bug``重構`、`維運`、`文件` 與 `研究` 六種類型（`研究` 沿用相同 lifecycle，產出保存於 `## 結論`）。
+  - **相容性與 Fail Closed**：既有 v1/legacy artifacts 不會原地 migration；CLI 或 runtime 不可用時一律 fail closed，不回退至 agent 直接解析或修改 managed state。已有 `.sdd` machine metadata 的提案不可交給舊版 engine，刪除 metadata 或 schema marker 不構成受支援的降級。詳細規格見 [`docs/schema-v2.md`](./docs/schema-v2.md)、[`docs/runtime.md`](./docs/runtime.md)、[`docs/cli-contract.md`](./docs/cli-contract.md) 與 [`docs/transaction-protocol.md`](./docs/transaction-protocol.md)。
+  - **版本驗證**：安裝或升級後可在 package 內執行 `skills/sdd-workflow/scripts/sdd.py --version` 驗證版本（安裝副本使用對應路徑）。
+- **團隊並行與資料權威**：
+  - **Owner 機制**：團隊並行時，每個 proposal 同一時間只交由一位 owner；獨立工作使用不同短名稱，修改可能互相干擾時再搭配不同 Git worktree。
+  - **INDEX 與歸檔**：Archive directories 是 authoritative，`INDEX.md` 是可由 `validate-index`／`rebuild-index` 檢查與重建的 derived artifact。v0.6.0 的 contention tests 沒有發現 authoritative data loss，因此沒有預先加入 lock 或 INDEX CAS。詳細交接、worktree、version-skew 與 stale INDEX 程序見 [`docs/team-operations.md`](./docs/team-operations.md) 與 [`docs/compatibility.md`](./docs/compatibility.md)。
 
 ## 更新與移除
 
