@@ -21,6 +21,12 @@
       ]
     },
     {
+      "id": "archive.committed-index-recovery",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_archive_commit_survives_index_failure_and_rebuilds"
+      ]
+    },
+    {
       "id": "concurrency.atomic-convergence",
       "selectors": [
         "tests.test_concurrency"

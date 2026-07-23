@@ -234,6 +234,7 @@
         "tests.test_protocol_draft",
         "tests.test_quickstart_docs",
         "tests.test_recovery_drill_runner",
+        "tests.test_recovery_drills",
         "tests.test_sample_web_api",
         "tests.test_skill_reduction",
         "tests.test_team_evidence_contract",
