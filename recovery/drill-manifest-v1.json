@@ -52,6 +52,12 @@
       ]
     },
     {
+      "id": "compatibility.future-schema-mutation",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_future_schema_blocks_read_and_mutation_without_writes"
+      ]
+    },
+    {
       "id": "discovery.external-move",
       "selectors": [
         "tests.test_recovery_drills.RecoveryDrillsTests.test_renamed_proposal_does_not_retarget_other_active_proposal",

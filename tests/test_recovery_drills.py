@@ -103,6 +103,44 @@ def file_bytes(directory: Path) -> dict[str, bytes]:
 
 
 class RecoveryDrillsTests(unittest.TestCase):
+    def test_future_schema_blocks_read_and_mutation_without_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            future = copy_named_fixture(root, "future-item")
+            other = copy_named_fixture(root, "untouched")
+            proposal = future / "proposal.md"
+            proposal.write_text(
+                "---\nschema_version: 999\n---\n" + proposal.read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            future_before = file_bytes(future)
+            other_before = file_bytes(other)
+
+            for arguments in (
+                ("status", "future-item"),
+                (
+                    "approve",
+                    "future-item",
+                    "--expected-snapshot",
+                    "0" * 64,
+                ),
+            ):
+                with self.subTest(command=arguments[0]):
+                    code, blocked = invoke(root, *arguments)
+                    self.assertEqual(code, 1)
+                    self.assertEqual(
+                        blocked["errors"][0]["code"],  # type: ignore[index]
+                        "ERROR_UNSUPPORTED_SCHEMA_VERSION",
+                    )
+                    self.assertEqual(
+                        blocked["errors"][0]["action"],  # type: ignore[index]
+                        "use_supported_engine",
+                    )
+                    self.assertEqual(file_bytes(future), future_before)
+                    self.assertEqual(file_bytes(other), other_before)
+                    self.assertFalse((future / ".sdd").exists())
+                    self.assertFalse((other / ".sdd").exists())
+
     def test_renamed_proposal_does_not_retarget_other_active_proposal(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
