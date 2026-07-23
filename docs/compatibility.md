@@ -1,6 +1,6 @@
 # Compatibility axes
 
-Status: v0.6 contract
+Status: v0.8 portable-distribution contract over the v0.6 engine
 
 | Axis | Current version | Consumer | Unknown version behavior |
 | --- | --- | --- | --- |
@@ -29,6 +29,36 @@ Read compatibility is not mutation compatibility. An absent proposal schema sele
 | Unknown proposal/metadata/approval/attestation version | No for the affected operation | No | `use_supported_engine`; no prose fallback or deletion-based downgrade. |
 
 Supported downgrade is read-only and format-bound. A pre-v0.5 engine may read only the schemas and envelopes it explicitly supports. An in-flight managed proposal must be completed or abandoned with a compatible engine before pinning an older workflow; deleting `.sdd` or a schema marker is never downgrade.
+
+## Portable environment matrix
+
+| Axis | Supported | Conditional / best effort | Fail-closed or unsupported behavior |
+| --- | --- | --- | --- |
+| OS | macOS and Linux/Ubuntu, with required filesystem and clean-install tests | Windows is best effort through `sdd.py`; the POSIX launcher and release gate do not claim Windows support | An unsupported launcher/platform never authorizes a prose parser fallback. |
+| Python | CPython 3.11 and the current CI Python generation | A later CPython is accepted only while the complete suite and handshake pass | Python below 3.11 returns `ERROR_PYTHON_VERSION`; missing `python3` returns `ERROR_PYTHON_NOT_FOUND`. |
+| Agent host | Claude Code Skills and Codex Skills when the host loads one complete package from its documented root | Other Agent Skills hosts and third-party managers are conditional on proving both host loading and package handshake | A complete package in an unscanned directory is not treated as installed. |
+| Agent model | Model identity is not a runtime compatibility axis; evaluated model/host pairs are recorded in each Agent-eval report | A changed model or host generation requires affected scenarios to be rerun | No model label can override a failed runtime handshake, approval gate, or Critical Violation. |
+| Proposal schema | implicit/explicit v1 and explicit v2 | readable legacy artifacts are read-only when the adapter marks mutation unsafe | Unknown or malformed explicit versions fail before tasks are parsed. |
+| Distribution | One complete `sdd-workflow` package with matching Skill hash and required capabilities | A complete directory symlink is supported where the host follows it | Partial/mixed copies, multiple distinct candidates, PATH discovery, and silent fallback are unsupported. |
+
+Installation-channel locations and host-loading limits are fixed in
+[`install-methods.md`](./install-methods.md) and
+`conformance/install-channels-v1.json`.
+
+## Skill/runtime combinations
+
+| Skill package / runtime | Discovery | Project mutation | Required action |
+| --- | --- | --- | --- |
+| Package-local runtime, identity manifest, Skill hash, engine generation, schema interval, and capabilities all match | Accepted | Allowed subject to ordinary project/status gates | Normal command path. |
+| Same file exposed through duplicate symlink aliases | Deduplicated by resolved file identity | Same as the one resolved candidate | Record installed and resolved paths. |
+| Multiple distinct candidates in one explicit discovery source | `RUNTIME_AMBIGUOUS` | No | Select one complete package; do not choose newest or first. |
+| Explicit candidate missing or invalid | `RUNTIME_NOT_FOUND` or `RUNTIME_HANDSHAKE_FAILED` | No | Repair the exact pin; no fallback to bundled or PATH runtime. |
+| Wrong distribution, handshake/output version, engine generation, schema interval, or capability set | `RUNTIME_INCOMPATIBLE` | No | Install a compatible complete distribution. |
+| Installed `SKILL.md` bytes differ from `runtime-identity.json` | `RUNTIME_INCOMPATIBLE`; `doctor` reports `RUNTIME_SKILL_VERSION_SKEW` when directly inspected | No | Reinstall the complete distribution; never choose either file by timestamp. |
+| Compatible runtime with proposal/metadata version outside its declared artifact support | Runtime handshake may pass, affected project command fails its narrower format gate | No for the affected artifact | Use an engine that explicitly supports the artifact; never delete version markers. |
+
+The runtime handshake proves package compatibility, not Agent compliance.
+Agent host/model behavior remains covered by the versioned Agent-eval matrix.
 
 ## Problem reports
 

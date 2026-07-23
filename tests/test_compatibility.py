@@ -21,6 +21,26 @@ from sdd_core.cli import main  # noqa: E402
 
 
 class CompatibilityTests(unittest.TestCase):
+    def test_portable_compatibility_matrix_is_fail_closed(self) -> None:
+        document = (ROOT / "docs/compatibility.md").read_text(encoding="utf-8")
+        for fact in (
+            "| OS | macOS and Linux/Ubuntu",
+            "| Python | CPython 3.11",
+            "| Agent host | Claude Code Skills and Codex Skills",
+            "| Agent model | Model identity is not a runtime compatibility axis",
+            "| Proposal schema | implicit/explicit v1 and explicit v2",
+            "`RUNTIME_AMBIGUOUS`",
+            "`RUNTIME_HANDSHAKE_FAILED`",
+            "`RUNTIME_INCOMPATIBLE`",
+            "`RUNTIME_SKILL_VERSION_SKEW`",
+            "no fallback to bundled or PATH runtime",
+            "Agent host/model behavior remains covered",
+            "install-methods.md",
+            "conformance/install-channels-v1.json",
+        ):
+            with self.subTest(fact=fact):
+                self.assertIn(fact, document)
+
     def test_engine_version_and_generation_are_strict(self) -> None:
         self.assertEqual(ENGINE_VERSION, "0.6.0")
         self.assertEqual(parse_engine_version("0.5.12"), (0, 5, 12))
