@@ -424,6 +424,7 @@ silently downgrade a proposal, envelope, or capability claim.
 
 Detailed schemas and recovery matrices remain in the linked design documents:
 [`architecture.md`](./architecture.md),
+[`Agent Adapter Contract`](./protocol/agent-adapter-contract.md),
 [`approval-manifest.md`](./approval-manifest.md),
 [`managed-state.md`](./managed-state.md),
 [`transaction-protocol.md`](./transaction-protocol.md),

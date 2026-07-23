@@ -5,6 +5,7 @@
   "reference_runtime_manifest": "conformance/runtime-manifest-v1.json",
   "reference_runtime": "skills/sdd-workflow/scripts/sdd.py",
   "expected_envelopes": "conformance/expected-envelopes-v1.json",
+  "adapter_scenarios": "conformance/adapter-scenarios-v1.json",
   "runner": "scripts/run-conformance-kit",
   "fixture_manifests": [
     "tests/fixtures/baseline/MANIFEST.json",

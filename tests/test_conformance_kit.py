@@ -33,6 +33,7 @@ class PublicConformanceKitTests(unittest.TestCase):
             "reference_runtime_manifest",
             "reference_runtime",
             "expected_envelopes",
+            "adapter_scenarios",
             "runner",
         ):
             self.assertTrue((ROOT / manifest[key]).is_file(), key)
