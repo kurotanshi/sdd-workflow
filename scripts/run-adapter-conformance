@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""Run public adapter scenarios against the hermetic test adapter."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CONFORMANCE = ROOT / "conformance"
+SCENARIOS_PATH = CONFORMANCE / "adapter-scenarios-v1.json"
+sys.path.insert(0, str(CONFORMANCE))
+
+from hermetic_adapter import (  # noqa: E402
+    DESCRIPTOR,
+    HermeticPolicyAdapter,
+    evaluate,
+)
+
+
+class ScenarioError(Exception):
+    pass
+
+
+def load_scenarios() -> dict[str, Any]:
+    try:
+        document = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ScenarioError(f"cannot read adapter scenarios: {error}") from error
+    if (
+        not isinstance(document, dict)
+        or document.get("scenario_version") != 1
+        or document.get("adapter_contract_version")
+        != DESCRIPTOR["adapter_contract_version"]
+    ):
+        raise ScenarioError("unsupported or malformed adapter scenario contract")
+    return document
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Run the test-only hermetic Agent adapter conformance suite.",
+    )
+    parser.add_argument("--case", action="append", default=[], dest="case_ids")
+    parser.add_argument("--list", action="store_true", dest="list_only")
+    parser.add_argument("--json", action="store_true", dest="json_output")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    arguments = build_parser().parse_args(argv)
+    try:
+        document = load_scenarios()
+        scenarios = document.get("scenarios")
+        if not isinstance(scenarios, list) or not scenarios:
+            raise ScenarioError("adapter scenario list is empty")
+        known = {
+            case.get("id")
+            for case in scenarios
+            if isinstance(case, dict) and isinstance(case.get("id"), str)
+        }
+        unknown = sorted(set(arguments.case_ids) - known)
+        if unknown:
+            raise ScenarioError(f"unknown scenario(s): {', '.join(unknown)}")
+        selected = [
+            case
+            for case in scenarios
+            if isinstance(case, dict)
+            and (not arguments.case_ids or case.get("id") in arguments.case_ids)
+        ]
+        if arguments.list_only:
+            output = {
+                "output_version": 1,
+                "ok": True,
+                "mode": "list",
+                "scenario_version": document["scenario_version"],
+                "adapter": DESCRIPTOR,
+                "scenarios": [case["id"] for case in selected],
+            }
+            if arguments.json_output:
+                print(json.dumps(output, ensure_ascii=False, sort_keys=True))
+            else:
+                for scenario_id in output["scenarios"]:
+                    print(scenario_id)
+            return 0
+
+        adapter = HermeticPolicyAdapter()
+        results = []
+        for case in selected:
+            initial_state = case.get("initial_state")
+            turns = case.get("turns")
+            if (
+                not isinstance(initial_state, str)
+                or not isinstance(turns, list)
+                or not all(isinstance(turn, str) for turn in turns)
+            ):
+                raise ScenarioError(f"invalid scenario inputs: {case.get('id')!r}")
+            try:
+                result = evaluate(case, adapter.decide(initial_state, turns))
+            except ValueError as error:
+                raise ScenarioError(
+                    f"invalid scenario contract: {case.get('id')!r}"
+                ) from error
+            results.append(result)
+    except ScenarioError as error:
+        output = {
+            "output_version": 1,
+            "ok": False,
+            "errors": [
+                {
+                    "code": "ERROR_ADAPTER_SCENARIO",
+                    "message": str(error),
+                }
+            ],
+        }
+        if arguments.json_output:
+            print(json.dumps(output, ensure_ascii=False, sort_keys=True))
+        else:
+            print(f"ERROR_ADAPTER_SCENARIO: {error}", file=sys.stderr)
+        return 2
+
+    ok = all(result["passed"] for result in results)
+    output = {
+        "output_version": 1,
+        "ok": ok,
+        "mode": "run",
+        "scenario_version": document["scenario_version"],
+        "adapter": DESCRIPTOR,
+        "selected_scenarios": [result["scenario_id"] for result in results],
+        "results": results,
+    }
+    if arguments.json_output:
+        print(json.dumps(output, ensure_ascii=False, sort_keys=True))
+    else:
+        for result in results:
+            label = "PASS" if result["passed"] else "FAIL"
+            print(f"[{label}] {result['scenario_id']}")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -85,3 +85,21 @@ invocation. The reference-runtime manifest remains the deeper executable
 evidence for transaction, recovery, archive, concurrency, packaging, and
 documentation rules. Passing either suite does not add a supported Agent host
 or installation channel.
+
+## Hermetic adapter scenarios
+
+The implementation-neutral adapter contract has a separate test-only runner:
+
+```text
+scripts/run-adapter-conformance --list --json
+scripts/run-adapter-conformance --json
+```
+
+It evaluates the policy in `conformance/hermetic_adapter.py` against every
+case in `conformance/adapter-scenarios-v1.json`, requiring the declared actions
+in order, rejecting every prohibited action, and comparing the final human
+handoff. The policy consumes only canonical initial-state labels and user
+turns; it is not keyed by scenario ID and does not start an Agent.
+
+Its descriptor is permanently `implementation_kind: "hermetic-test"` with no
+supported hosts. Passing it is evidence for adapter contract logic only.

@@ -34,6 +34,8 @@ class PublicConformanceKitTests(unittest.TestCase):
             "reference_runtime",
             "expected_envelopes",
             "adapter_scenarios",
+            "hermetic_adapter",
+            "adapter_runner",
             "runner",
         ):
             self.assertTrue((ROOT / manifest[key]).is_file(), key)

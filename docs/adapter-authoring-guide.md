@@ -158,3 +158,13 @@ Then execute every applicable entry in
 
 Finally, run the real-host Agent evaluation before making a support claim.
 Hermetic success proves contract logic only.
+
+The repository's test-only reference policy can be exercised with:
+
+```text
+scripts/run-adapter-conformance --json
+```
+
+It uses `implementation_kind: "hermetic-test"` and has an empty
+`supported_hosts` list. Its result demonstrates the action/handoff contract,
+not Claude Code, Codex, or any other Agent integration.
