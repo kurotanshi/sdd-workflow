@@ -1039,6 +1039,11 @@ def _write_human(result: CommandResult, *, stdout: TextIO, stderr: TextIO) -> No
                 f"{result.data['short_name']}: {result.command} dry-run "
                 f"destination={result.data['destination']}\n"
             )
+        elif result.data.get("committed"):
+            stdout.write(
+                f"{result.data['short_name']}: {result.command} committed "
+                f"destination={result.data['destination']}\n"
+            )
 
     for issue in (*result.warnings, *result.errors):
         location = ""
@@ -1049,3 +1054,150 @@ def _write_human(result: CommandResult, *, stdout: TextIO, stderr: TextIO) -> No
                 if issue.column is not None:
                     location += f":{issue.column}"
         stderr.write(f"{issue.code}:{location} {issue.message}\n")
+
+    if result.command not in {"version", "handshake"}:
+        guidance = _human_guidance(result)
+        stream = stderr if result.errors else stdout
+        stream.write(f"current state: {guidance['current_state']}\n")
+        stream.write(f"next action: {guidance['next_action']}\n")
+        stream.write(f"blocked reason: {guidance['blocked_reason']}\n")
+        stream.write(f"required user action: {guidance['required_user_action']}\n")
+        stream.write(f"authoritative path: {guidance['authoritative_path']}\n")
+
+
+def _human_guidance(result: CommandResult) -> dict[str, str]:
+    data = result.data
+    action = result.errors[0].action if result.errors else None
+    current_state = _human_current_state(result)
+    next_action = _human_next_action(result, action)
+    blocked_reason = (
+        "; ".join(f"{issue.code}: {issue.message}" for issue in result.errors)
+        if result.errors
+        else "none"
+    )
+    return {
+        "current_state": current_state,
+        "next_action": next_action,
+        "blocked_reason": blocked_reason,
+        "required_user_action": _human_required_user_action(result, action),
+        "authoritative_path": _human_authoritative_path(result, data),
+    }
+
+
+def _human_current_state(result: CommandResult) -> str:
+    data = result.data
+    if result.command in {"archive", "abandon"} and data.get("committed"):
+        return "completed" if result.command == "archive" else "abandoned"
+    if result.command == "status" and data.get("status"):
+        return str(data["status"])
+    if result.errors:
+        return "blocked"
+    if result.command == "validate":
+        return "valid"
+    if result.command == "list":
+        return f"{len(data.get('candidates', []))} active proposal(s)"
+    if result.command == "abandon-preflight":
+        return "abandonment preflight complete"
+    if result.command == "approve":
+        return "approved"
+    if result.command == "begin-revision":
+        return "draft"
+    if result.command == "complete-task":
+        return "approved"
+    if result.command in {"archive", "abandon"} and data.get("dry_run"):
+        return f"{result.command} planned"
+    if result.command == "doctor":
+        return "healthy" if data.get("healthy") else "findings present"
+    if result.command == "validate-index":
+        return "index valid" if data.get("valid") else "index invalid"
+    if result.command == "rebuild-index":
+        return "index rebuilt"
+    return "command complete"
+
+
+def _human_next_action(result: CommandResult, action: str | None) -> str:
+    data = result.data
+    if action is not None:
+        return action.replace("_", " ")
+    if result.command == "status":
+        tasks = data.get("tasks", [])
+        next_task = next(
+            (
+                task.get("ordinal")
+                for task in tasks
+                if isinstance(task, dict) and not task.get("completed")
+            ),
+            None,
+        )
+        if data.get("status") == "draft":
+            return "approve after explicit user authorization"
+        if next_task is not None:
+            return f"complete task {next_task}"
+        return "archive after acceptance"
+    if result.command == "validate":
+        return "run status"
+    if result.command == "list":
+        return "select one proposal"
+    if result.command == "abandon-preflight":
+        return f"wait for exact confirmation: 確認放棄 {data.get('short_name')}"
+    if result.command == "approve":
+        return "implement the first incomplete task"
+    if result.command == "begin-revision":
+        return "edit and validate revised proposal scope"
+    if result.command == "complete-task":
+        return "run status and verify canonical progress"
+    if result.command in {"archive", "abandon"} and data.get("dry_run"):
+        return f"review dry-run before {result.command}"
+    if result.command == "validate-index":
+        return "continue workflow"
+    if result.command == "rebuild-index":
+        return "validate archive index"
+    if result.command == "doctor":
+        return "continue workflow" if data.get("healthy") else "inspect findings"
+    return "none"
+
+
+def _human_required_user_action(
+    result: CommandResult,
+    action: str | None,
+) -> str:
+    if action is not None:
+        user_actions = {
+            "select_project_root": "select the project root",
+            "choose_short_name": "provide a valid proposal short name",
+            "create_or_select_proposal": "create or select a proposal",
+            "refresh_status": "confirm intent again after a fresh status check",
+            "begin_revision": "authorize managed revision and reapproval",
+            "begin_revision_and_reapprove": "authorize managed revision and reapproval",
+            "establish_approval_manifest": "reconfirm the canonical approved plan",
+            "fix_command_arguments": "correct the command arguments",
+            "rebuild_index": "none",
+        }
+        return user_actions.get(action, f"follow the {action.replace('_', ' ')} remediation")
+    data = result.data
+    if result.command == "status":
+        if data.get("status") == "draft":
+            return "explicitly approve before implementation"
+        if data.get("task_count") == data.get("completed_count"):
+            return "accept completed work before archive"
+    if result.command == "abandon-preflight":
+        return f"reply exactly: 確認放棄 {data.get('short_name')}"
+    if result.command == "begin-revision":
+        return "review revised scope and explicitly approve it"
+    return "none"
+
+
+def _human_authoritative_path(
+    result: CommandResult,
+    data: dict[str, Any],
+) -> str:
+    if data.get("destination"):
+        return str(data["destination"])
+    if data.get("short_name"):
+        return f"sdd/{data['short_name']}"
+    for issue in (*result.errors, *result.warnings):
+        if issue.path is not None:
+            return issue.path
+    if result.command in {"rebuild-index", "validate-index"}:
+        return "sdd/archive/INDEX.md"
+    return "unknown"

@@ -14,7 +14,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "skills/sdd-workflow/scripts"))
 
-from sdd_core.cli import main  # noqa: E402
+from sdd_core.cli import CliIssue, CommandResult, _write_human, main  # noqa: E402
 
 
 def invoke(arguments: list[str], *, cwd: Path = ROOT) -> tuple[int, str, str]:
@@ -71,6 +71,14 @@ class CliContractTests(unittest.TestCase):
             self.assertEqual(error[0], 1)
             self.assertEqual(error[1], "")
             self.assertIn("ERROR_INVALID_SHORT_NAME:", error[2])
+            for field in (
+                "current state: blocked",
+                "next action: choose short name",
+                "blocked reason: ERROR_INVALID_SHORT_NAME:",
+                "required user action: provide a valid proposal short name",
+                "authoritative path: unknown",
+            ):
+                self.assertIn(field, error[2])
             proposal = target / "proposal.md"
             proposal.write_text(proposal.read_text().replace("draft", "approved", 1))
             status = invoke(["--root", str(root), "status", "valid-simple"], cwd=root)
@@ -78,6 +86,45 @@ class CliContractTests(unittest.TestCase):
             self.assertEqual(status[2], "")
             for field in ("adapter=", "status=approved", "type=", "tasks=", "counts=", "snapshot="):
                 self.assertIn(field, status[1])
+            for field in (
+                "current state: approved",
+                "next action: complete task 2",
+                "blocked reason: none",
+                "required user action: none",
+                "authoritative path: sdd/valid-simple",
+            ):
+                self.assertIn(field, status[1])
+
+    def test_human_terminal_guidance_preserves_committed_authority(self) -> None:
+        result = CommandResult(
+            command="archive",
+            data={
+                "short_name": "valid-simple",
+                "committed": True,
+                "destination": "sdd/archive/2026-07-23-valid-simple",
+            },
+            errors=(
+                CliIssue(
+                    code="COMMITTED_DERIVED_ARTIFACT_STALE",
+                    action="rebuild_index",
+                    message="Terminal bundle committed but INDEX is stale",
+                    severity="error",
+                ),
+            ),
+            exit_code=1,
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        _write_human(result, stdout=stdout, stderr=stderr)
+        self.assertIn("archive committed", stdout.getvalue())
+        for field in (
+            "current state: completed",
+            "next action: rebuild index",
+            "blocked reason: COMMITTED_DERIVED_ARTIFACT_STALE:",
+            "required user action: none",
+            "authoritative path: sdd/archive/2026-07-23-valid-simple",
+        ):
+            self.assertIn(field, stderr.getvalue())
 
     def test_status_exposes_task_source_canonical_text_and_stable_digest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

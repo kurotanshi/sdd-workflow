@@ -54,6 +54,8 @@ JSON mode uses the same exit status as human mode. A nonzero exit does not make 
 - `status` prints short name, adapter, status, type, completed/total tasks, count reliability, and snapshot digest.
 - `abandon-preflight` prints progress, the non-revert warning, and separate labeled 64-character lowercase SHA-256 values for `proposal.md` and `tasks.md`. Task-format diagnostics degrade counts to unreliable warnings instead of blocking preflight. Structural, path, or unsupported-schema failures remain blocking.
 - `--version` prints engine version and the supported schema range.
+- Lifecycle command output ends with labeled `current state`, `next action`, `blocked reason`, `required user action`, and `authoritative path` fields. Successful guidance is written to stdout; blocking guidance accompanies errors on stderr. A committed terminal transition remains reported as completed/abandoned when only the derived INDEX is stale.
+- Guidance is derived from the same command result but is not a machine contract. Automation continues to use `--json`, stable `code`/`action`, and the versioned envelope.
 
 ## JSON output
 

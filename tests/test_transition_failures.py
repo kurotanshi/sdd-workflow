@@ -130,7 +130,11 @@ class TransitionFailureTests(unittest.TestCase):
             "abandon <short-name>",
         ):
             self.assertIn(command, skill)
-        self.assertIn("Never edit these managed fields directly", skill)
+        self.assertIn(
+            "Never directly edit lifecycle status, checkbox markers, machine metadata, "
+            "archive paths, or INDEX",
+            skill,
+        )
 
     def test_complete_task_retry_finishes_staged_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
