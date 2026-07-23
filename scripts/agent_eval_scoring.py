@@ -89,7 +89,7 @@ class Evidence:
         return sources[name]
 
     def command_lines(self) -> list[str]:
-        return self.cli_lines or self.tool_lines or self.agent_lines
+        return self.cli_lines
 
     def ordered_trace(self) -> str:
         return "\n".join(self.agent_lines or self.cli_lines or self.tool_lines)

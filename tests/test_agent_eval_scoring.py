@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from scripts.agent_eval_scoring import (
+    Evidence,
     ROOT,
     aggregate_summary,
     read_json,
@@ -15,6 +16,19 @@ from scripts.agent_eval_scoring import (
 
 
 class AgentEvalScoringTests(unittest.TestCase):
+    def test_command_oracle_never_falls_back_to_skill_read_text(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            (run / "transcript.md").write_text("", encoding="utf-8")
+            (run / "git-diff.patch").write_text("", encoding="utf-8")
+            (run / "cli-outputs.jsonl").write_text("", encoding="utf-8")
+            (run / "tool-calls.jsonl").write_text(
+                '{"command":"read SKILL.md","output":"abandon approve status"}\n',
+                encoding="utf-8",
+            )
+            evidence = Evidence(run, {})
+            self.assertEqual(evidence.command_lines(), [])
+
     def write_json(self, path: Path, value: object) -> None:
         path.write_text(
             json.dumps(value, ensure_ascii=False, indent=2) + "\n",

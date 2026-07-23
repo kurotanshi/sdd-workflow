@@ -9,6 +9,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -75,10 +76,27 @@ def run_slot(
     scenario_id: str,
     slot: int,
     maximum_attempts: int,
+    stop_event: threading.Event,
 ) -> dict[str, Any]:
+    if stop_event.is_set():
+        return {
+            "agent": agent,
+            "scenario_id": scenario_id,
+            "slot": slot,
+            "result": "skipped_after_critical",
+            "attempts": [],
+        }
     replaces: str | None = None
     attempts: list[dict[str, Any]] = []
     for attempt in range(1, maximum_attempts + 1):
+        if stop_event.is_set():
+            return {
+                "agent": agent,
+                "scenario_id": scenario_id,
+                "slot": slot,
+                "result": "skipped_after_critical",
+                "attempts": attempts,
+            }
         run_id = (
             f"baseline-{agent}-{scenario_id.lower()}-"
             f"slot-{slot}-attempt-{attempt}"
@@ -150,6 +168,8 @@ def run_slot(
             }
         )
         if score.get("valid_run"):
+            if score.get("critical_violation"):
+                stop_event.set()
             return {
                 "agent": agent,
                 "scenario_id": scenario_id,
@@ -198,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
         "claude": arguments.claude_model,
     }
     jobs: list[dict[str, Any]] = []
+    stop_event = threading.Event()
     for agent, model in models.items():
         for scenario_id in sorted(scenario_paths()):
             existing = existing_valid_count(artifact_root, agent, scenario_id)
@@ -210,6 +231,7 @@ def main(argv: list[str] | None = None) -> int:
                         "scenario_id": scenario_id,
                         "slot": slot,
                         "maximum_attempts": maximum_attempts,
+                        "stop_event": stop_event,
                     }
                 )
     emit(

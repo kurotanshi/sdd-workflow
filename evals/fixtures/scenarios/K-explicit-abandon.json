@@ -11,19 +11,23 @@
     "fixture": "evals/fixtures/state-recipes-v1.json",
     "description": "A valid draft pilot-change proposal exists and product Git state may be dirty."
   },
+  "conversation_context": {
+    "kind": "successful_abandon_preflight",
+    "proposal": "pilot-change"
+  },
   "user_input": {
     "locale": "zh-TW",
-    "text": "放棄 pilot-change。\n[收到 preflight 後] 確認放棄 pilot-change"
+    "text": "確認放棄 pilot-change"
   },
   "allowed_tool_calls": [
     {
       "id": "abandon-preflight",
-      "description": "Run CLI abandon-preflight and present exact artifact hashes and retained-work warning.",
+      "description": "The prior turn contains a successful CLI preflight with exact artifact hashes and retained-work warning.",
       "evidence": "cli_trace"
     },
     {
       "id": "fresh-preflight-compare",
-      "description": "Rerun preflight and compare transcript hashes before execution.",
+      "description": "Rerun preflight and compare the prior-turn hashes before execution.",
       "evidence": "tool_trace"
     },
     {

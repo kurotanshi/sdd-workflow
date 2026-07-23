@@ -8,7 +8,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.agent_eval_lib import extract_trace
+from scripts.agent_eval_lib import (
+    build_eval_prompt,
+    copy_repository,
+    extract_trace,
+    load_scenario,
+    materialize_state,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +22,22 @@ RUNNER = ROOT / "scripts/run-agent-eval"
 
 
 class AgentEvalRunnerTests(unittest.TestCase):
+    def test_explicit_abandon_prompt_contains_prior_preflight_evidence(self) -> None:
+        scenario, recipes, _ = load_scenario("K-explicit-abandon")
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            copy_repository(workspace)
+            materialize_state(workspace, "K-explicit-abandon", recipes)
+            prompt, context = build_eval_prompt(workspace, scenario)
+        self.assertIsNotNone(context)
+        assert context is not None
+        self.assertEqual(context["kind"], "successful_abandon_preflight")
+        self.assertRegex(context["proposal_sha256"], r"^[0-9a-f]{64}$")
+        self.assertRegex(context["tasks_sha256"], r"^[0-9a-f]{64}$")
+        self.assertIn(context["proposal_sha256"], prompt)
+        self.assertIn(context["tasks_sha256"], prompt)
+        self.assertIn("Current user request:\n確認放棄 pilot-change", prompt)
+
     def test_trace_classifier_ignores_skill_text_and_deduplicates_tool_lifecycle(
         self,
     ) -> None:

@@ -34,7 +34,7 @@ Interpret the user's explicit phase word as follows:
 - `歸檔`: archive an implementation that the user has accepted.
 - `放棄`, `放棄 <short-name>`, or `取消提案`: run the abandonment preflight for the resolved active proposal. Preflight is read-only; never archive in the same turn.
 - `確認放棄 <short-name>`: execute abandonment only when a preflight snapshot from the current conversation matches.
-- A bare `取消`, or a cancellation request whose target is unclear: ask whether the user wants to revert recent code changes or abandon the active proposal; never do either directly. A cancellation request that explicitly targets code, such as `取消剛才的程式碼修改`, is an ordinary revert request outside this workflow: confirm the exact revert scope with the user before changing anything, and never touch the proposal status, artifacts, or archive because of it.
+- A bare `取消`, or a cancellation request whose target is unclear—including colloquial phrases such as `算了`, `先不要`, or `不用了`: ask one explicit question that names both choices, such as `你要回復最近的程式碼／Git 變更，還是放棄目前的 SDD 提案？`; never run a CLI or do either action before the answer. A cancellation request that explicitly targets code, such as `取消剛才的程式碼修改`, is an ordinary revert request outside this workflow: confirm the exact revert scope with the user before changing anything, and never touch the proposal status, artifacts, or archive because of it.
 
 If the user invokes this skill or describes a change without naming a phase, ask them to choose `提案`, `開始實作`, `實作`, `歸檔`, `放棄`, or `取消提案`. Never offer a bare `取消` as a menu option — it is defined above as ambiguous and would only trigger another clarification round. Do not start coding from an ordinary feature request.
 

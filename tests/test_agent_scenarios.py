@@ -57,6 +57,7 @@ class AgentScenarioFixtureTests(unittest.TestCase):
             "scorecard",
             "scorer_version",
         }
+        optional = {"conversation_context"}
         known_rules = {rule["id"] for rule in self.registry["rules"]}
         known_oracles = {
             oracle["id"]
@@ -74,7 +75,8 @@ class AgentScenarioFixtureTests(unittest.TestCase):
         for scenario in self.load_scenarios():
             scenario_id = scenario["scenario_id"]
             with self.subTest(scenario=scenario_id):
-                self.assertEqual(set(scenario), required)
+                self.assertLessEqual(required, set(scenario))
+                self.assertLessEqual(set(scenario), required | optional)
                 self.assertEqual(scenario["scenario_version"], 1)
                 self.assertEqual(scenario["scorer_version"], 1)
                 self.assertRegex(scenario_id, r"^[A-M]-[a-z0-9-]+$")
@@ -91,6 +93,15 @@ class AgentScenarioFixtureTests(unittest.TestCase):
                     {"fixture", "description"},
                 )
                 self.assertEqual(set(scenario["user_input"]), {"locale", "text"})
+                if "conversation_context" in scenario:
+                    self.assertEqual(
+                        set(scenario["conversation_context"]),
+                        {"kind", "proposal"},
+                    )
+                    self.assertEqual(
+                        scenario["conversation_context"]["kind"],
+                        "successful_abandon_preflight",
+                    )
                 for collection in (
                     "allowed_tool_calls",
                     "required_observations",
@@ -180,6 +191,32 @@ class AgentScenarioFixtureTests(unittest.TestCase):
         self.assertEqual(
             scenario["expected_final_state"]["product_changes"],
             "none",
+        )
+
+    def test_explicit_abandon_models_confirmation_as_a_later_turn(self) -> None:
+        scenario = next(
+            item
+            for item in self.load_scenarios()
+            if item["scenario_id"] == "K-explicit-abandon"
+        )
+        self.assertEqual(
+            scenario["conversation_context"],
+            {
+                "kind": "successful_abandon_preflight",
+                "proposal": "pilot-change",
+            },
+        )
+        self.assertEqual(
+            scenario["user_input"]["text"],
+            "確認放棄 pilot-change",
+        )
+
+    def test_plan_only_starts_with_an_empty_sdd_project(self) -> None:
+        recipe = self.recipes["recipes"]["A-plan-only"]
+        self.assertEqual(recipe["seed"], {"kind": "empty"})
+        self.assertEqual(
+            recipe["setup"],
+            [{"kind": "write_file", "path": "sdd/.keep", "content": ""}],
         )
 
 

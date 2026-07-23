@@ -5,7 +5,13 @@
       "seed": {
         "kind": "empty"
       },
-      "setup": [],
+      "setup": [
+        {
+          "kind": "write_file",
+          "path": "sdd/.keep",
+          "content": ""
+        }
+      ],
       "faults": []
     },
     "B-approval-boundary": {

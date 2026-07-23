@@ -65,6 +65,23 @@
         }
       }
     },
+    "conversation_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "proposal"
+      ],
+      "properties": {
+        "kind": {
+          "const": "successful_abandon_preflight"
+        },
+        "proposal": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        }
+      }
+    },
     "user_input": {
       "type": "object",
       "additionalProperties": false,

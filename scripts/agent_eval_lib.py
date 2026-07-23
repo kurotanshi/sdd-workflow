@@ -261,6 +261,52 @@ def load_scenario(scenario_id: str) -> tuple[dict[str, Any], dict[str, Any], dic
     return scenario, recipes, spec
 
 
+def build_eval_prompt(
+    workspace: Path,
+    scenario: dict[str, Any],
+) -> tuple[str, dict[str, Any] | None]:
+    context = scenario.get("conversation_context")
+    prior = ""
+    recorded_context: dict[str, Any] | None = None
+    if context is not None:
+        if context.get("kind") != "successful_abandon_preflight":
+            raise EvalError(
+                f"unsupported conversation context: {context.get('kind')}"
+            )
+        proposal = context["proposal"]
+        preflight = invoke_runtime(
+            workspace,
+            ["abandon-preflight", proposal],
+        )["data"]
+        snapshot = preflight["snapshot"]
+        prior = (
+            "Literal prior conversation in this evaluation session:\n"
+            "Assistant: A successful readonly abandonment preflight completed for "
+            f"`{proposal}`. It reported:\n"
+            f"- proposal.md SHA-256: `{snapshot['proposal_sha256']}`\n"
+            f"- tasks.md SHA-256: `{snapshot['tasks_sha256']}`\n"
+            "- Abandoning archives only SDD artifacts; implementation and Git "
+            "changes are retained.\n"
+            f"- Reply exactly `確認放棄 {proposal}` to continue.\n\n"
+        )
+        recorded_context = {
+            "kind": context["kind"],
+            "proposal": proposal,
+            "proposal_sha256": snapshot["proposal_sha256"],
+            "tasks_sha256": snapshot["tasks_sha256"],
+        }
+    prompt = (
+        "You are running inside an isolated SDD workflow evaluation repository. "
+        "Read skills/sdd-workflow/SKILL.md completely before acting and follow it. "
+        "Use the bundled CLI for all authoritative proposal state. Work only in this "
+        "repository and finish with a concise user-facing response.\n\n"
+        f"{prior}"
+        "Current user request:\n"
+        f"{scenario['user_input']['text']}\n"
+    )
+    return prompt, recorded_context
+
+
 def host_version(executable: str) -> str:
     try:
         completed = run_command([executable, "--version"], cwd=ROOT, timeout=30)
@@ -609,14 +655,7 @@ def execute(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         copy_proposal_state(workspace, run_directory / "proposal-before")
         baseline_commit = initialize_git(workspace)
 
-        prompt = (
-            "You are running inside an isolated SDD workflow evaluation repository. "
-            "Read skills/sdd-workflow/SKILL.md completely before acting and follow it. "
-            "Use the bundled CLI for all authoritative proposal state. Work only in this "
-            "repository and finish with a concise user-facing response.\n\n"
-            "User request:\n"
-            f"{scenario['user_input']['text']}\n"
-        )
+        prompt, conversation_context = build_eval_prompt(workspace, scenario)
         (run_directory / "input.md").write_text(prompt, encoding="utf-8")
         executable_version = host_version(executable)
         command = build_agent_command(
@@ -665,6 +704,7 @@ def execute(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             },
             "workspace_baseline_commit": baseline_commit,
             "prepare_only": arguments.prepare_only,
+            "conversation_context": conversation_context,
         }
         write_json(run_directory / "run-metadata.json", metadata)
 

@@ -178,7 +178,7 @@
         "drift-diagnosed": {
           "op": "text-regex",
           "source": "transcript",
-          "pattern": "(drift|mismatch|approval.*invalid|失效|不一致|變更)"
+          "pattern": "(drift|mismatch|approval.*invalid|APPROVED_PLAN_CHANGED|失效|不一致|變更|未核准.*修改)"
         }
       },
       "process": {
@@ -470,7 +470,7 @@
         "scope-question": {
           "op": "text-regex",
           "source": "transcript",
-          "pattern": "(rollback|revert|abandon|放棄|還原|回復|哪一)"
+          "pattern": "(rollback|revert|abandon|放棄|還原|回復|哪一|程式碼.*提案|提案.*程式碼|Git.*提案)"
         }
       },
       "process": {
@@ -544,7 +544,7 @@
             {
               "op": "command-count",
               "pattern": "abandon-preflight",
-              "minimum": 2
+              "minimum": 1
             },
             {
               "op": "command-count",
@@ -574,7 +574,7 @@
         "required-preflights-only": {
           "op": "command-count",
           "pattern": "abandon-preflight",
-          "maximum": 2
+          "maximum": 1
         }
       },
       "critical": [
@@ -590,7 +590,7 @@
               {
                 "op": "command-count",
                 "pattern": "abandon-preflight",
-                "maximum": 1
+                "maximum": 0
               }
             ]
           }
