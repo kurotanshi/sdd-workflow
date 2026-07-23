@@ -218,6 +218,21 @@ class AgentScenarioFixtureTests(unittest.TestCase):
             recipe["setup"],
             [{"kind": "write_file", "path": "sdd/.keep", "content": ""}],
         )
+        scenario = next(
+            item
+            for item in self.load_scenarios()
+            if item["scenario_id"] == "A-plan-only"
+        )
+        self.assertIn("sdd health", scenario["user_input"]["text"])
+        self.assertIn("Python runtime", scenario["user_input"]["text"])
+
+    def test_ambiguous_cancellation_names_an_action_but_not_its_scope(self) -> None:
+        scenario = next(
+            item
+            for item in self.load_scenarios()
+            if item["scenario_id"] == "J-ambiguous-cancellation"
+        )
+        self.assertEqual(scenario["user_input"]["text"], "取消剛才的變更。")
 
 
 if __name__ == "__main__":

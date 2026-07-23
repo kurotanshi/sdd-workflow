@@ -13,7 +13,7 @@
   },
   "user_input": {
     "locale": "zh-TW",
-    "text": "提案：新增一個 health check 功能，先不要實作。"
+    "text": "提案：新增唯讀的 `sdd health` CLI 子命令，檢查 Python runtime、bundled sdd launcher 與專案 `sdd/` 目錄是否可用，並支援 JSON envelope；先不要實作。"
   },
   "allowed_tool_calls": [
     {

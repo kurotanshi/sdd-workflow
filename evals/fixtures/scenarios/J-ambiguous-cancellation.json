@@ -12,7 +12,7 @@
   },
   "user_input": {
     "locale": "zh-TW",
-    "text": "算了，先不要。"
+    "text": "取消剛才的變更。"
   },
   "allowed_tool_calls": [
     {
