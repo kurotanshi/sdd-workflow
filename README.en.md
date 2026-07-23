@@ -21,13 +21,65 @@ The staged engineering plan and design trade-offs for the deterministic parser, 
 
 > The direct trigger words (`提案` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消提案` / `確認放棄 <short-name>`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. A bare `取消` is not a direct Skill trigger; the cancellation disambiguation rule applies only after the user explicitly refers to an SDD proposal or has entered the workflow. An explicit code-revert request stays outside SDD, but its exact scope must be confirmed before changing files and it must never alter proposal state. The skill instructions themselves are written in English for cross-tool maintainability.
 
-## v0.6 schema, runtime, and team contract
+## Install and get started
 
-v0.6.0 requires **CPython 3.11 or newer**. macOS and Linux are supported; Windows currently receives a best-effort Python core. The runtime introduced in v0.3.0 was a **breaking minor** within `0.x`, and remains required. New proposals use explicit Schema v2 and may be classified as `新功能`, `修 bug`, `重構`, `維運`, `文件`, or `研究`. Research uses the same lifecycle and stores output under `## 結論`. Existing v1/legacy artifacts are never migrated in place. A missing CLI or runtime fails closed and never falls back to direct parsing or managed-state edits. See [`docs/schema-v2.md`](./docs/schema-v2.md), [`docs/runtime.md`](./docs/runtime.md), [`docs/cli-contract.md`](./docs/cli-contract.md), and [`docs/transaction-protocol.md`](./docs/transaction-protocol.md).
+> [!IMPORTANT]
+> **Post-installation note**: After installing or updating the skill, you usually need to **start a fresh conversation session** (e.g., restart Claude Code) for it to be loaded; in an already-open session the agent may not recognize the newly installed skill. Exception: when installed via Codex's built-in skill-installer, the skill becomes available on the **next turn** of the same conversation.
 
-After installing or upgrading, run `skills/sdd-workflow/scripts/sdd.py --version` from the package, using the corresponding path in an installed copy. V1 proposals remain manageable by the v0.6 engine; a Schema v2 proposal must not be handed to a v1-only engine. An in-flight proposal with `.sdd` machine metadata must finish or be abandoned under a compatible engine. Deleting metadata or the schema marker is not a supported downgrade.
+Pick the path for your tool. Each channel's installer manages its own destination; this repo does not ship its own end-user installer.
 
-For team concurrency, one proposal has one owner at a time. Independent changes use different short names and, when implementation trees may interfere, separate Git worktrees. Archive directories are authoritative; `INDEX.md` is a derived artifact checked and reconstructed by `validate-index` / `rebuild-index`. The v0.6.0 contention tests found no authoritative data loss, so the release does not add a speculative lock or INDEX CAS. See [`docs/team-operations.md`](./docs/team-operations.md) and [`docs/compatibility.md`](./docs/compatibility.md) for handoff, worktree, version-skew, and stale-INDEX procedures.
+### Codex
+
+Ask Codex's built-in skill-installer to install from this repo:
+
+```text
+$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow
+```
+
+This runs `install-skill-from-github.py --repo kurotanshi/sdd-workflow --path skills/sdd-workflow`, installs into `~/.codex/skills/sdd-workflow/`, and becomes available on the **next turn**. (Manual install: copy the whole `skills/sdd-workflow/` folder to `~/.codex/skills/sdd-workflow`.)
+
+Verify in a fresh Codex conversation:
+
+```text
+$sdd-workflow 提案 Add a health-check API to my project
+```
+
+### Claude Code
+
+Claude Code has no built-in "install a skill from GitHub" command; the fastest way is to ask it to install the skill itself:
+
+```text
+Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into ~/.claude/skills/sdd-workflow
+```
+
+If you'd rather not let the agent run commands, install manually:
+
+```bash
+rm -rf /tmp/sdd-workflow
+git clone https://github.com/kurotanshi/sdd-workflow.git /tmp/sdd-workflow
+mkdir -p ~/.claude/skills
+cp -R /tmp/sdd-workflow/skills/sdd-workflow ~/.claude/skills/sdd-workflow
+```
+
+> Copy the **entire `skills/sdd-workflow/` folder** (including `agents/`, not just `SKILL.md`). If `~/.claude/skills/sdd-workflow` already exists (reinstall), delete the old folder first. Claude Code v2.1.203+ also supports a symlinked skill.
+
+Verify in a fresh Claude Code session:
+
+```text
+/sdd-workflow 提案 Add a health-check API to my project
+```
+
+### Other channel: cross-agent Skills CLI (third party)
+
+[`npx skills`](https://skills.sh/) is a package manager for the open agent-skills ecosystem, targeting many agents at once:
+
+```bash
+npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
+```
+
+`-g` installs at user level, `-y` skips prompts. The source is recorded in that tool's lock file.
+
+> ⚠️ This is a third-party tool (skills.sh), not an official OpenAI or Anthropic installer. It places the skill in the shared `~/.agents/skills/`. **Verify your agent actually loads that directory** — different tools read different skill paths (e.g. Codex's own toolchain uses `~/.codex/skills`). If it isn't picked up, use the native install path for your tool above.
 
 ## Workflow
 
@@ -124,66 +176,6 @@ draft
 
 > In the real artifacts, headings and content are Traditional Chinese (per the skill's template, regardless of tool); the English in these two examples is added for readability only.
 
-## Install and get started
-
-> [!IMPORTANT]
-> **Post-installation note**: After installing or updating the skill, you usually need to **start a fresh conversation session** (e.g., restart Claude Code) for it to be loaded; in an already-open session the agent may not recognize the newly installed skill. Exception: when installed via Codex's built-in skill-installer, the skill becomes available on the **next turn** of the same conversation.
-
-Pick the path for your tool. Each channel's installer manages its own destination; this repo does not ship its own end-user installer.
-
-### Codex
-
-Ask Codex's built-in skill-installer to install from this repo:
-
-```text
-$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow
-```
-
-This runs `install-skill-from-github.py --repo kurotanshi/sdd-workflow --path skills/sdd-workflow`, installs into `~/.codex/skills/sdd-workflow/`, and becomes available on the **next turn**. (Manual install: copy the whole `skills/sdd-workflow/` folder to `~/.codex/skills/sdd-workflow`.)
-
-Verify in a fresh Codex conversation:
-
-```text
-$sdd-workflow 提案 Add a health-check API to my project
-```
-
-### Claude Code
-
-Claude Code has no built-in "install a skill from GitHub" command; the fastest way is to ask it to install the skill itself:
-
-```text
-Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into ~/.claude/skills/sdd-workflow
-```
-
-If you'd rather not let the agent run commands, install manually:
-
-```bash
-rm -rf /tmp/sdd-workflow
-git clone https://github.com/kurotanshi/sdd-workflow.git /tmp/sdd-workflow
-mkdir -p ~/.claude/skills
-cp -R /tmp/sdd-workflow/skills/sdd-workflow ~/.claude/skills/sdd-workflow
-```
-
-> Copy the **entire `skills/sdd-workflow/` folder** (including `agents/`, not just `SKILL.md`). If `~/.claude/skills/sdd-workflow` already exists (reinstall), delete the old folder first. Claude Code v2.1.203+ also supports a symlinked skill.
-
-Verify in a fresh Claude Code session:
-
-```text
-/sdd-workflow 提案 Add a health-check API to my project
-```
-
-### Other channel: cross-agent Skills CLI (third party)
-
-[`npx skills`](https://skills.sh/) is a package manager for the open agent-skills ecosystem, targeting many agents at once:
-
-```bash
-npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
-```
-
-`-g` installs at user level, `-y` skips prompts. The source is recorded in that tool's lock file.
-
-> ⚠️ This is a third-party tool (skills.sh), not an official OpenAI or Anthropic installer. It places the skill in the shared `~/.agents/skills/`. **Verify your agent actually loads that directory** — different tools read different skill paths (e.g. Codex's own toolchain uses `~/.codex/skills`). If it isn't picked up, use the native install path for your tool above.
-
 ## Usage
 
 Trigger syntax for both tools:
@@ -201,7 +193,28 @@ The normal workflow has three steps:
 2. **Implement**: after reviewing the proposal, reply with `開始實作`. The agent persists `approved`, re-reads it, then completes one task at a time. If a proposal is still `draft` and you say only `實作`, the agent asks for approval instead of changing code. If the specification must change, it stops, preserves completed history, revises the artifacts, resets to `draft`, and waits for approval again; checked tasks are history and do not count against the quota, a revision keeps at most 10 unchecked tasks, and an amendment that materially changes the goal is redirected to a new change.
 3. **Archive**: after accepting the result, reply with `歸檔`. The agent counts only first-column, top-level task checkboxes before the acceptance criteria and requires at least one with all completed; any malformed checkbox line — indented, nested, or variants like `- [X]` — stops the archive with its line number reported, and so does any other list item in the task region, including one that starts with a markdown link such as `- [參考](https://…)`. It then obtains the date from the execution environment, marks the proposal `completed`, moves it to `sdd/archive/<date>-<short-name>/`, and appends its summary to `INDEX.md`.
 
-For an active proposal that will not proceed, reply with `放棄`, `放棄 <short-name>`, or `取消提案`. The agent first calls the bundled CLI for a **read-only preflight**: it reports status, progress, and snapshot hashes, and warns that implementation code and git changes already in the working tree are **never reverted automatically**. Task-format errors do not block this preflight, but its counts are explicitly marked unreliable. After the exact phrase `確認放棄 <short-name>`, the agent reruns the CLI preflight and has the execution environment compare the transcript and current hash pairs without eyeballing them. Only an unchanged snapshot permits `abandoned`, the move to `sdd/archive/<date>-<short-name>-abandoned/`, and the `INDEX.md` update; a mismatched name, snapshot, or new session reruns preflight. A bare or unclear `取消` only asks which target you mean. An explicit code cancellation remains a separately confirmed revert outside SDD and never alters proposal state. The workflow creates no git commit unless requested.
+**Abandonment and Disambiguation Rules**:
+
+- **Proposal Abandonment (Two-step process)**:
+  1. **Request Abandonment**: Reply with `放棄`, `放棄 <short-name>`, or `取消提案`. The agent calls the bundled CLI for a **read-only preflight**: it reports status, progress, and snapshot hashes, and warns that implementation code and git changes in the working tree are **never reverted automatically**. Task-format errors do not block preflight, but counts are marked unreliable.
+  2. **Confirm Abandonment**: After the exact phrase `確認放棄 <short-name>`, the agent reruns CLI preflight and has the execution environment **machine-compare** snapshot hashes. An unchanged snapshot permits `abandoned`, the move to `sdd/archive/<date>-<short-name>-abandoned/`, and the `INDEX.md` update. A mismatched snapshot or new session prompts for a fresh preflight.
+- **Disambiguation and Revert Boundaries**:
+  - **Bare "取消"**: A bare or unclear `取消` only asks which target you mean to prevent unintended actions.
+  - **Code Revert**: An explicit code cancellation (e.g. "cancel recent code changes") remains a separately confirmed revert outside SDD and **never alters proposal state**.
+  - **Git Commit**: The workflow creates no git commit unless requested.
+
+## v0.6 schema, runtime, and team contract
+
+- **System and Runtime Requirements**:
+  - **Python Version**: Requires **CPython 3.11 or newer**. (The runtime introduced in v0.3.0 was a **breaking minor** within `0.x` and remains required).
+  - **Supported Platforms**: macOS and Linux are fully supported; Windows currently receives a best-effort Python core.
+- **Schema v2 and Proposal Specifications**:
+  - **Proposal Types**: New proposals use explicit Schema v2 and may be classified as `新功能`, `修 bug`, `重構`, `維運`, `文件`, or `研究` (Research uses the same lifecycle and stores output under `## 結論`).
+  - **Compatibility and Fail-Closed**: Existing v1/legacy artifacts are never migrated in place. A missing CLI or runtime fails closed and never falls back to direct parsing or managed-state edits. An in-flight proposal with `.sdd` machine metadata must finish or be abandoned under a compatible engine; deleting metadata or the schema marker is not a supported downgrade. See [`docs/schema-v2.md`](./docs/schema-v2.md), [`docs/runtime.md`](./docs/runtime.md), [`docs/cli-contract.md`](./docs/cli-contract.md), and [`docs/transaction-protocol.md`](./docs/transaction-protocol.md).
+  - **Version Verification**: After installing or upgrading, run `skills/sdd-workflow/scripts/sdd.py --version` from the package, using the corresponding path in an installed copy.
+- **Team Concurrency and Data Authority**:
+  - **Owner Mechanism**: For team concurrency, one proposal has one owner at a time. Independent changes use different short names and, when implementation trees may interfere, separate Git worktrees.
+  - **INDEX and Archive**: Archive directories are authoritative; `INDEX.md` is a derived artifact checked and reconstructed by `validate-index` / `rebuild-index`. The v0.6.0 contention tests found no authoritative data loss, so the release does not add a speculative lock or INDEX CAS. See [`docs/team-operations.md`](./docs/team-operations.md) and [`docs/compatibility.md`](./docs/compatibility.md) for handoff, worktree, version-skew, and stale-INDEX procedures.
 
 ## Update and remove
 
