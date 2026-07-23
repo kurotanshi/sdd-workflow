@@ -23,6 +23,7 @@ The files do not need to move into category directories.
 | Responsibility | Files |
 | --- | --- |
 | Installed-package and layout smoke | `install_smoke.py`, `package_validation.py` |
+| Clean install-to-uninstall lifecycle | `full_lifecycle_smoke.py` |
 | Documentation and trigger consistency | `docs_consistency.py`, `trigger-contract.sh` |
 | Fixture maintenance | `dump_fixture_models.py`, `fixtures/` |
 

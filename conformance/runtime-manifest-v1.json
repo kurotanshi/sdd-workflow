@@ -191,6 +191,17 @@
       ]
     },
     {
+      "id": "package.full-lifecycle-smoke",
+      "kind": "command",
+      "rules": [
+        "SDD-PKG-001"
+      ],
+      "argv": [
+        "{python}",
+        "tests/full_lifecycle_smoke.py"
+      ]
+    },
+    {
       "id": "documentation.consistency",
       "kind": "command",
       "rules": [
