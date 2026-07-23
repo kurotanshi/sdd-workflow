@@ -57,3 +57,5 @@ unreviewed narrative into JSON.
 
 The bounded v0.10 controlled trial and its limitations are recorded in
 [`reports/v0.10-controlled-team-trial.md`](./reports/v0.10-controlled-team-trial.md).
+Its lock/lease gate is decided in
+[`decisions/2026-07-23-v010-lock-lease.md`](./decisions/2026-07-23-v010-lock-lease.md).

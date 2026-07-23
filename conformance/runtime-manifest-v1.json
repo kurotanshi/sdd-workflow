@@ -238,6 +238,7 @@
         "tests.test_sample_web_api",
         "tests.test_skill_reduction",
         "tests.test_team_evidence_contract",
+        "tests.test_team_lock_decision",
         "tests.test_runtime_conformance"
       ]
     }
