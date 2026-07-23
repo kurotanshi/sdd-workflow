@@ -5,6 +5,11 @@ Status: v1 compatibility contract (candidate until the v1.0.0 release gate)
 Version classification, deprecation, schema evolution, migration, and rollback
 rules are normative in
 [`protocol/versioning-policy-v1.md`](./protocol/versioning-policy-v1.md).
+Security assumptions and explicit scope exclusions are defined in
+[`security-trust-model.md`](./security-trust-model.md) and
+[`non-goals-v1.md`](./non-goals-v1.md). Release transitions use
+[`migration-v1.md`](./migration-v1.md) and
+[`rollback-v1.md`](./rollback-v1.md).
 
 | Axis | Current version | Consumer | Unknown version behavior |
 | --- | --- | --- | --- |

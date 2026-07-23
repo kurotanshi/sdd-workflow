@@ -72,6 +72,58 @@ class CompatibilityTests(unittest.TestCase):
             with self.subTest(fact=fact):
                 self.assertIn(fact, document)
 
+    def test_v1_security_scope_migration_and_rollback_are_explicit(self) -> None:
+        documents = {
+            "security": (
+                ROOT / "docs/security-trust-model.md"
+            ).read_text(encoding="utf-8"),
+            "non_goals": (
+                ROOT / "docs/non-goals-v1.md"
+            ).read_text(encoding="utf-8"),
+            "migration": (
+                ROOT / "docs/migration-v1.md"
+            ).read_text(encoding="utf-8"),
+            "rollback": (
+                ROOT / "docs/rollback-v1.md"
+            ).read_text(encoding="utf-8"),
+        }
+        for term in (
+            "cooperative local change-control protocol",
+            "Hashes, timestamps, writer strings",
+            "MUST NOT be interpreted as authenticated identity",
+            "no lock, lease",
+            "credentials",
+            "absolute user paths",
+        ):
+            with self.subTest(security=term):
+                self.assertIn(term, documents["security"])
+        for term in (
+            "Schema v3",
+            "Locking, leases",
+            "Web UI",
+            "external-platform",
+            "Multi-Agent",
+        ):
+            with self.subTest(non_goal=term):
+                self.assertIn(term, documents["non_goals"])
+        for term in (
+            "does not rewrite proposal data",
+            "Direct package upgrade",
+            "scripts/discover-runtime.py",
+            "rollback-v1.md",
+        ):
+            with self.subTest(migration=term):
+                self.assertIn(term, documents["migration"])
+        for term in (
+            "class `direct`",
+            "`finish-or-abandon`",
+            "`restore-backup`",
+            "`forward-recovery`",
+            "does not",
+        ):
+            with self.subTest(rollback=term):
+                self.assertIn(term, documents["rollback"])
+
     def test_engine_version_and_generation_are_strict(self) -> None:
         self.assertEqual(ENGINE_VERSION, "0.6.0")
         self.assertEqual(parse_engine_version("0.5.12"), (0, 5, 12))
