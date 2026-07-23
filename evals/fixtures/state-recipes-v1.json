@@ -145,11 +145,32 @@
     },
     "L-index-corruption": {
       "seed": {
-        "kind": "archive_tree",
-        "source": "tests/fixtures/archive/legacy",
-        "destination": "sdd/archive"
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
       },
-      "setup": [],
+      "setup": [
+        {
+          "kind": "cli",
+          "command": "approve",
+          "proposal": "pilot-change"
+        },
+        {
+          "kind": "write_file",
+          "path": "result.txt",
+          "content": "managed-pilot\n"
+        },
+        {
+          "kind": "cli",
+          "command": "complete-all-tasks",
+          "proposal": "pilot-change"
+        },
+        {
+          "kind": "cli",
+          "command": "archive",
+          "proposal": "pilot-change",
+          "summary": "Canonical eval archive"
+        }
+      ],
       "faults": [
         {
           "kind": "remove_path",

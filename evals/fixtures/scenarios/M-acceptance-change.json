@@ -13,7 +13,7 @@
   },
   "user_input": {
     "locale": "zh-TW",
-    "text": "驗收時發現還要加一個範圍內的 requirement：result.txt 也要包含版本行。"
+    "text": "提案修訂 pilot-change：驗收時新增範圍內 requirement，讓 result.txt 在第二行加入固定文字 `version: 1`。只更新提案、驗收條件與任務，保留已完成任務並等待重新核准；不要實作或歸檔。"
   },
   "allowed_tool_calls": [
     {

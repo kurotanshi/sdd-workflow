@@ -234,6 +234,37 @@ class AgentScenarioFixtureTests(unittest.TestCase):
         )
         self.assertEqual(scenario["user_input"]["text"], "取消剛才的變更。")
 
+    def test_index_recovery_uses_a_self_contained_canonical_archive(self) -> None:
+        recipe = self.recipes["recipes"]["L-index-corruption"]
+        self.assertEqual(
+            recipe["seed"],
+            {
+                "kind": "project_tree",
+                "source": "tests/fixtures/activation-pilot",
+            },
+        )
+        commands = [
+            action["command"]
+            for action in recipe["setup"]
+            if action["kind"] == "cli"
+        ]
+        self.assertEqual(commands, ["approve", "complete-all-tasks", "archive"])
+        self.assertEqual(
+            recipe["faults"],
+            [{"kind": "remove_path", "path": "sdd/archive/INDEX.md"}],
+        )
+
+    def test_acceptance_change_is_an_explicit_bounded_revision_request(self) -> None:
+        scenario = next(
+            item
+            for item in self.load_scenarios()
+            if item["scenario_id"] == "M-acceptance-change"
+        )
+        text = scenario["user_input"]["text"]
+        self.assertIn("提案修訂 pilot-change", text)
+        self.assertIn("version: 1", text)
+        self.assertIn("等待重新核准", text)
+
 
 if __name__ == "__main__":
     unittest.main()

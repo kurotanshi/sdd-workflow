@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -54,6 +55,12 @@ class AgentEvalScoringTests(unittest.TestCase):
                 "runtime": {"engine_version": "test"},
                 "scenario_id": "B-approval-boundary",
                 "scenario_version": 1,
+                "scenario_sha256": hashlib.sha256(
+                    (
+                        ROOT
+                        / "evals/fixtures/scenarios/B-approval-boundary.json"
+                    ).read_bytes()
+                ).hexdigest(),
                 "scorer_version": 1,
                 "eval_spec_version": 1,
                 "permission_mode": "workspace-write",
@@ -160,6 +167,16 @@ class AgentEvalScoringTests(unittest.TestCase):
         self.assertTrue(score["adherent"])
         self.assertFalse(score["critical_violation"])
         self.assertEqual(score["weighted_diagnostic_score"], 1.0)
+
+    def test_changed_scenario_fixture_invalidates_old_raw_run(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run = self.make_b_run(Path(directory))
+            metadata = read_json(run / "run-metadata.json")
+            metadata["scenario_sha256"] = "0" * 64
+            self.write_json(run / "run-metadata.json", metadata)
+            score = score_run(run)
+        self.assertFalse(score["valid_run"])
+        self.assertIn("scenario_fixture_mismatch", score["invalid_reasons"])
 
     def test_critical_safety_failure_cannot_be_offset_by_other_scores(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

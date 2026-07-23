@@ -241,6 +241,7 @@ def invalid_reasons(
     run_directory: Path,
     metadata: dict[str, Any],
     scenario: dict[str, Any],
+    scenario_path: Path,
     spec: dict[str, Any],
 ) -> list[str]:
     reasons: list[str] = []
@@ -257,6 +258,7 @@ def invalid_reasons(
         "runtime",
         "scenario_id",
         "scenario_version",
+        "scenario_sha256",
         "scorer_version",
         "eval_spec_version",
         "permission_mode",
@@ -279,6 +281,9 @@ def invalid_reasons(
         reasons.append("scenario_id_mismatch")
     if metadata.get("scenario_version") != scenario.get("scenario_version"):
         reasons.append("scenario_version_mismatch")
+    current_scenario_sha = hashlib.sha256(scenario_path.read_bytes()).hexdigest()
+    if metadata.get("scenario_sha256") != current_scenario_sha:
+        reasons.append("scenario_fixture_mismatch")
     if metadata.get("scorer_version") != scenario.get("scorer_version"):
         reasons.append("scorer_version_mismatch")
     if metadata.get("eval_spec_version") != spec.get("eval_spec_version"):
@@ -323,7 +328,8 @@ def score_run(run_directory: Path) -> dict[str, Any]:
     scenario_id = metadata.get("scenario_id")
     if scenario_id not in paths:
         raise ScoringError(f"unknown scenario in metadata: {scenario_id}")
-    scenario = read_json(paths[scenario_id])
+    scenario_path = paths[scenario_id]
+    scenario = read_json(scenario_path)
     spec = read_json(EVAL_SPEC_PATH)
     all_rules = read_json(SCORING_RULES_PATH)
     if all_rules.get("score_version") != spec.get("score_version"):
@@ -333,7 +339,13 @@ def score_run(run_directory: Path) -> dict[str, Any]:
     rules = all_rules["scenarios"][scenario_id]
     final_state = read_json(run_directory / "final-state.json")
     evidence = Evidence(run_directory, final_state)
-    reasons = invalid_reasons(run_directory, metadata, scenario, spec)
+    reasons = invalid_reasons(
+        run_directory,
+        metadata,
+        scenario,
+        scenario_path,
+        spec,
+    )
 
     dimensions = {
         name: dimension_score(name, scenario, rules, evidence)
@@ -408,6 +420,9 @@ def aggregate_summary(artifact_root: Path) -> dict[str, Any]:
     critical_ids: dict[str, int] = {}
     failed_dimensions: dict[str, int] = {}
     models: set[str] = set()
+    skill_commits: set[str] = set()
+    skill_hashes: set[str] = set()
+    runtime_versions: set[str] = set()
     started: list[str] = []
     finished: list[str] = []
     discovered = 0
@@ -430,6 +445,13 @@ def aggregate_summary(artifact_root: Path) -> dict[str, Any]:
         model = metadata.get("requested_model")
         if isinstance(model, str) and model:
             models.add(model)
+        if isinstance(metadata.get("skill_commit"), str):
+            skill_commits.add(metadata["skill_commit"])
+        if isinstance(metadata.get("skill_sha256"), str):
+            skill_hashes.add(metadata["skill_sha256"])
+        runtime = metadata.get("runtime", {})
+        if isinstance(runtime, dict) and isinstance(runtime.get("engine_version"), str):
+            runtime_versions.add(runtime["engine_version"])
         if isinstance(metadata.get("execution_started_at"), str):
             started.append(metadata["execution_started_at"])
         if isinstance(metadata.get("execution_finished_at"), str):
@@ -472,6 +494,13 @@ def aggregate_summary(artifact_root: Path) -> dict[str, Any]:
         },
         "agents": list(agents),
         "models": sorted(models),
+        "skill_commits": sorted(skill_commits),
+        "skill_sha256": sorted(skill_hashes),
+        "runtime_versions": sorted(runtime_versions),
+        "eval_spec_sha256": hashlib.sha256(EVAL_SPEC_PATH.read_bytes()).hexdigest(),
+        "scoring_rules_sha256": hashlib.sha256(
+            SCORING_RULES_PATH.read_bytes()
+        ).hexdigest(),
         "scenario_count": len(scenarios),
         "minimum_valid_runs_per_agent_scenario": minimum,
         "planned_minimum_valid_runs": len(agents) * len(scenarios) * minimum,

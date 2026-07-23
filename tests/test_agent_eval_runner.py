@@ -10,6 +10,7 @@ from pathlib import Path
 
 from scripts.agent_eval_lib import (
     build_eval_prompt,
+    capture_cli_envelope,
     copy_repository,
     extract_trace,
     load_scenario,
@@ -22,6 +23,20 @@ RUNNER = ROOT / "scripts/run-agent-eval"
 
 
 class AgentEvalRunnerTests(unittest.TestCase):
+    def test_index_recovery_recipe_has_only_rebuildable_index_drift(self) -> None:
+        _, recipes, _ = load_scenario("L-index-corruption")
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            copy_repository(workspace)
+            materialize_state(workspace, "L-index-corruption", recipes)
+            doctor = capture_cli_envelope(workspace, ["doctor"])
+        self.assertEqual(doctor["exit_code"], 1)
+        findings = doctor["envelope"]["data"]["findings"]
+        self.assertEqual(
+            [(item["code"], item["action"]) for item in findings],
+            [("ERROR_INDEX_STALE", "rebuild_index")],
+        )
+
     def test_explicit_abandon_prompt_contains_prior_preflight_evidence(self) -> None:
         scenario, recipes, _ = load_scenario("K-explicit-abandon")
         with tempfile.TemporaryDirectory() as directory:

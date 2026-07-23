@@ -9,7 +9,7 @@
   ],
   "initial_state": {
     "fixture": "evals/fixtures/state-recipes-v1.json",
-    "description": "Authoritative archive bundles exist while derived sdd/archive/INDEX.md is missing."
+    "description": "A canonical archive with self-contained summary metadata exists while derived sdd/archive/INDEX.md is missing."
   },
   "user_input": {
     "locale": "zh-TW",

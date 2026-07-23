@@ -133,6 +133,20 @@ def apply_cli_setup(workspace: Path, action: dict[str, Any]) -> None:
                     status["snapshot"]["snapshot_digest"],
                 ],
             )
+    if command == "archive":
+        status = invoke_runtime(workspace, ["status", proposal])["data"]
+        invoke_runtime(
+            workspace,
+            [
+                "archive",
+                proposal,
+                "--expected-snapshot",
+                status["snapshot"]["snapshot_digest"],
+                "--summary",
+                action["summary"],
+            ],
+        )
+        return
     raise EvalError(f"unsupported setup CLI command: {command}")
 
 
@@ -686,6 +700,9 @@ def execute(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
                     for entry in read_json(SCENARIO_MANIFEST_PATH)["scenarios"]
                     if entry["id"] == arguments.scenario
                 )
+            ),
+            "state_recipe_sha256": sha256(
+                ROOT / read_json(SCENARIO_MANIFEST_PATH)["state_recipes"]
             ),
             "scorer_version": scenario["scorer_version"],
             "eval_spec_version": spec["eval_spec_version"],

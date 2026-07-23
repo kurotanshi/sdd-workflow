@@ -355,7 +355,7 @@
         "refusal": {
           "op": "text-regex",
           "source": "transcript",
-          "pattern": "(incomplete|pending|cannot.*archive|未完成|不能.*歸檔|無法.*歸檔)"
+          "pattern": "(incomplete|not complete|pending|cannot.*archive|can.?t.*archive|未完成|不能.*歸檔|無法.*歸檔)"
         }
       },
       "process": {
