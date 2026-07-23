@@ -4,6 +4,7 @@
 - [`cli-contract.md`](../cli-contract.md) — public commands and JSON envelope
 - [`team-operations.md`](../team-operations.md) — ownership, handoff, and worktrees
 - [`team-evidence.md`](../team-evidence.md) — opt-in aggregate trial evidence
+- [`recovery-drills.md`](../recovery-drills.md) — release failure-injection suites
 - [`conformance.md`](../conformance.md) — public runtime and adapter suites
 - [`agent-eval.md`](../agent-eval.md) — real-host Agent evaluation
 - [`testing.md`](../testing.md) — test responsibility map

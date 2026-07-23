@@ -1,0 +1,38 @@
+{
+  "drills": [
+    {
+      "id": "transaction.safe-retry",
+      "selectors": [
+        "tests.test_transition_failures",
+        "tests.test_terminal_validation"
+      ]
+    },
+    {
+      "id": "atomic-write.no-partial",
+      "selectors": [
+        "tests.test_atomic_write"
+      ]
+    },
+    {
+      "id": "archive.authority-and-diagnostics",
+      "selectors": [
+        "tests.test_archive_cli",
+        "tests.test_doctor"
+      ]
+    },
+    {
+      "id": "concurrency.atomic-convergence",
+      "selectors": [
+        "tests.test_concurrency"
+      ]
+    },
+    {
+      "id": "compatibility.fail-closed",
+      "selectors": [
+        "tests.test_compatibility"
+      ]
+    }
+  ],
+  "manifest_version": 1,
+  "runner": "scripts/run-recovery-drills"
+}
