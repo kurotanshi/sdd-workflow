@@ -6,6 +6,7 @@
 - [`conformance.md`](../conformance.md) — public runtime and adapter suites
 - [`agent-eval.md`](../agent-eval.md) — real-host Agent evaluation
 - [`testing.md`](../testing.md) — test responsibility map
+- [`usability/first-workflow-15-minute.md`](../usability/first-workflow-15-minute.md) — bounded first-run check
 - [`ci.md`](../ci.md) — required CI checks
 - [`release-checklist.md`](../release-checklist.md) — release evidence
 

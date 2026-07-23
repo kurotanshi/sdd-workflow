@@ -1,0 +1,38 @@
+{
+  "automated_proxy_runs": 1,
+  "decision": "PASS_WITH_BOUNDED_EVIDENCE",
+  "end_point": "one-task-change-tested-accepted-and-archived",
+  "human_participant_runs": 0,
+  "measurement_date": "2026-07-23",
+  "persona_id": "agent-assisted-developer-first-sdd-workflow-v1",
+  "record_version": 1,
+  "sample_count": 1,
+  "samples": [
+    {
+      "authoritative_path": "sdd/archive/2026-07-23-add-health-check",
+      "doctor_healthy": true,
+      "elapsed_seconds": 0.832,
+      "finished_at": "2026-07-23T13:41:32.107013+00:00",
+      "human_participant": false,
+      "sample_id": "proxy-20260723-01",
+      "sample_kind": "automated-first-time-path-proxy",
+      "stages": [
+        "proposal",
+        "approval",
+        "implementation",
+        "acceptance",
+        "archive"
+      ],
+      "started_at": "2026-07-23T13:41:31.274958+00:00",
+      "task_success": true,
+      "transaction_protocol_read": false,
+      "valid_run": true,
+      "within_budget": true
+    }
+  ],
+  "start_point": "package-installed-clean-repository-readme-quickstart-open",
+  "task_successes": 1,
+  "threshold_seconds": 900,
+  "valid_runs": 1,
+  "within_budget_runs": 1
+}

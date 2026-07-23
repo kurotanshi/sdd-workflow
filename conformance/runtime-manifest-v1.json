@@ -229,6 +229,7 @@
         "tests.test_conformance_manifest",
         "tests.test_conformance_kit",
         "tests.test_composition_example",
+        "tests.test_first_workflow_usability",
         "tests.test_hermetic_adapter",
         "tests.test_protocol_draft",
         "tests.test_quickstart_docs",
