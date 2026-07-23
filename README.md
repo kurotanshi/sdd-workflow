@@ -2,7 +2,9 @@
 
 > 版本 v0.6.0 ｜ [English](./README.en.md)
 
-一份跨 AI coding agent 共用的 **SDD（Spec-Driven Development，規格驅動開發）** skill。核心理念一句話：**動手寫程式之前，先把要做什麼寫清楚、讓人確認，再開始做。**
+一份跨 AI coding agent 共用的 **SDD（Spec-Driven Development，規格驅動開發）** skill。
+
+核心理念一句話：**動手寫程式之前，先把要做什麼寫清楚、讓人確認，再開始做。**
 
 它把每個需求切成三個階段，另有修訂與放棄路徑；需要核准的地方都會停下來等你確認：
 
