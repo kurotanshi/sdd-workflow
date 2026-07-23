@@ -1,0 +1,19 @@
+{
+  "identity_version": 1,
+  "distribution_id": "sdd-workflow",
+  "handshake_version": 1,
+  "cli_output_version": 1,
+  "compatible_engine_generation": "0.6",
+  "minimum_schema_version": 1,
+  "maximum_schema_version": 2,
+  "required_capabilities": [
+    "approval-manifest-v1",
+    "archive-model-v1",
+    "doctor-v1",
+    "managed-attestation-v1",
+    "managed-transitions-v1",
+    "schema-v1",
+    "schema-v2",
+    "terminal-transitions-v1"
+  ]
+}

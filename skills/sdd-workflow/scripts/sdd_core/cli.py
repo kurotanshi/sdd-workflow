@@ -50,9 +50,10 @@ from .terminal_transitions import (
     validate_archive,
 )
 from .version import ENGINE_VERSION
+from .runtime_identity import CLI_OUTPUT_VERSION, runtime_handshake
 
 
-OUTPUT_VERSION = 1
+OUTPUT_VERSION = CLI_OUTPUT_VERSION
 
 
 _ACTION_BY_CODE = {
@@ -160,6 +161,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--root")
     parser.add_argument("--json", action="store_true", dest="json_mode")
     parser.add_argument("--version", action="store_true")
+    parser.add_argument("--handshake", action="store_true")
     commands = parser.add_subparsers(dest="command")
 
     validate = commands.add_parser("validate")
@@ -214,10 +216,17 @@ def main(
     json_requested = "--json" in arguments
     try:
         namespace = build_parser().parse_args(arguments)
-        if namespace.version and namespace.command is not None:
-            raise UsageError("--version cannot be combined with a command")
-        if not namespace.version and namespace.command is None:
-            raise UsageError("a command or --version is required")
+        selectors = sum(
+            (
+                bool(namespace.version),
+                bool(namespace.handshake),
+                namespace.command is not None,
+            )
+        )
+        if selectors != 1:
+            raise UsageError(
+                "exactly one command, --version, or --handshake is required"
+            )
         result = execute(namespace, cwd=cwd)
     except UsageError as error:
         result = _error_result(
@@ -282,6 +291,11 @@ def main(
 
 
 def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> CommandResult:
+    if namespace.handshake:
+        return CommandResult(
+            command="handshake",
+            data=runtime_handshake(),
+        )
     if namespace.version:
         return CommandResult(
             command="version",
@@ -928,6 +942,8 @@ def _command_hint(arguments: Sequence[str]) -> str:
             return argument
     if "--version" in arguments:
         return "version"
+    if "--handshake" in arguments:
+        return "handshake"
     return "usage"
 
 
@@ -937,6 +953,12 @@ def _write_human(result: CommandResult, *, stdout: TextIO, stderr: TextIO) -> No
             f"sdd-workflow {result.data['engine_version']} "
             f"(schema {result.data['minimum_schema_version']}.."
             f"{result.data['maximum_schema_version']})\n"
+        )
+    elif result.command == "handshake" and result.ok:
+        stdout.write(
+            f"sdd-workflow handshake {result.data['handshake_version']} "
+            f"engine={result.data['engine_version']} "
+            f"capabilities={len(result.data['capabilities'])}\n"
         )
     elif result.command == "status" and result.data:
         reliability = "reliable" if result.data.get("task_counts_reliable") else "unreliable"
