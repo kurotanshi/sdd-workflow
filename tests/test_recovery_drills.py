@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -76,6 +78,81 @@ def prepare_complete(root: Path, short_name: str = "recovery-item") -> dict[str,
 
 
 class RecoveryDrillsTests(unittest.TestCase):
+    def test_second_process_with_same_snapshot_stably_fails_stale(self) -> None:
+        for attempt in range(3):
+            with self.subTest(attempt=attempt):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    active = root / "sdd/recovery-item"
+                    active.parent.mkdir(parents=True)
+                    shutil.copytree(FIXTURE, active)
+                    proposal = active / "proposal.md"
+                    tasks = active / "tasks.md"
+                    proposal.write_text(
+                        proposal.read_text(encoding="utf-8").replace(
+                            "valid-simple",
+                            "recovery-item",
+                            1,
+                        ),
+                        encoding="utf-8",
+                    )
+                    tasks.write_text(
+                        tasks.read_text(encoding="utf-8").replace(
+                            "valid-simple",
+                            "recovery-item",
+                            1,
+                        ),
+                        encoding="utf-8",
+                    )
+                    status = invoke(root, "status", "recovery-item")[1]["data"]
+                    command = [
+                        sys.executable,
+                        str(ROOT / "skills/sdd-workflow/scripts/sdd.py"),
+                        "--root",
+                        str(root),
+                        "--json",
+                        "approve",
+                        "recovery-item",
+                        "--expected-snapshot",
+                        status["snapshot"]["snapshot_digest"],  # type: ignore[index]
+                    ]
+                    environment = os.environ.copy()
+                    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+                    first = subprocess.run(
+                        command,
+                        cwd=root,
+                        env=environment,
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    )
+                    second = subprocess.run(
+                        command,
+                        cwd=root,
+                        env=environment,
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    )
+                    self.assertEqual(first.returncode, 0, first.stdout)
+                    self.assertEqual(first.stderr, "")
+                    self.assertEqual(second.returncode, 1, second.stdout)
+                    self.assertEqual(second.stderr, "")
+                    stale = json.loads(second.stdout)
+                    self.assertEqual(
+                        stale["errors"][0]["code"],
+                        "ERROR_SNAPSHOT_MISMATCH",
+                    )
+                    self.assertEqual(
+                        stale["errors"][0]["action"],
+                        "refresh_status",
+                    )
+                    final_code, final = invoke(root, "status", "recovery-item")
+                    self.assertEqual(final_code, 0, final)
+                    self.assertEqual(final["data"]["status"], "approved")  # type: ignore[index]
+                    self.assertTrue((active / ".sdd/metadata.json").is_file())
+                    self.assertTrue((active / ".sdd/approval-manifest.json").is_file())
+
     def test_atomic_metadata_replace_never_exposes_partial_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             machine = Path(directory) / ".sdd"

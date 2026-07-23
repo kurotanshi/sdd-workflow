@@ -40,6 +40,12 @@
       ]
     },
     {
+      "id": "concurrency.same-snapshot-stale",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_second_process_with_same_snapshot_stably_fails_stale"
+      ]
+    },
+    {
       "id": "compatibility.fail-closed",
       "selectors": [
         "tests.test_compatibility"

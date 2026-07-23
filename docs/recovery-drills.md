@@ -22,7 +22,8 @@ The v1 groups cover:
 - partial metadata replacement and pre-commit approval authority;
 - archive authority and evidence-bounded doctor findings;
 - committed archive authority across post-move INDEX failure and rebuild;
-- concurrent archive/INDEX convergence; and
+- concurrent archive/INDEX convergence;
+- repeated second-process stale-snapshot rejection; and
 - compatibility and future-version fail-closed behavior.
 
 The manifest reuses the canonical regression modules rather than copying
