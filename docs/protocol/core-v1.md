@@ -437,5 +437,6 @@ Detailed schemas and recovery matrices remain in the linked design documents:
 [`transaction-protocol.md`](../transaction-protocol.md),
 [`archive-model.md`](../archive-model.md),
 [`schema-v2.md`](../schema-v2.md),
+[`Reference Runtime and CLI Contract v1`](./runtime-cli-v1.md),
 [`cli-contract.md`](../cli-contract.md), and
 [`compatibility.md`](../compatibility.md).
