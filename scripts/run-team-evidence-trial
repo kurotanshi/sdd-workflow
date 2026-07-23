@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+"""Run the de-identified controlled team trial."""
+
+from team_evidence_trial import main
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

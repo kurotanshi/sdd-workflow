@@ -54,3 +54,6 @@ Friction belongs in `docs/friction-log.md` only when an independently
 observable failure or material operator cost was reproduced. The aggregate
 may reference its stable ID; it must not copy sensitive evidence or an
 unreviewed narrative into JSON.
+
+The bounded v0.10 controlled trial and its limitations are recorded in
+[`reports/v0.10-controlled-team-trial.md`](./reports/v0.10-controlled-team-trial.md).
