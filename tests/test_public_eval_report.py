@@ -19,6 +19,21 @@ class PublicEvalReportTests(unittest.TestCase):
             any(path.name == "v0.7-agent-eval-summary.md" for path in reports)
         )
 
+    def test_each_summary_can_report_its_own_measured_ratio(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "v1.0-agent-eval-summary.md"
+            report.write_text(
+                "# v1\n"
+                "- Release gate: **PASS**\n"
+                "- Adherence: **76/78 (97.4%)**, above the 95% threshold\n"
+                "- Critical Violations: **0**\n"
+                "- Secret scan: PASS\n"
+                "- Anonymization review: PASS\n"
+                "- Manual review: PASS\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(validate_report_directory(Path(directory)), [report])
+
     def test_sensitive_and_raw_identifiers_are_rejected(self) -> None:
         unsafe = {
             "home": "source: /Users/example/private/run.json",

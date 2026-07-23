@@ -44,12 +44,15 @@ UNSAFE_PATTERNS = {
 
 REQUIRED_SUMMARY_FACTS = (
     "Release gate: **PASS**",
-    "77/78",
-    "98.7%",
     "Critical Violations: **0**",
     "Secret scan: PASS",
     "Anonymization review: PASS",
     "Manual review: PASS",
+)
+
+ADHERENCE_FACT = re.compile(
+    r"Adherence:.*\b[0-9]+/[0-9]+\b.*\b[0-9]+(?:\.[0-9]+)?%.*threshold",
+    re.IGNORECASE,
 )
 
 
@@ -93,6 +96,8 @@ def validate_report_directory(report_root: Path = PUBLIC_REPORT_ROOT) -> list[Pa
     for path in summaries:
         text = path.read_text(encoding="utf-8")
         missing = [fact for fact in REQUIRED_SUMMARY_FACTS if fact not in text]
+        if ADHERENCE_FACT.search(text) is None:
+            missing.append("version-specific adherence ratio, percentage, and threshold")
         if missing:
             raise PublicReportError(
                 f"{path.name}: missing publication facts: {', '.join(missing)}"
