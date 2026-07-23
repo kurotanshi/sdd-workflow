@@ -125,7 +125,7 @@ class CompatibilityTests(unittest.TestCase):
                 self.assertIn(term, documents["rollback"])
 
     def test_engine_version_and_generation_are_strict(self) -> None:
-        self.assertEqual(ENGINE_VERSION, "0.6.0")
+        self.assertEqual(ENGINE_VERSION, "1.0.0")
         self.assertEqual(parse_engine_version("0.5.12"), (0, 5, 12))
         self.assertEqual(engine_generation("0.5.12"), (0, 5))
         for invalid in ("v0.5.0", "0.5", "0.5.0-dev", "00.5.0"):
@@ -144,7 +144,7 @@ class CompatibilityTests(unittest.TestCase):
             ])
             metadata_path = target / ".sdd/metadata.json"
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-            metadata["writer"]["version"] = "0.7.0"
+            metadata["writer"]["version"] = "1.1.0"
             metadata_path.write_text(
                 json.dumps(metadata, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
                 encoding="utf-8",
@@ -153,7 +153,7 @@ class CompatibilityTests(unittest.TestCase):
             skew = [item for item in findings if item.code == "ENGINE_VERSION_SKEW"]
             self.assertEqual(len(skew), 1)
             self.assertEqual(skew[0].action, "use_compatible_engine")
-            self.assertIn("0.7.0", skew[0].message)
+            self.assertIn("1.1.0", skew[0].message)
             self.assertNotIn("author", skew[0].message.lower())
 
     def test_current_engine_reads_v1_and_rejects_future_schema(self) -> None:

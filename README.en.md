@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v0.6.0 ｜ [繁體中文](./README.md)
+> Version v1.0.0 ｜ [繁體中文](./README.md)
 
 A cross-agent **SDD (Spec-Driven Development) Skill** for coding agents such
 as Claude Code and Codex.

@@ -1,6 +1,6 @@
 # CLI contract
 
-Status: v0.5 internal consumer contract  
+Status: v1 stable implementation contract
 Output version: `1`
 
 `skills/sdd-workflow/scripts/sdd.py` is a non-interactive adapter from project artifacts to the deterministic core. It never prompts, reads a selection from stdin, or chooses among multiple active proposals. Read and managed-mutation commands are the formal v0.4 Skill path.

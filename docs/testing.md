@@ -1,6 +1,6 @@
 # Test responsibility map
 
-Status: v0.6 release-baseline classification
+Status: v1 release-test classification
 
 This document classifies the current flat `tests/` layout by primary
 responsibility. A test may exercise adjacent layers, but it has one primary

@@ -50,7 +50,7 @@ python3 <installed-skill>/scripts/discover-runtime.py
 python3 <installed-skill>/scripts/sdd.py --json --handshake
 ```
 
-Both results must identify `sdd-workflow`, engine generation `0.6`, handshake
+Both results must identify `sdd-workflow`, engine generation `1.0`, handshake
 version `1`, schema range `1..2`, and all required capabilities. Then invoke
 the Skill in the host and confirm the loaded `SKILL.md` path is the same
 package. A package handshake alone cannot prove host loading.

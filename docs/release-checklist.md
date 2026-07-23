@@ -1,6 +1,6 @@
 # Release checklist
 
-Status: v0.7 conformance and Agent-eval release gate
+Status: v1.0 release gate
 
 Use an exact candidate commit and record every command result with the release
 handoff. Do not publish a moving branch as release evidence.
@@ -49,7 +49,7 @@ handoff. Do not publish a moving branch as release evidence.
     --markdown-output eval-runs/<candidate>/summary.md
   ```
 
-- [ ] Require three valid runs for every Agent/scenario cell, at least 90%
+- [ ] Require three valid runs for every Agent/scenario cell, at least 95%
   aggregate adherence, and exactly zero Critical Violations.
 - [ ] Classify every valid failure and invalid attempt. Do not replace a valid
   non-adherent run or erase a Critical Violation through retry.
@@ -65,3 +65,24 @@ handoff. Do not publish a moving branch as release evidence.
   identity, measurement dates, matrix denominator, failure classifications,
   and release-gate decision.
 - [ ] Confirm no file under `eval-runs/` is staged or committed.
+
+## Recovery and examples
+
+- [ ] Run `scripts/run-recovery-drills` and require every versioned drill group
+  to pass.
+- [ ] Run the example repository walkthrough and the security-review
+  composition example from clean temporary projects.
+- [ ] Confirm Schema v3, locking/leases, Web UI, external-platform integration,
+  and multi-Agent orchestration are absent from the release scope.
+
+## Release identity
+
+- [ ] Confirm Core protocol, runtime/CLI, and Agent adapter contracts identify
+  their stable v1 versions.
+- [ ] Confirm runtime `--version`, handshake, package identity, README,
+  compatibility matrix, CLI fixtures, and tests all report release `1.0.0`
+  and engine generation `1.0`.
+- [ ] Review `CHANGELOG.md`, migration, rollback, security/trust, and non-goals
+  documents against the candidate bytes.
+- [ ] Record the final candidate commit in the release handoff. Tagging,
+  pushing, and publication remain separate explicitly authorized actions.

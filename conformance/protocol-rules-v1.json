@@ -90,7 +90,7 @@
       "requirement": "Public commands MUST preserve the versioned JSON envelope, stdout and stderr separation, exit classes, and stable error code and action semantics.",
       "sources": [
         "docs/cli-contract.md",
-        "docs/release-baseline-v0.6.md"
+        "docs/release-baseline-v1.0.md"
       ]
     },
     {
@@ -132,7 +132,7 @@
       "sources": [
         "docs/runtime.md",
         "docs/ci.md",
-        "docs/release-baseline-v0.6.md"
+        "docs/release-baseline-v1.0.md"
       ]
     },
     {
@@ -142,7 +142,7 @@
       "requirement": "Duplicated public version, command, runtime, and workflow facts MUST remain consistent with their canonical sources.",
       "sources": [
         "docs/testing.md",
-        "docs/release-baseline-v0.6.md"
+        "docs/release-baseline-v1.0.md"
       ]
     },
     {

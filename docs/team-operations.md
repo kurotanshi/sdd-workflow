@@ -1,6 +1,6 @@
 # Team operation contract
 
-Status: v0.6 team-readiness contract
+Status: stable v1 team-operations contract
 
 ## Cooperative coordination
 

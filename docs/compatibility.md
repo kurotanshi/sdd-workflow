@@ -13,7 +13,7 @@ Security assumptions and explicit scope exclusions are defined in
 
 | Axis | Current version | Consumer | Unknown version behavior |
 | --- | --- | --- | --- |
-| Engine/release | `0.6.0` active | Human diagnostics/activation records | Never overrides artifact formats. |
+| Engine/release | `1.0.0` active | Human diagnostics/activation records | Never overrides artifact formats. |
 | CLI output | `1` | Skill and test consumers | Consumer must refuse unsupported envelopes. |
 | Proposal schema | implicit/explicit `1`, explicit `2` | Markdown parser adapter | Fail before task parsing; never guess future schema. |
 | Canonical model | `1` | Internal projections | Engine upgrade required. |
@@ -30,10 +30,11 @@ Read compatibility is not mutation compatibility. An absent proposal schema sele
 
 | Artifact / engine pairing | Read | Mutation | Required action |
 | --- | --- | --- | --- |
-| v1 or readable legacy with v0.6 | Yes | v1 when mutation-safe; legacy no | Establish a manifest explicitly for unattested approved v1; recreate/upgrade legacy before mutation. |
-| Schema v2 with v0.6 | Yes | Yes when all format and state versions are supported | Normal managed command path. |
+| v1 or readable legacy with v1.0 | Yes | v1 when mutation-safe; legacy no | Establish a manifest explicitly for unattested approved v1; recreate/upgrade legacy before mutation. |
+| Schema v2 with v1.0 | Yes | Yes when all format and state versions are supported | Normal managed command path. |
 | Schema v2 with a v1-only engine | No | No | Upgrade the engine; never remove frontmatter to force fallback. |
-| v0.4/v0.5 metadata with v0.6 | Yes | Yes when metadata/approval/attestation versions remain supported | Writer version is preserved as provenance until the next successful write. |
+| v0.4–v0.6 metadata with v1.0 | Yes | Yes when metadata/approval/attestation versions remain supported | Writer version is preserved as provenance until the next successful write. |
+| v1.0-written version-1 envelopes with v0.6 | Yes | Yes when every observed format is supported; doctor may warn about writer generation | Direct package rollback is format-bound; follow `rollback-v1.md`. |
 | Supported formats with a newer writer generation | Format-dependent | Format-dependent; never inferred from writer alone | `doctor` reports `ENGINE_VERSION_SKEW`; collect `--version` and use a compatible engine when behavior is uncertain. |
 | Unknown proposal/metadata/approval/attestation version | No for the affected operation | No | `use_supported_engine`; no prose fallback or deletion-based downgrade. |
 
