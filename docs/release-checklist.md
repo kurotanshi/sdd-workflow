@@ -11,6 +11,15 @@ handoff. Do not publish a moving branch as release evidence.
 - [ ] Confirm the worktree contains no unrelated tracked or untracked files.
 - [ ] Run the complete unit/integration suite and package, documentation,
   trigger, and install-smoke validations.
+- [ ] Run `python3 tests/full_lifecycle_smoke.py` and require install,
+  discovery, handshake, proposal lifecycle, readonly diagnostics, uninstall,
+  and no-residue checks to pass.
+- [ ] Run `python3 <candidate-skill>/scripts/discover-runtime.py`; confirm the
+  identity manifest, Skill hash, engine generation, schema interval, and
+  required capabilities agree.
+- [ ] Compare `conformance/install-channels-v1.json`, README install paths,
+  `docs/install-methods.md`, and package validation for the same complete
+  distribution contract.
 - [ ] Review compatibility, schema, CLI, and package changes for an explicit
   version decision.
 

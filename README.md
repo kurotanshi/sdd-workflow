@@ -38,7 +38,7 @@ Deterministic parser、transaction engine 與後續 schema 的分階段工程計
 $skill-installer 從 GitHub 安裝 kurotanshi/sdd-workflow 的 skills/sdd-workflow
 ```
 
-底層等同 `install-skill-from-github.py --repo kurotanshi/sdd-workflow --path skills/sdd-workflow`，會裝進 `~/.codex/skills/sdd-workflow/`，並在**下一個 turn** 生效。（手動安裝：把整個 `skills/sdd-workflow/` 資料夾複製到 `~/.codex/skills/sdd-workflow`。）
+目前 Codex 會從使用者層的 `~/.agents/skills/` 載入 Skill；安裝器應將完整 `skills/sdd-workflow/` 目錄安裝為 `~/.agents/skills/sdd-workflow/`，並在下一個可用 turn 生效。手動安裝也必須複製完整目錄，不能只複製 `SKILL.md`。
 
 開一個新的 Codex 對話驗證：
 
@@ -81,7 +81,7 @@ npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
 
 `-g` 裝在使用者層、`-y` 略過確認。安裝來源會記錄在該工具的 lock file。
 
-> ⚠️ 這是第三方工具（skills.sh），不是 OpenAI 或 Anthropic 官方 installer。它把 skill 放進共用的 `~/.agents/skills/`。**請自行確認你的 agent 真的會載入該目錄**——不同工具讀取的 skill 路徑不同（例如 Codex 內建工具鏈使用 `~/.codex/skills`）；若沒被載入，請改用上方各工具的原生安裝方式。
+> ⚠️ 這是第三方工具（skills.sh），不是 OpenAI 或 Anthropic 官方 installer。它把 skill 放進共用的 `~/.agents/skills/`。Codex 目前會掃描這個使用者層目錄；其他 Agent 仍須自行確認真的會載入該路徑。完整 package layout 不等於 host 已載入。
 
 ## 工作流程
 
@@ -209,9 +209,9 @@ draft
   - **Python 版本**：必須 **CPython 3.11 以上**（v0.3.0 引入 runtime 時為 `0.x` 的 **breaking minor**，此要求延續至今）。
   - **支援平台**：macOS 與 Linux 為完整支援平台；Windows 目前僅提供 best-effort Python core。
 - **Schema v2 與提案規範**：
-  - **提案類型**：新提案採用明確 Schema v2，包含 `新功能`、`修 bug``重構`、`維運`、`文件` 與 `研究` 六種類型（`研究` 沿用相同 lifecycle，產出保存於 `## 結論`）。
+  - **提案類型**：新提案採用明確 Schema v2，包含 `新功能`、`修 bug`、`重構`、`維運`、`文件` 與 `研究` 六種類型（`研究` 沿用相同 lifecycle，產出保存於 `## 結論`）。
   - **相容性與 Fail Closed**：既有 v1/legacy artifacts 不會原地 migration；CLI 或 runtime 不可用時一律 fail closed，不回退至 agent 直接解析或修改 managed state。已有 `.sdd` machine metadata 的提案不可交給舊版 engine，刪除 metadata 或 schema marker 不構成受支援的降級。詳細規格見 [`docs/schema-v2.md`](./docs/schema-v2.md)、[`docs/runtime.md`](./docs/runtime.md)、[`docs/cli-contract.md`](./docs/cli-contract.md) 與 [`docs/transaction-protocol.md`](./docs/transaction-protocol.md)。
-  - **版本驗證**：安裝或升級後可在 package 內執行 `skills/sdd-workflow/scripts/sdd.py --version` 驗證版本（安裝副本使用對應路徑）。
+  - **安裝驗證**：安裝或升級後，先執行 `python3 <已安裝 Skill>/scripts/discover-runtime.py`，再執行 `python3 <已安裝 Skill>/scripts/sdd.py --json --handshake`；兩者必須指向同一完整 package。詳見 [`docs/install-methods.md`](./docs/install-methods.md) 與 [`docs/troubleshooting.md`](./docs/troubleshooting.md)。
 - **團隊並行與資料權威**：
   - **Owner 機制**：團隊並行時，每個 proposal 同一時間只交由一位 owner；獨立工作使用不同短名稱，修改可能互相干擾時再搭配不同 Git worktree。
   - **INDEX 與歸檔**：Archive directories 是 authoritative，`INDEX.md` 是可由 `validate-index`／`rebuild-index` 檢查與重建的 derived artifact。v0.6.0 的 contention tests 沒有發現 authoritative data loss，因此沒有預先加入 lock 或 INDEX CAS。詳細交接、worktree、version-skew 與 stale INDEX 程序見 [`docs/team-operations.md`](./docs/team-operations.md) 與 [`docs/compatibility.md`](./docs/compatibility.md)。
@@ -220,7 +220,7 @@ draft
 
 | 工具／通路 | 更新 | 移除 |
 | --- | --- | --- |
-| Codex | 先刪 `${CODEX_HOME:-$HOME/.codex}/skills/sdd-workflow` 再重裝（installer 遇既有目錄會中止） | 刪除 `${CODEX_HOME:-$HOME/.codex}/skills/sdd-workflow` |
+| Codex | 先移除 `$HOME/.agents/skills/sdd-workflow` 再用 installer 重裝 | 移除 `$HOME/.agents/skills/sdd-workflow` |
 | Claude Code | 先刪 `~/.claude/skills/sdd-workflow` 再重新安裝 | 刪除 `~/.claude/skills/sdd-workflow` |
 | Skills CLI（第三方） | `npx skills update sdd-workflow -g -y` | `npx skills remove sdd-workflow -g -y` |
 

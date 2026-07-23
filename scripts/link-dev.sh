@@ -16,7 +16,7 @@
 #
 # Target dirs (override for hermetic testing or a verified Codex skill root):
 #   Claude Code : ${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}
-#   Codex       : ${CODEX_SKILLS_DIR:-${CODEX_HOME:-$HOME/.codex}/skills}
+#   Codex       : ${CODEX_SKILLS_DIR:-$HOME/.agents/skills}
 #
 # Safety: only ever creates a symlink at a *non-existing* destination, and only
 # ever removes a symlink that resolves to THIS repo's canonical skill. Any other
@@ -29,7 +29,7 @@ CANONICAL="$(cd "$SCRIPT_DIR/../skills/sdd-workflow" && pwd -P)"
 SKILL_NAME="sdd-workflow"
 
 CLAUDE_DIR="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
-CODEX_DIR="${CODEX_SKILLS_DIR:-${CODEX_HOME:-$HOME/.codex}/skills}"
+CODEX_DIR="${CODEX_SKILLS_DIR:-$HOME/.agents/skills}"
 
 DO_CLAUDE=1
 DO_CODEX=1
@@ -52,7 +52,7 @@ Options:
 
 Target dirs (env-overridable, e.g. for hermetic testing):
   Claude Code : ${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}
-  Codex       : ${CODEX_SKILLS_DIR:-${CODEX_HOME:-$HOME/.codex}/skills}
+  Codex       : ${CODEX_SKILLS_DIR:-$HOME/.agents/skills}
 EOF
 }
 

@@ -71,6 +71,11 @@ grep -Fq 'Never offer a bare `取消` as a menu option' "$skill_file" || {
   exit 1
 }
 
+grep -Fq 'scripts/discover-runtime.py' "$skill_file" || {
+  echo "trigger-contract: missing package-local runtime discovery gate" >&2
+  exit 1
+}
+
 grep -Fq '## Deterministic command contract' "$skill_file" || {
   echo "trigger-contract: missing deterministic CLI command contract" >&2
   exit 1

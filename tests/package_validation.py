@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import stat
 import sys
@@ -20,6 +22,8 @@ def validate_package() -> None:
     required = {
         "SKILL.md",
         "agents/openai.yaml",
+        "runtime-identity.json",
+        "scripts/discover-runtime.py",
         "scripts/sdd",
         "scripts/sdd.py",
         "scripts/sdd_core/__init__.py",
@@ -33,6 +37,8 @@ def validate_package() -> None:
         "scripts/sdd_core/discovery.py",
         "scripts/sdd_core/doctor.py",
         "scripts/sdd_core/model.py",
+        "scripts/sdd_core/runtime_discovery.py",
+        "scripts/sdd_core/runtime_identity.py",
         "scripts/sdd_core/managed_state.py",
         "scripts/sdd_core/parser_legacy.py",
         "scripts/sdd_core/parser_v1.py",
@@ -69,6 +75,30 @@ def validate_package() -> None:
     metadata = (PACKAGE / "agents/openai.yaml").read_text(encoding="utf-8")
     if "$sdd-workflow" not in metadata:
         raise AssertionError("openai.yaml default prompt must mention $sdd-workflow")
+
+    identity = json.loads(
+        (PACKAGE / "runtime-identity.json").read_text(encoding="utf-8")
+    )
+    if identity["distribution_id"] != "sdd-workflow":
+        raise AssertionError("runtime identity has wrong distribution")
+    if identity["handshake_version"] != 1 or identity["cli_output_version"] != 1:
+        raise AssertionError("runtime identity has unsupported handshake/output")
+    if identity["compatible_engine_generation"] != "0.6":
+        raise AssertionError("runtime identity has wrong engine generation")
+    if (
+        identity["minimum_schema_version"],
+        identity["maximum_schema_version"],
+    ) != (1, 2):
+        raise AssertionError("runtime identity has wrong schema interval")
+    if identity["required_capabilities"] != sorted(
+        set(identity["required_capabilities"])
+    ):
+        raise AssertionError("runtime capabilities must be sorted and unique")
+    actual_skill_sha256 = hashlib.sha256(
+        (PACKAGE / "SKILL.md").read_bytes()
+    ).hexdigest()
+    if identity["skill_sha256"] != actual_skill_sha256:
+        raise AssertionError("runtime identity does not match SKILL.md bytes")
 
     if os.name == "posix":
         for executable in (SCRIPTS / "sdd", SCRIPTS / "sdd.py"):

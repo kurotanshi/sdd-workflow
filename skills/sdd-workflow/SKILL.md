@@ -16,6 +16,7 @@ Use this skill to enforce the project workflow `提案 → 實作 → 歸檔`, i
 - Abandonment never reverts implementation code or git changes. Revert working-tree changes only as a separate operation that the user explicitly requests and whose scope the user confirms.
 - Treat `開始實作` as explicit approval of a `draft` proposal. If the user says only `實作` for a `draft` or statusless proposal, ask for approval and stop; do not infer approval.
 - Use the bundled CLI as the only supported way to discover, parse, validate, count, or snapshot proposal artifacts. If it cannot run, fail closed; never reconstruct its parser in prose.
+- Before the first SDD CLI command in a session, run the bundled runtime discovery command once and require its JSON result to select the package-local compatible runtime. Never search `PATH`, the repository, or another Agent's Skill root; zero, ambiguous, failed, or incompatible discovery stops the workflow.
 - Once a proposal exists, use the bundled CLI as the only supported way to change status, task completion, machine metadata, archive location, or archive INDEX. Never edit these managed fields directly.
 - Do not invent requirements, add unrequested features, or over-design.
 - Ask when the specification, target, or expected behavior is unclear; do not guess.
@@ -42,9 +43,10 @@ Keep the current change name in context across turns. If a phase request does no
 
 ## Deterministic command contract
 
-`<sdd-cli>` means `python3 <skill-dir>/scripts/sdd.py`, where `<skill-dir>` is the directory containing this `SKILL.md`. Run it from the user's project with an explicit project root:
+`<runtime-discovery>` means `python3 <skill-dir>/scripts/discover-runtime.py`. `<sdd-cli>` means `python3 <skill-dir>/scripts/sdd.py`, where `<skill-dir>` is the directory containing this `SKILL.md`. Run discovery once per session, then run project commands from the user's project with an explicit project root:
 
 ```text
+<runtime-discovery>
 <sdd-cli> --root <project-root> --json list --state active
 <sdd-cli> --root <project-root> --json validate <short-name>
 <sdd-cli> --root <project-root> --json status <short-name>
@@ -58,7 +60,8 @@ Keep the current change name in context across turns. If a phase request does no
 <sdd-cli> --root <project-root> --json rebuild-index
 ```
 
-- Execute each invocation as one unwrapped tool call. Do not add pipes, redirects, command chaining, or an exit-code helper.
+- Execute discovery and each CLI invocation as one unwrapped tool call. Do not add pipes, redirects, command chaining, or an exit-code helper.
+- Consume the discovery JSON first. Continue only when `ok` is true, `runtime.source` is `package-local`, and the handshake identifies `sdd-workflow`; use the returned installed runtime path only as evidence that it is the same package-local `scripts/sdd.py`. A discovery failure is binding and never falls back to another candidate.
 - Consume the JSON document even when the process exits nonzero. Branch on `ok`, then `errors[].code` and `errors[].action`; never branch on message wording.
 - If the launcher, Python runtime, or tool permission is unavailable, stop and report the execution problem. Do not open the artifacts and do not fall back to prose parsing.
 - Never read raw artifacts to derive status, task order or counts, acceptance conditions, diagnostics, compatibility, snapshots, or managed-state evidence. Direct artifact access is allowed only when creating a new proposal, editing user-authorized semantic prose during an explicit revision, or recording the conclusion body of an approved Schema v2 research proposal; never use it to mutate managed fields.

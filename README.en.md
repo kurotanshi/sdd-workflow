@@ -36,7 +36,7 @@ Ask Codex's built-in skill-installer to install from this repo:
 $skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow
 ```
 
-This runs `install-skill-from-github.py --repo kurotanshi/sdd-workflow --path skills/sdd-workflow`, installs into `~/.codex/skills/sdd-workflow/`, and becomes available on the **next turn**. (Manual install: copy the whole `skills/sdd-workflow/` folder to `~/.codex/skills/sdd-workflow`.)
+Current Codex loads user Skills from `~/.agents/skills/`. The installer should place the complete `skills/sdd-workflow/` directory at `~/.agents/skills/sdd-workflow/`, where it becomes available on a subsequent usable turn. A manual install must also copy the complete directory, not only `SKILL.md`.
 
 Verify in a fresh Codex conversation:
 
@@ -79,7 +79,7 @@ npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
 
 `-g` installs at user level, `-y` skips prompts. The source is recorded in that tool's lock file.
 
-> ⚠️ This is a third-party tool (skills.sh), not an official OpenAI or Anthropic installer. It places the skill in the shared `~/.agents/skills/`. **Verify your agent actually loads that directory** — different tools read different skill paths (e.g. Codex's own toolchain uses `~/.codex/skills`). If it isn't picked up, use the native install path for your tool above.
+> ⚠️ This is a third-party tool (skills.sh), not an official OpenAI or Anthropic installer. It places the skill in the shared `~/.agents/skills/`. Current Codex scans that user directory; other Agents still require an explicit host-loading check. A complete package layout does not prove that the host loaded it.
 
 ## Workflow
 
@@ -211,7 +211,7 @@ The normal workflow has three steps:
 - **Schema v2 and Proposal Specifications**:
   - **Proposal Types**: New proposals use explicit Schema v2 and may be classified as `新功能`, `修 bug`, `重構`, `維運`, `文件`, or `研究` (Research uses the same lifecycle and stores output under `## 結論`).
   - **Compatibility and Fail-Closed**: Existing v1/legacy artifacts are never migrated in place. A missing CLI or runtime fails closed and never falls back to direct parsing or managed-state edits. An in-flight proposal with `.sdd` machine metadata must finish or be abandoned under a compatible engine; deleting metadata or the schema marker is not a supported downgrade. See [`docs/schema-v2.md`](./docs/schema-v2.md), [`docs/runtime.md`](./docs/runtime.md), [`docs/cli-contract.md`](./docs/cli-contract.md), and [`docs/transaction-protocol.md`](./docs/transaction-protocol.md).
-  - **Version Verification**: After installing or upgrading, run `skills/sdd-workflow/scripts/sdd.py --version` from the package, using the corresponding path in an installed copy.
+  - **Install Verification**: After installing or upgrading, run `python3 <installed-skill>/scripts/discover-runtime.py`, then `python3 <installed-skill>/scripts/sdd.py --json --handshake`; both must identify the same complete package. See [`docs/install-methods.md`](./docs/install-methods.md) and [`docs/troubleshooting.md`](./docs/troubleshooting.md).
 - **Team Concurrency and Data Authority**:
   - **Owner Mechanism**: For team concurrency, one proposal has one owner at a time. Independent changes use different short names and, when implementation trees may interfere, separate Git worktrees.
   - **INDEX and Archive**: Archive directories are authoritative; `INDEX.md` is a derived artifact checked and reconstructed by `validate-index` / `rebuild-index`. The v0.6.0 contention tests found no authoritative data loss, so the release does not add a speculative lock or INDEX CAS. See [`docs/team-operations.md`](./docs/team-operations.md) and [`docs/compatibility.md`](./docs/compatibility.md) for handoff, worktree, version-skew, and stale-INDEX procedures.
@@ -220,7 +220,7 @@ The normal workflow has three steps:
 
 | Tool / channel | Update | Remove |
 | --- | --- | --- |
-| Codex | Delete `${CODEX_HOME:-$HOME/.codex}/skills/sdd-workflow`, then reinstall (the installer aborts on an existing dir) | Delete `${CODEX_HOME:-$HOME/.codex}/skills/sdd-workflow` |
+| Codex | Remove `$HOME/.agents/skills/sdd-workflow`, then reinstall with the installer | Remove `$HOME/.agents/skills/sdd-workflow` |
 | Claude Code | Delete `~/.claude/skills/sdd-workflow`, then reinstall | Delete `~/.claude/skills/sdd-workflow` |
 | Skills CLI (third party) | `npx skills update sdd-workflow -g -y` | `npx skills remove sdd-workflow -g -y` |
 
