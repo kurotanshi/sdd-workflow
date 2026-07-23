@@ -19,7 +19,7 @@ The **single maintained source** of the workflow is [`skills/sdd-workflow/SKILL.
 
 The staged engineering plan and design trade-offs for the deterministic parser, transaction engine, and later schema work are documented in [`ROADMAP.md`](./ROADMAP.md).
 
-> The direct trigger words (`提案` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消提案` / `確認放棄 <short-name>`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. A bare `取消` is not a direct Skill trigger; the cancellation disambiguation rule applies only after the user explicitly refers to an SDD proposal or has entered the workflow. An explicit code-revert request stays outside SDD, but its exact scope must be confirmed before changing files and it must never alter proposal state. The skill instructions themselves are written in English for cross-tool maintainability.
+> The direct trigger words (`提案` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消提案` / `確認放棄 <short-name>`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. A standalone `取消` (without a target) is not a direct Skill trigger; the cancellation disambiguation rule applies only after the user explicitly refers to an SDD proposal or has entered the workflow. An explicit code-revert request stays outside SDD, but its exact scope must be confirmed before changing files and it must never alter proposal state. The skill instructions themselves are written in English for cross-tool maintainability.
 
 ## Install and get started
 
@@ -199,7 +199,7 @@ The normal workflow has three steps:
   1. **Request Abandonment**: Reply with `放棄`, `放棄 <short-name>`, or `取消提案`. The agent calls the bundled CLI for a **read-only preflight**: it reports status, progress, and snapshot hashes, and warns that implementation code and git changes in the working tree are **never reverted automatically**. Task-format errors do not block preflight, but counts are marked unreliable.
   2. **Confirm Abandonment**: After the exact phrase `確認放棄 <short-name>`, the agent reruns CLI preflight and has the execution environment **machine-compare** snapshot hashes. An unchanged snapshot permits `abandoned`, the move to `sdd/archive/<date>-<short-name>-abandoned/`, and the `INDEX.md` update. A mismatched snapshot or new session prompts for a fresh preflight.
 - **Disambiguation and Revert Boundaries**:
-  - **Bare "取消"**: A bare or unclear `取消` only asks which target you mean to prevent unintended actions.
+  - **Standalone "取消"**: A standalone or unclear `取消` only asks which target you mean to prevent unintended actions.
   - **Code Revert**: An explicit code cancellation (e.g. "cancel recent code changes") remains a separately confirmed revert outside SDD and **never alters proposal state**.
   - **Git Commit**: The workflow creates no git commit unless requested.
 

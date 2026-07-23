@@ -19,7 +19,7 @@
 
 Deterministic parser、transaction engine 與後續 schema 的分階段工程計畫及設計取捨，見 [`ROADMAP.md`](./ROADMAP.md)。
 
-> 裸 `取消` 不是直接 Skill trigger；只有使用者明指 SDD proposal 或已明確進入 workflow 時，才套用 Skill 內的取消消歧規則。明確的 code-revert 請求屬於 workflow 外操作，但在改檔前仍必須確認精確範圍，且不得因此改動 proposal state。
+> 單獨輸入「取消」（未指明目標）不是直接 Skill trigger；只有使用者明指 SDD proposal 或已明確進入 workflow 時，才套用 Skill 內的取消消歧規則。明確的 code-revert 請求屬於 workflow 外操作，但在改檔前仍必須確認精確範圍，且不得因此改動 proposal state。
 
 ## 安裝與上手
 
@@ -197,7 +197,7 @@ draft
   1. **請求放棄**：回覆「放棄」、「放棄 <短名稱>」或「`取消提案`」。Agent 會呼叫 CLI 執行**唯讀 preflight**，回報狀態、進度與 snapshot hash，並提醒工作區程式碼與 Git 變更**不會自動復原**（`tasks.md` 格式錯誤不會擋下 preflight，但計數會標為不可靠）。
   2. **確認放棄**：回覆一字不差的「確認放棄 <短名稱>」後，Agent 重跑 CLI preflight 並由執行環境**機器比對** snapshot hash。確認未變後才標記為 `abandoned`、移至 `sdd/archive/<日期>-<短名稱>-abandoned/` 並全量重建 `INDEX.md`。若 snapshot 不符或跨 session 則會提示重新 preflight。
 - **消歧與復原邊界**：
-  - **裸「取消」**：若單獨說「取消」或目標不明，Agent 只會先詢問目標，避免誤動。
+  - **單獨輸入「取消」**：若僅說「取消」或目標不明，Agent 只會先詢問目標，避免誤動。
   - **程式碼復原**：明確指向程式碼的取消（如「取消剛才的修改」）屬於 workflow 外的 code-revert 操作，變更前必須先確認精確範圍，且**不得改動提案狀態**。
   - **Git Commit**：未經你要求，workflow 不會自行建立 git commit。
 
