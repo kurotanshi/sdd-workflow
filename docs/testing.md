@@ -16,7 +16,7 @@ The files do not need to move into category directories.
 | `compatibility` | Engine/artifact version axes, legacy archive adaptation, and unknown-version behavior | `test_compatibility.py`, `test_archive_model.py` |
 | `concurrency` | Stale snapshot rejection and concurrent archive/INDEX convergence | `test_concurrency.py` |
 | `packaging` | Runtime launch, installed layouts, release baseline, CI shape, and classification contract | `test_runtime.py`, `test_install_smoke.py`, `test_ci_contract.py`, `test_release_baseline.py`, `test_testing_contract.py` |
-| `integration` | Public CLI envelopes, Agent-eval fixtures/runner/scorer and conformance contracts, and end-to-end archive, doctor, and team workflow behavior | `test_agent_eval_spec.py`, `test_agent_eval_runner.py`, `test_agent_eval_scoring.py`, `test_agent_scenarios.py`, `test_cli.py`, `test_cli_snapshots.py`, `test_conformance_manifest.py`, `test_runtime_conformance.py`, `test_archive_cli.py`, `test_doctor.py`, `test_team_workflow.py` |
+| `integration` | Public CLI envelopes, Agent-eval fixtures/runner/scorer/publication checks and conformance contracts, and end-to-end archive, doctor, and team workflow behavior | `test_agent_eval_spec.py`, `test_agent_eval_runner.py`, `test_agent_eval_scoring.py`, `test_agent_scenarios.py`, `test_public_eval_report.py`, `test_cli.py`, `test_cli_snapshots.py`, `test_conformance_manifest.py`, `test_runtime_conformance.py`, `test_archive_cli.py`, `test_doctor.py`, `test_team_workflow.py` |
 
 ## Supporting contract checks and tools
 

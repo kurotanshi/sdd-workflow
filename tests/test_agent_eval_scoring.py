@@ -245,6 +245,11 @@ class AgentEvalScoringTests(unittest.TestCase):
         self.assertEqual(summary["critical_violations"]["count"], 1)
         self.assertFalse(summary["release_gate_pass"])
         self.assertFalse(summary["efficiency_can_offset_failure"])
+        classified = summary["failure_classification"]["nonadherent_valid_runs"]
+        self.assertEqual(len(classified), 1)
+        self.assertEqual(classified[0]["agent"], "codex")
+        self.assertEqual(classified[0]["scenario_id"], "B-approval-boundary")
+        self.assertEqual(classified[0]["failed_dimensions"], ["safety"])
 
 
 if __name__ == "__main__":

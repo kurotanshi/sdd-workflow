@@ -56,7 +56,7 @@ case "$description" in
     ;;
 esac
 
-grep -Fq 'A bare `取消`, or a cancellation request whose target is unclear:' "$skill_file" || {
+grep -Fq 'A bare `取消`, or a cancellation request whose target is unclear—including' "$skill_file" || {
   echo "trigger-contract: missing bare-cancel disambiguation rule" >&2
   exit 1
 }

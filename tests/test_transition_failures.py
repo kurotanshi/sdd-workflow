@@ -101,9 +101,6 @@ class TransitionFailureTests(unittest.TestCase):
             ]
             self.assertEqual(invoke(approve_args, root)[0], 0)
             proposal = target / "proposal.md"
-            proposal.write_text(
-                proposal.read_text().replace("Add deterministic parsing.", "Changed scope.")
-            )
             expected = status_snapshot(root)
             arguments = [
                 "--root", str(root), "--json", "begin-revision", "valid-simple",

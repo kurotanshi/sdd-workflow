@@ -419,6 +419,8 @@ def aggregate_summary(artifact_root: Path) -> dict[str, Any]:
     }
     critical_ids: dict[str, int] = {}
     failed_dimensions: dict[str, int] = {}
+    invalid_reason_counts: dict[str, int] = {}
+    nonadherent_cases: list[dict[str, Any]] = []
     models: set[str] = set()
     skill_commits: set[str] = set()
     skill_hashes: set[str] = set()
@@ -462,12 +464,30 @@ def aggregate_summary(artifact_root: Path) -> dict[str, Any]:
                 row["adherent_runs"] += 1
             else:
                 row["nonadherent_runs"] += 1
+                failed: list[str] = []
                 for name in ("outcome", "process", "safety"):
                     dimension = score.get(name, {})
                     if dimension.get("earned") != dimension.get("possible"):
                         failed_dimensions[name] = failed_dimensions.get(name, 0) + 1
+                        failed.append(name)
+                nonadherent_cases.append(
+                    {
+                        "agent": metadata.get("agent"),
+                        "scenario_id": score.get("scenario_id"),
+                        "run_id": metadata.get("run_id"),
+                        "failed_dimensions": failed,
+                        "critical_violation_ids": score.get(
+                            "critical_violation_ids",
+                            [],
+                        ),
+                    }
+                )
         else:
             row["invalid_runs"] += 1
+            for reason in score.get("invalid_reasons", []):
+                invalid_reason_counts[reason] = (
+                    invalid_reason_counts.get(reason, 0) + 1
+                )
         for violation_id in score.get("critical_violation_ids", []):
             row["critical_violations"] += 1
             critical_ids[violation_id] = critical_ids.get(violation_id, 0) + 1
@@ -525,7 +545,16 @@ def aggregate_summary(artifact_root: Path) -> dict[str, Any]:
         "failure_classification": {
             "failed_dimensions": dict(sorted(failed_dimensions.items())),
             "invalid_runs": total_invalid,
+            "invalid_reasons": dict(sorted(invalid_reason_counts.items())),
             "critical_violations": total_critical,
+            "nonadherent_valid_runs": sorted(
+                nonadherent_cases,
+                key=lambda item: (
+                    str(item["agent"]),
+                    str(item["scenario_id"]),
+                    str(item["run_id"]),
+                ),
+            ),
         },
         "matrix_complete": matrix_complete,
         "matrix": matrix,
@@ -565,6 +594,25 @@ def summary_markdown(summary: dict[str, Any]) -> str:
             f"{row['adherent_runs']} | {row['invalid_runs']} | "
             f"{row['critical_violations']} |"
         )
+    classification = summary["failure_classification"]
+    lines.extend(["", "## Failure classification", ""])
+    nonadherent = classification["nonadherent_valid_runs"]
+    if nonadherent:
+        for item in nonadherent:
+            dimensions = ", ".join(item["failed_dimensions"]) or "critical-only"
+            lines.append(
+                f"- Valid non-adherent: {item['agent']} / "
+                f"{item['scenario_id']} / {item['run_id']} "
+                f"(failed: {dimensions})."
+            )
+    else:
+        lines.append("- No valid non-adherent runs.")
+    invalid_reasons = classification["invalid_reasons"]
+    if invalid_reasons:
+        for reason, count in invalid_reasons.items():
+            lines.append(f"- Invalid attempts: {reason} × {count}.")
+    else:
+        lines.append("- No invalid attempts.")
     lines.extend(
         [
             "",

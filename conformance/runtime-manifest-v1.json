@@ -210,6 +210,7 @@
         "tests.test_agent_eval_spec",
         "tests.test_agent_eval_runner",
         "tests.test_agent_scenarios",
+        "tests.test_public_eval_report",
         "tests.test_conformance_manifest",
         "tests.test_runtime_conformance"
       ]
