@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+"""Aggregate token usage from valid Agent-eval runs."""
+
+from agent_eval_usage import main
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
