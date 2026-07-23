@@ -1,0 +1,107 @@
+{
+  "manifest_version": 1,
+  "baseline": {
+    "release_tag": "v0.2.3",
+    "commit": "5facfaca4c1e339d69fb2c14ac26c33062c5596f",
+    "normative_source": "skills/sdd-workflow/SKILL.md",
+    "rules_inventory": "NORMATIVE_RULES.md"
+  },
+  "fixtures": [
+    {
+      "name": "valid-simple",
+      "path": "valid-simple",
+      "category": "valid",
+      "source_rules": ["PROPOSAL-001", "PROPOSAL-002", "PROPOSAL-004", "TASK-001", "TASK-002", "TASK-003"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "v1", "readable": true, "mutation_safe": true, "status": "draft", "change_type": "新功能", "task_count": 2, "completed_count": 1, "diagnostic_codes": []}
+    },
+    {
+      "name": "valid-nested-acceptance",
+      "path": "valid-nested-acceptance",
+      "category": "valid",
+      "source_rules": ["TASK-001", "ACCEPTANCE-001"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "v1", "readable": true, "mutation_safe": true, "status": "approved", "change_type": "修 bug", "task_count": 1, "completed_count": 0, "acceptance_condition_count": 2, "diagnostic_codes": []}
+    },
+    {
+      "name": "explicit-v1",
+      "path": "explicit-v1",
+      "category": "valid",
+      "source_rules": ["SCHEMA-002", "MODEL-001"],
+      "input": {"explicit_schema_version": 1},
+      "expected": {"adapter": "v1", "readable": true, "mutation_safe": true, "schema_version": 1, "status": "draft", "task_count": 1, "diagnostic_codes": []}
+    },
+    {
+      "name": "invalid-checkbox",
+      "path": "invalid-checkbox",
+      "category": "invalid",
+      "source_rules": ["TASK-004", "TASK-007"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "v1", "readable": true, "mutation_safe": false, "task_count": 1, "task_counts_reliable": false, "diagnostic_codes": ["ERROR_INVALID_TASK_CHECKBOX", "ERROR_INVALID_TASK_CHECKBOX", "ERROR_INVALID_TASK_CHECKBOX"], "diagnostic_lines": [4, 5, 6]}
+    },
+    {
+      "name": "invalid-list-item",
+      "path": "invalid-list-item",
+      "category": "invalid",
+      "source_rules": ["TASK-005", "TASK-007"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "v1", "readable": true, "mutation_safe": false, "task_count": 1, "task_counts_reliable": false, "diagnostic_codes": ["ERROR_INVALID_TASK_LIST_ITEM", "ERROR_INVALID_TASK_LIST_ITEM"], "diagnostic_lines": [4, 5]}
+    },
+    {
+      "name": "legacy-statusless",
+      "path": "legacy-statusless",
+      "category": "legacy",
+      "source_rules": ["LEGACY-001", "LEGACY-003"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "legacy", "readable": true, "mutation_safe": false, "status": null, "task_count": 1, "diagnostic_codes": ["WARNING_LEGACY_STATUS_MISSING"]}
+    },
+    {
+      "name": "legacy-partial",
+      "path": "legacy-partial",
+      "category": "legacy",
+      "source_rules": ["LEGACY-003", "MODEL-001"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "legacy", "readable": true, "mutation_safe": false, "status": "draft", "change_type": null, "task_count": 1, "diagnostic_codes": ["WARNING_LEGACY_SECTION_MISSING"]}
+    },
+    {
+      "name": "ambiguous-active",
+      "path": "ambiguous-active",
+      "category": "discovery",
+      "source_rules": ["DISCOVERY-001", "DISCOVERY-002"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"candidate_names": ["alpha-change", "beta-change"], "diagnostic_codes": ["ERROR_AMBIGUOUS_ACTIVE_PROPOSAL"]}
+    },
+    {
+      "name": "abandon-snapshot",
+      "path": "abandon-snapshot",
+      "category": "abandonment",
+      "source_rules": ["LEGACY-002", "TASK-004", "TASK-007"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "v1", "readable": true, "mutation_safe": false, "task_count": 2, "completed_count": 1, "task_counts_reliable": false, "abandonment_readable": true, "diagnostic_codes": ["ERROR_INVALID_TASK_CHECKBOX"], "diagnostic_lines": [5]}
+    },
+    {
+      "name": "completed-terminal",
+      "path": "completed-terminal",
+      "category": "terminal",
+      "source_rules": ["PROPOSAL-003", "TERMINAL-001"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "v1", "readable": true, "mutation_safe": false, "status": "completed", "task_count": 2, "completed_count": 2, "diagnostic_codes": []}
+    },
+    {
+      "name": "abandoned-terminal",
+      "path": "abandoned-terminal",
+      "category": "terminal",
+      "source_rules": ["PROPOSAL-003", "TERMINAL-001"],
+      "input": {"explicit_schema_version": null},
+      "expected": {"adapter": "v1", "readable": true, "mutation_safe": false, "status": "abandoned", "task_count": 2, "completed_count": 1, "diagnostic_codes": []}
+    },
+    {
+      "name": "future-schema",
+      "path": "future-schema",
+      "category": "unsupported",
+      "source_rules": ["SCHEMA-003"],
+      "input": {"explicit_schema_version": 99},
+      "expected": {"adapter": null, "readable": false, "mutation_safe": false, "diagnostic_codes": ["ERROR_UNSUPPORTED_SCHEMA_VERSION"]}
+    }
+  ]
+}

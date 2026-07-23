@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> 版本 v0.2.3 ｜ [English](./README.en.md)
+> 版本 v0.6.0 ｜ [English](./README.en.md)
 
 一份跨 AI coding agent 共用的 **SDD（Spec-Driven Development，規格驅動開發）** skill。核心理念一句話：**動手寫程式之前，先把要做什麼寫清楚、讓人確認，再開始做。**
 
@@ -9,13 +9,25 @@
 | 階段 | 觸發詞 | 做什麼 |
 | --- | --- | --- |
 | 1. 提案 | `提案` | 取短名稱、判斷類型，產出狀態為 `draft` 的 `proposal.md` 與 `tasks.md`，然後**停下等確認，不寫程式**；修訂既有提案也使用這個觸發詞 |
-| 2. 實作 | `開始實作`／`實作` | `開始實作` 會把 `draft` 核准為 `approved`；`實作` 只會繼續已核准提案。之後逐條完成任務、驗證、打勾並回報 |
-| 3. 歸檔 | `歸檔` | 驗收且任務全數完成後，從系統取得日期，歸檔為 `completed` 並更新 `sdd/archive/INDEX.md` |
-| 放棄 | `放棄`／`取消提案` → `確認放棄 <短名稱>` | 先執行唯讀 preflight：回報進度、警告工作區程式碼不會復原、把內容 hash 列在回報中；`tasks.md` 格式錯誤不會擋下放棄，只會標明任務計數不可靠。收到一字不差的 `確認放棄 <短名稱>`、且系統指令比對 hash 確認內容未變，才標記 `abandoned` 歸檔並更新索引；單獨說「取消」只會先詢問目標 |
+| 2. 實作 | `開始實作`／`實作` | `開始實作` 由 CLI 把 `draft` 核准為 `approved`；`實作` 只會繼續已核准提案。之後逐條完成任務、驗證，再由 CLI 寫入完成狀態並回報 |
+| 3. 歸檔 | `歸檔` | 驗收且任務全數完成後，由 CLI 原子地準備終態、搬移目錄並重建 `sdd/archive/INDEX.md` |
+| 放棄 | `放棄`／`取消提案` → `確認放棄 <短名稱>` | 先由內附 CLI 執行唯讀 preflight：回報進度、警告工作區程式碼不會復原、把 snapshot hash 列在回報中；`tasks.md` 格式錯誤不會擋下放棄，只會標明任務計數不可靠。收到一字不差的 `確認放棄 <短名稱>` 後重跑 preflight 並以機器比對 snapshot，內容未變才由 CLI 歸檔為 `abandoned` 並重建索引；單獨說「取消」只會先詢問目標 |
 
 產出物都是純文字，留在你的專案 `sdd/` 目錄，跟著 git 一起版控。
 
 這個 repo **唯一維護的流程來源**是 [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md)。安裝到各工具的副本只是可重新產生的安裝產物，不是第二份來源。
+
+Deterministic parser、transaction engine 與後續 schema 的分階段工程計畫及設計取捨，見 [`ROADMAP.md`](./ROADMAP.md)。
+
+> 裸 `取消` 不是直接 Skill trigger；只有使用者明指 SDD proposal 或已明確進入 workflow 時，才套用 Skill 內的取消消歧規則。明確的 code-revert 請求屬於 workflow 外操作，但在改檔前仍必須確認精確範圍，且不得因此改動 proposal state。
+
+## v0.6 Schema、runtime 與團隊契約
+
+v0.6.0 必須有 **CPython 3.11 以上**；macOS 與 Linux 為支援平台，Windows 目前只提供 best-effort Python core。v0.3.0 引入 runtime 時是 `0.x` 的 **breaking minor**；此要求延續至今。新提案使用明確的 Schema v2，類型可為 `新功能`、`修 bug`、`重構`、`維運`、`文件` 或 `研究`；研究沿用相同 lifecycle，並以 `## 結論` 保存輸出。既有 v1/legacy artifacts 不會原地 migration。CLI 或 runtime 不可用時一律 fail closed，不回退到 agent 直接解析或修改 managed state。完整契約見 [`docs/schema-v2.md`](./docs/schema-v2.md)、[`docs/runtime.md`](./docs/runtime.md)、[`docs/cli-contract.md`](./docs/cli-contract.md) 與 [`docs/transaction-protocol.md`](./docs/transaction-protocol.md)。
+
+安裝或升級後，先在 package 內執行 `skills/sdd-workflow/scripts/sdd.py --version`（安裝副本使用對應路徑）。v1 proposals 可繼續由 v0.6 engine 管理；Schema v2 proposal 不可交給只支援 v1 的 engine。已有 `.sdd` machine metadata 的進行中 proposal 必須以相容 engine 完成或放棄，刪除 metadata 或 schema marker 不構成受支援的降級。
+
+團隊並行時，每個 proposal 同一時間只交由一位 owner；獨立工作使用不同 short name，修改可能互相干擾時再搭配不同 Git worktree。Archive directories 是 authoritative，`INDEX.md` 是可由 `validate-index`／`rebuild-index` 檢查與重建的 derived artifact。v0.6.0 的 contention tests 沒有發現 authoritative data loss，因此沒有預先加入 lock 或 INDEX CAS。完整交接、worktree、version-skew 與 stale INDEX 程序見 [`docs/team-operations.md`](./docs/team-operations.md) 與 [`docs/compatibility.md`](./docs/compatibility.md)。
 
 ## 工作流程
 
@@ -34,11 +46,11 @@ sequenceDiagram
 
     Note over User, Agent: 2. 實作階段 (Implementation Phase)
     User->>Agent: 「開始實作」
-    Agent->>Files: 將提案狀態更新為 approved 並重新讀取確認
+    Agent->>Files: CLI approve 寫入 manifest、metadata 與 approved 狀態
     loop 逐條任務執行
         Agent->>Files: 檢查並實作 tasks.md 中第一條未勾選任務
         Agent->>Agent: 執行測試/驗證
-        Agent->>Files: 勾選任務 ( [ ] -> [x] )
+        Agent->>Files: CLI complete-task 驗證 snapshot 後寫入 [x]
         Agent->>User: 回報「第 N 條完成」
     end
     Agent->>User: 全部完成，請使用者驗收
@@ -46,8 +58,8 @@ sequenceDiagram
     Note over User, Agent: 3. 歸檔階段 (Archive Phase)
     User->>Agent: 「歸檔」
     Agent->>Files: 檢查 tasks.md 是否全數完成
-    Agent->>Files: 由系統取得日期，標記 completed 並移至 archive
-    Agent->>Files: 追加一行至 sdd/archive/INDEX.md
+    Agent->>Files: CLI archive 標記 completed 並移至 archive
+    Agent->>Files: 從 archive records 全量重建 INDEX.md
     Agent->>User: 回報「歸檔完成」與單句變更摘要
 ```
 
@@ -57,8 +69,9 @@ sequenceDiagram
 專案根目錄/
 └── sdd/
     ├── <短名稱>/             # 活動中的變更提案 (例如: sdd/add-health-check/)
-    │   ├── proposal.md       # 提案狀態、類型、原因與影響範圍
-    │   └── tasks.md          # 頂層 checkbox 任務清單（新提案最多 10 條）與驗收條件
+    │   ├── proposal.md       # Schema v2、狀態、類型、原因與影響範圍
+    │   ├── tasks.md          # 頂層 checkbox 任務清單（新提案最多 10 條）與驗收條件
+    │   └── .sdd/             # approval manifest、attestation 與 operation evidence
     └── archive/              # 已完成或放棄的歷史紀錄
         ├── INDEX.md          # 日期、短名稱、終態與單句摘要
         ├── YYYY-MM-DD-<短名稱>/
@@ -74,6 +87,9 @@ sequenceDiagram
 `sdd/<短名稱>/proposal.md` 範例：
 
 ```markdown
+---
+schema_version: 2
+---
 # add-health-check
 
 ## 狀態
@@ -183,7 +199,7 @@ npx skills add kurotanshi/sdd-workflow --skill sdd-workflow -g -y
 2. **實作**：看完提案後回覆「開始實作」，agent 會先把狀態寫成 `approved` 並重新讀取確認，再一次完成一條任務。若提案仍是 `draft` 而你只說「實作」，agent 會先詢問是否核准，不會直接動碼。發現規格不對時會停止，修訂提案、保留已完成紀錄並回到 `draft` 等待重新核准；已勾任務屬歷史紀錄不占配額，修訂後未勾任務最多 10 條，若修訂實質改變原目標會建議另開新變更。
 3. **歸檔**：驗收完成後回覆「歸檔」。agent 只計算「驗收條件」之前、行首頂層的 task checkbox，確認至少一條且全部完成；若出現縮排、巢狀或 `- [X]` 等格式異常的 checkbox 行，或任務區內混入其他清單項——包含以 Markdown 連結開頭的項目，如 `- [參考](https://…)`——會指出行號並停止歸檔。通過後再由執行環境取得日期、標記為 `completed`、移到 `sdd/archive/<日期>-<短名稱>/`，並把摘要追加到 `INDEX.md`。
 
-不再進行的活動提案可回覆「放棄」、「放棄 <短名稱>」或「取消提案」。agent 會先執行**唯讀的 preflight**：回報短名稱、狀態、已完成／未完成任務數與已完成任務清單，明確提醒放棄只歸檔 `sdd/` 產出物——已寫入工作區的程式碼與 git 變更**不會自動復原**——並以系統指令計算兩份檔案的 SHA-256 hash，直接列在 preflight 回報中作為 snapshot。`tasks.md` 有格式錯誤時**不會擋下放棄**：agent 會列出錯誤行號、標明任務計數與已完成清單不可靠，preflight 照常進行（實作與歸檔仍會被格式錯誤嚴格擋下）。你必須回覆一字不差的「確認放棄 <短名稱>」（例如 `確認放棄 add-todo`），agent 會把 snapshot 的 hash 值代入系統指令做等值比對——不目視比對長字串、只依比對結果行動——兩份檔案自 preflight 後未改變才會標記 `abandoned`、移到 `sdd/archive/<日期>-<短名稱>-abandoned/` 並在同一份 `INDEX.md` 留下摘要；名稱不符、hash 不符或跨 session 沒有 snapshot 時會重新 preflight。單獨說「取消」或指涉不明時，agent 一律先詢問你要復原程式碼還是放棄提案，不會直接執行任一種；若取消明確指向程式碼（例如「取消剛才的程式碼修改」），agent 會把它當成 workflow 之外的一般復原請求——先跟你確認復原範圍才動手，且絕不因此改動提案。未經你要求，workflow 不會自行建立 git commit。
+不再進行的活動提案可回覆「放棄」、「放棄 <短名稱>」或「取消提案」。agent 會先呼叫內附 CLI 執行**唯讀的 preflight**：回報狀態、進度與 snapshot，並明確提醒放棄只歸檔 `sdd/` 產出物，已寫入工作區的程式碼與 git 變更**不會自動復原**。`tasks.md` 格式錯誤不會擋下 preflight，但計數會明確標為不可靠。你回覆一字不差的「確認放棄 <短名稱>」後，agent 會重跑 CLI preflight，由執行環境機器比對對話中與最新的兩個 hash，不目視比對長字串。內容未變才會標記 `abandoned`、移至 `sdd/archive/<日期>-<短名稱>-abandoned/` 並更新 `INDEX.md`；名稱不符、snapshot 不符或跨 session 沒有 snapshot 時會重新 preflight。單獨說「取消」或指涉不明時只會先詢問目標；明確指向程式碼的取消屬於 workflow 外復原，要先確認範圍且不得改動提案。未經你要求，workflow 不會自行建立 git commit。
 
 ## 更新與移除
 

@@ -1,0 +1,48 @@
+{
+  "manifest_version": 1,
+  "schema_version": 2,
+  "decision": "docs/decisions/2026-07-22-schema-v2-entry.md",
+  "fixtures": [
+    {
+      "name": "minimal-v2",
+      "path": "minimal-v2",
+      "expected": {"adapter": "v2", "readable": true, "mutation_safe": true, "change_type": "新功能", "diagnostic_codes": []}
+    },
+    {
+      "name": "six-primary-types",
+      "path": "minimal-v2",
+      "change_types": ["新功能", "修 bug", "重構", "維運", "文件"],
+      "research_path": "research-active"
+    },
+    {
+      "name": "research-active",
+      "path": "research-active",
+      "expected": {"status": "draft", "mutation_safe": true, "conclusion": []}
+    },
+    {
+      "name": "research-completed",
+      "path": "research-completed",
+      "expected": {"status": "completed", "conclusion": ["Use the v2 adapter."]}
+    },
+    {
+      "name": "research-abandoned-empty",
+      "path": "research-abandoned",
+      "expected": {"status": "abandoned", "conclusion": []}
+    },
+    {
+      "name": "research-completed-missing",
+      "path": "research-completed-missing",
+      "expected": {"diagnostic_codes": ["ERROR_RESEARCH_CONCLUSION_REQUIRED"]}
+    },
+    {
+      "name": "future-version",
+      "path": "future-version",
+      "expected": {"adapter": null, "readable": false, "diagnostic_codes": ["ERROR_UNSUPPORTED_SCHEMA_VERSION"]}
+    },
+    {
+      "name": "unknown-frontmatter-field",
+      "path": "unknown-frontmatter-field",
+      "expected": {"adapter": null, "readable": false, "diagnostic_codes": ["ERROR_UNKNOWN_SCHEMA_FIELD"]}
+    }
+  ]
+}

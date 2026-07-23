@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "ERROR_PYTHON_NOT_FOUND: sdd-workflow requires Python 3.11 or newer. Install a supported Python and rerun this command; do not fall back to prose parsing." >&2
+  exit 1
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec python3 "$script_dir/sdd.py" "$@"

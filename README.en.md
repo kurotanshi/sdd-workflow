@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v0.2.3 ｜ [繁體中文](./README.md)
+> Version v0.6.0 ｜ [繁體中文](./README.md)
 
 A cross-agent **SDD (Spec-Driven Development)** skill. One idea: **before writing any code, state clearly what will be done, get it approved, then build.**
 
@@ -9,15 +9,25 @@ Every request is split into three phases, with revision and abandonment paths. T
 | Phase | Trigger | What it does |
 | --- | --- | --- |
 | 1. Propose | `提案` | Pick a short name and type, produce `proposal.md` and `tasks.md` with status `draft`, then **stop and wait — no code yet**; use the same trigger to revise a proposal |
-| 2. Implement | `開始實作` / `實作` | `開始實作` approves a `draft` as `approved`; `實作` only continues an approved proposal. Then implement, validate, check off, and report one task at a time |
-| 3. Archive | `歸檔` | After acceptance and full task completion, obtain the system date, archive as `completed`, and update `sdd/archive/INDEX.md` |
-| Abandon | `放棄` / `取消提案` → `確認放棄 <short-name>` | Run a read-only preflight first: report progress, warn that working-tree code is not reverted, print the content hashes in the report; format errors in `tasks.md` never block abandonment — they only mark the task counts as unreliable. Only an exact `確認放棄 <short-name>` reply, with a system command confirming the hashes are unchanged, marks the proposal `abandoned`, moves it to an `-abandoned` archive directory, and updates the index; a bare `取消` only asks what to cancel |
+| 2. Implement | `開始實作` / `實作` | `開始實作` asks the CLI to approve a `draft`; `實作` only continues an approved proposal. Each task is implemented and validated before the CLI records completion |
+| 3. Archive | `歸檔` | After acceptance and full task completion, the CLI stages terminal state, commits the directory move, and rebuilds `sdd/archive/INDEX.md` |
+| Abandon | `放棄` / `取消提案` → `確認放棄 <short-name>` | Run the bundled CLI's read-only preflight first: report progress, warn that working-tree code is not reverted, and print its snapshot hashes; format errors in `tasks.md` only make counts unreliable. After an exact `確認放棄 <short-name>`, rerun preflight and machine-compare snapshots before the CLI archives as `abandoned` and rebuilds the index; a bare `取消` only asks what to cancel |
 
 All artifacts are plain text under your project's `sdd/` directory, version-controlled with git.
 
 The **single maintained source** of the workflow is [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md). Copies installed into each tool are reproducible install artifacts, not a second source of truth.
 
-> The trigger words (`提案` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消` / `確認放棄 <short-name>`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. The skill instructions themselves are written in English for cross-tool maintainability.
+The staged engineering plan and design trade-offs for the deterministic parser, transaction engine, and later schema work are documented in [`ROADMAP.md`](./ROADMAP.md).
+
+> The direct trigger words (`提案` / `開始實作` / `實作` / `歸檔` / `放棄` / `取消提案` / `確認放棄 <short-name>`) are intentionally Traditional Chinese, and so is the workflow's user-facing output. A bare `取消` is not a direct Skill trigger; the cancellation disambiguation rule applies only after the user explicitly refers to an SDD proposal or has entered the workflow. An explicit code-revert request stays outside SDD, but its exact scope must be confirmed before changing files and it must never alter proposal state. The skill instructions themselves are written in English for cross-tool maintainability.
+
+## v0.6 schema, runtime, and team contract
+
+v0.6.0 requires **CPython 3.11 or newer**. macOS and Linux are supported; Windows currently receives a best-effort Python core. The runtime introduced in v0.3.0 was a **breaking minor** within `0.x`, and remains required. New proposals use explicit Schema v2 and may be classified as `新功能`, `修 bug`, `重構`, `維運`, `文件`, or `研究`. Research uses the same lifecycle and stores output under `## 結論`. Existing v1/legacy artifacts are never migrated in place. A missing CLI or runtime fails closed and never falls back to direct parsing or managed-state edits. See [`docs/schema-v2.md`](./docs/schema-v2.md), [`docs/runtime.md`](./docs/runtime.md), [`docs/cli-contract.md`](./docs/cli-contract.md), and [`docs/transaction-protocol.md`](./docs/transaction-protocol.md).
+
+After installing or upgrading, run `skills/sdd-workflow/scripts/sdd.py --version` from the package, using the corresponding path in an installed copy. V1 proposals remain manageable by the v0.6 engine; a Schema v2 proposal must not be handed to a v1-only engine. An in-flight proposal with `.sdd` machine metadata must finish or be abandoned under a compatible engine. Deleting metadata or the schema marker is not a supported downgrade.
+
+For team concurrency, one proposal has one owner at a time. Independent changes use different short names and, when implementation trees may interfere, separate Git worktrees. Archive directories are authoritative; `INDEX.md` is a derived artifact checked and reconstructed by `validate-index` / `rebuild-index`. The v0.6.0 contention tests found no authoritative data loss, so the release does not add a speculative lock or INDEX CAS. See [`docs/team-operations.md`](./docs/team-operations.md) and [`docs/compatibility.md`](./docs/compatibility.md) for handoff, worktree, version-skew, and stale-INDEX procedures.
 
 ## Workflow
 
@@ -36,11 +46,11 @@ sequenceDiagram
 
     Note over User, Agent: 2. Implement Phase
     User->>Agent: "開始實作" (Approve and start)
-    Agent->>Files: Persist approved status and re-read it
+    Agent->>Files: CLI approve writes manifest, metadata, and approved status
     loop Execute tasks one by one
         Agent->>Files: Implement the first unchecked task in tasks.md
         Agent->>Agent: Run tests/validation
-        Agent->>Files: Check off task ( [ ] -> [x] )
+        Agent->>Files: CLI complete-task validates snapshot and writes [x]
         Agent->>User: Report "Task N completed"
     end
     Agent->>User: All tasks completed, request verification
@@ -48,8 +58,8 @@ sequenceDiagram
     Note over User, Agent: 3. Archive Phase
     User->>Agent: "歸檔" (Archive)
     Agent->>Files: Verify all tasks are checked
-    Agent->>Files: Get system date, mark completed, and move to archive
-    Agent->>Files: Append one line to sdd/archive/INDEX.md
+    Agent->>Files: CLI archive marks completed and commits the move
+    Agent->>Files: Rebuild INDEX.md from all archive records
     Agent->>User: Report "Archive complete" with one-line summary
 ```
 
@@ -59,8 +69,9 @@ sequenceDiagram
 Project Root/
 └── sdd/
     ├── <short-name>/         # Active change proposal (e.g., sdd/add-health-check/)
-    │   ├── proposal.md       # Status, type, rationale, and impact area
-    │   └── tasks.md          # Top-level checkbox task list (up to 10 for a new proposal) plus acceptance criteria
+    │   ├── proposal.md       # Schema v2, status, type, rationale, and impact area
+    │   ├── tasks.md          # Top-level checkbox task list (up to 10 for a new proposal) plus acceptance criteria
+    │   └── .sdd/             # Approval manifest, attestation, and operation evidence
     └── archive/              # Completed and abandoned history
         ├── INDEX.md          # Date, short name, terminal status, and one-line summary
         ├── YYYY-MM-DD-<short-name>/
@@ -76,6 +87,9 @@ Project Root/
 `sdd/<short-name>/proposal.md` Example:
 
 ```markdown
+---
+schema_version: 2
+---
 # add-health-check
 
 ## 狀態 (Status)
@@ -187,7 +201,7 @@ The normal workflow has three steps:
 2. **Implement**: after reviewing the proposal, reply with `開始實作`. The agent persists `approved`, re-reads it, then completes one task at a time. If a proposal is still `draft` and you say only `實作`, the agent asks for approval instead of changing code. If the specification must change, it stops, preserves completed history, revises the artifacts, resets to `draft`, and waits for approval again; checked tasks are history and do not count against the quota, a revision keeps at most 10 unchecked tasks, and an amendment that materially changes the goal is redirected to a new change.
 3. **Archive**: after accepting the result, reply with `歸檔`. The agent counts only first-column, top-level task checkboxes before the acceptance criteria and requires at least one with all completed; any malformed checkbox line — indented, nested, or variants like `- [X]` — stops the archive with its line number reported, and so does any other list item in the task region, including one that starts with a markdown link such as `- [參考](https://…)`. It then obtains the date from the execution environment, marks the proposal `completed`, moves it to `sdd/archive/<date>-<short-name>/`, and appends its summary to `INDEX.md`.
 
-For an active proposal that will not proceed, reply with `放棄`, `放棄 <short-name>`, or `取消提案`. The agent first runs a **read-only preflight**: it reports the short name, status, completed/uncompleted task counts, and the list of completed tasks, explicitly warns that abandonment only archives the `sdd/` artifacts — implementation code and git changes already in the working tree are **never reverted automatically** — and computes SHA-256 hashes of both files with a system command, printing them in the preflight report as the snapshot. Format errors in `tasks.md` **never block abandonment**: the agent reports the offending line numbers, marks the task counts and the completed-task list as unreliable, and the preflight continues (implementation and archiving still stop strictly on format errors). Only when you reply with the exact phrase `確認放棄 <short-name>` (e.g. `確認放棄 add-todo`) — and the agent has re-verified both files by substituting the snapshot hashes into a system equality check, acting only on its result instead of eyeballing hex strings — does the agent mark the proposal `abandoned`, move it to `sdd/archive/<date>-<short-name>-abandoned/`, and record it in the same `INDEX.md`; a mismatched name, changed hash, or missing snapshot (such as a new session) re-runs the preflight instead. A bare `取消`, or one whose target is unclear, always makes the agent ask whether you want to revert code or abandon the proposal — it never does either directly; a cancellation that explicitly targets code (e.g. `取消剛才的程式碼修改`) is handled as an ordinary revert request outside the workflow: the agent confirms the revert scope with you first and never touches the proposal because of it. The workflow does not create git commits unless you ask.
+For an active proposal that will not proceed, reply with `放棄`, `放棄 <short-name>`, or `取消提案`. The agent first calls the bundled CLI for a **read-only preflight**: it reports status, progress, and snapshot hashes, and warns that implementation code and git changes already in the working tree are **never reverted automatically**. Task-format errors do not block this preflight, but its counts are explicitly marked unreliable. After the exact phrase `確認放棄 <short-name>`, the agent reruns the CLI preflight and has the execution environment compare the transcript and current hash pairs without eyeballing them. Only an unchanged snapshot permits `abandoned`, the move to `sdd/archive/<date>-<short-name>-abandoned/`, and the `INDEX.md` update; a mismatched name, snapshot, or new session reruns preflight. A bare or unclear `取消` only asks which target you mean. An explicit code cancellation remains a separately confirmed revert outside SDD and never alters proposal state. The workflow creates no git commit unless requested.
 
 ## Update and remove
 

@@ -1,0 +1,34 @@
+# Runtime and platform contract
+
+## Python
+
+- Minimum supported runtime: CPython `3.11`.
+- Python `3.10` is not selected because its security-support window ends in October 2026, too soon after the v0.3 baseline. Python 3.11 remains in security support until October 2027, while keeping broader availability than a 3.12 minimum. See the official [Python 3.11 release schedule](https://peps.python.org/pep-0664/) and [Python 3.11 security release notes](https://www.python.org/downloads/release/python-31115/).
+- The package uses only the Python standard library.
+- `scripts/sdd.py` checks `sys.version_info` before importing `sdd_core`, so an older interpreter receives `ERROR_PYTHON_VERSION` instead of a syntax/import traceback.
+- Skill orchestration invokes `python3 scripts/sdd.py` as one unwrapped tool call because agent permission systems may classify direct package executables differently. `sdd.py` enforces the minimum version before importing the core; a missing `python3` is an execution failure and still fails closed.
+- `scripts/sdd` remains the supported POSIX convenience launcher for users and install smoke. It reports `ERROR_PYTHON_NOT_FOUND` when `python3` is absent, then delegates to `sdd.py` for the version check.
+- Either runtime error is fail-closed. The Skill must stop and report the remediation; it must never resume by parsing Markdown in prose.
+
+The minimum-version smoke executes the complete unit suite under Python 3.11, not only `--version`. New syntax or standard-library APIs therefore cannot silently raise the effective minimum.
+
+## Platform level
+
+| Platform | v0.3 level | Required checks | v0.4 filesystem checks |
+| --- | --- | --- | --- |
+| macOS | Supported | Python 3.11 minimum suite, current-Python suite, checkout and installed-package smoke | Required |
+| Linux | Supported | Python 3.11 minimum suite, current-Python suite, checkout and installed-package smoke | Required |
+| Windows | Best effort | Non-blocking exploratory Python-core run when available | Non-blocking until a separate proposal promotes support |
+
+Windows is explicitly best effort. The Python core does not intentionally reject it, but the POSIX `scripts/sdd` launcher is not supported there; an exploratory user may invoke `py -3.11 scripts/sdd.py`. v0.3 does not claim Windows install, symlink, subprocess, path, or console behavior as a release guarantee.
+
+The v0.4 transaction proposals must run atomic replacement, `fsync`, directory rename, mode preservation, and open-file behavior on both macOS and Linux. A Windows result may inform a later support proposal but cannot fail or satisfy the required matrix. Unsupported platform behavior must still fail closed; it never authorizes prose parsing as fallback.
+
+## Baseline smoke evidence
+
+On 2026-07-22 the same `tests/install_smoke.py` passed both:
+
+- macOS arm64 with CPython 3.11: checkout `sdd.py`, isolated installed package `sdd.py`, and installed POSIX launcher.
+- Linux arm64 in the official `python:3.11-slim` image (`sha256:db3ff2e1800a8581e2c48a27c3995339d47bdf046da21c7627accd3d51053a93`): the same three checks with a read-only repository mount and an executable temporary install filesystem.
+
+CI repeats these checks; this local record is not a substitute for future release runs.

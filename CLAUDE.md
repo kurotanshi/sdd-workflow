@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A cross-tool **Agent Skill** package: a Spec-Driven Development (SDD) workflow (`提案 → 實作 → 歸檔`, with revision and abandonment paths) shared by Claude Code (`/sdd-workflow`) and Codex (`$sdd-workflow`). There is no application code, build system, or test suite — the deliverables are the skill itself and its documentation.
+A cross-tool **Agent Skill** package: a Spec-Driven Development (SDD) workflow (`提案 → 實作 → 歸檔`, with revision and abandonment paths) shared by Claude Code (`/sdd-workflow`) and Codex (`$sdd-workflow`). The package includes a standard-library Python deterministic core and its tests; there is no separate end-user application.
 
 ## Single source of truth (most important rule)
 
@@ -18,7 +18,7 @@ A cross-tool **Agent Skill** package: a Spec-Driven Development (SDD) workflow (
 ## Language conventions
 
 - The skill body (`SKILL.md` instructions) is written in **English** for cross-tool maintainability.
-- Trigger words (`提案`, `開始實作`, `實作`, `歸檔`, `放棄`, `取消`, `確認放棄 <short-name>`) and all user-facing output of the workflow stay in **Traditional Chinese**.
+- Trigger words (`提案`, `開始實作`, `實作`, `歸檔`, `放棄`, `取消提案`, `確認放棄 <short-name>`) and all user-facing output of the workflow stay in **Traditional Chinese**. Generic cancellation without an explicit SDD proposal target is outside the skill-selection boundary.
 - `README.md` (zh-TW) and `README.en.md` are a bilingual pair — keep them in sync when changing either.
 
 ## Commands
@@ -41,7 +41,7 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/s
 
 ## Verification model
 
-Automation can only cover static and hermetic checks (skill structure, frontmatter, docs, link-dev.sh behavior). **Actual workflow acceptance must be done by a human in fresh interactive sessions** of each tool — a skill change may require a new session to load, and "not loaded" must not be mistaken for "passed". Acceptance must cover `draft → approved`, missing-artifact guards, revision back to `draft` (with the unchecked-tasks-only quota), the two-step abandonment (read-only preflight that degrades — reporting line numbers and unreliable counts — instead of stopping on task-scanner format errors, exact `確認放棄 <short-name>` confirmation with machine-executed hash re-verification, never auto-reverting code), bare `取消` disambiguation (the no-phase menu offers `取消提案`, never bare `取消`), shared task-scanner format errors (strict everywhere except the abandonment preflight), the single parameterized Terminal archive procedure behind the `completed` and `abandoned` archives, environment-derived dates, archive INDEX updates, and the no-auto-commit rule. See CONTRIBUTING.md for the acceptance matrix distinguishing statically provable rules from human-verified interactive behavior.
+Automation covers parser fixtures, CLI behavior, package/runtime checks, docs consistency, and other hermetic rules. **Actual workflow acceptance must still be done by a human in fresh interactive sessions** of each tool — a skill change may require a new session to load, and "not loaded" must not be mistaken for "passed". Acceptance must confirm that structure decisions come from the bundled JSON CLI with no Markdown fallback; new proposals use explicit Schema v2 and its six types; research conclusions remain output while reconstructing from archives; `approve`, `begin-revision`, `complete-task`, `archive`, and `abandon` are the only existing-proposal managed mutation paths; strict diagnostics stop before mutation; abandonment preflight alone degrades malformed task counts; terminal paths share one result procedure and preserve the move commit point; cancellation remains unambiguous; code is never auto-reverted; and no commit is created without a request. See CONTRIBUTING.md for the full matrix.
 
 ## Repo's own `sdd/` directory
 

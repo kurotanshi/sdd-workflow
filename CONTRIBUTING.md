@@ -25,8 +25,9 @@ sdd-workflow/
 └── skills/
     └── sdd-workflow/           # ← canonical skill，唯一流程來源
         ├── SKILL.md
-        └── agents/
-            └── openai.yaml     # 只放 Codex UI／invocation metadata，不承載流程規則
+        ├── scripts/                # deterministic readonly CLI 與 Python core
+        └── agents/
+            └── openai.yaml     # 只放 Codex UI／invocation metadata，不承載流程規則
 ```
 
 ### skill 資料夾要保持乾淨
@@ -53,6 +54,12 @@ sdd-workflow/
    python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/sdd-workflow
    ```
 
+## CI 與團隊並行
+
+受保護 branch 使用五個穩定且可獨立設為 required 的 check：`unit`、`fixtures`、`package-validation`、`docs-consistency`、`install-smoke`。其中 unit 與 install matrix 覆蓋 macOS／Linux 和最低／最新 Python；release package、Claude/Codex 安裝目的地與 dev-link 都在隔離暫存目錄驗證。新增或改名 check 時，必須同步 `.github/workflows/ci.yml`、`tests/test_ci_contract.py` 與 `tests/docs_consistency.py`。
+
+一個 proposal 同一時間只能有一位 owner。獨立變更使用不同 short name；實作檔案可能重疊時，使用不同 Git worktree。交接前停止 mutation 並提供最新狀態，接手者必須重新執行 `status`，不得沿用交接訊息裡的 snapshot。Archive directories 是 authority；若並行歸檔令 `INDEX.md` 暫時 stale，依序執行 `validate-index`、`rebuild-index`、`doctor`，不要手動合併 INDEX。完整契約見 [`docs/team-operations.md`](./docs/team-operations.md)。
+
 ## 驗收責任（互動測試由人執行）
 
 自動化只能涵蓋**靜態與 hermetic** 檢查（skill 結構、frontmatter、文件、dev-link 行為）。
@@ -70,15 +77,18 @@ sdd-workflow/
 | 驗收項目 | 靜態檢查可證明 | fresh-session 互動驗收 |
 | --- | --- | --- |
 | 提案建立 | 範本含 `## 狀態` 且值為 `draft` | 建立後停下等核准，不修改產品程式碼 |
-| 核准語意 | 規則文字存在 | `draft` 只說「實作」會詢問；「開始實作」寫入並驗證 `approved` |
+| 核准語意 | CLI transition tests 與 Skill command rule | `draft` 只說「實作」會詢問；「開始實作」以 snapshot 呼叫 `approve` 並驗證 manifest、metadata 與 `approved` |
 | 缺檔防呆 | 規則文字存在 | 缺目錄或任一 artifact 時要求先提案、不動程式碼 |
 | 修訂 | 規則文字存在 | 保留已勾任務、未勾任務最多 10 條、重設 `draft` 重新等核准；實質改變目標時建議另開新變更 |
-| task scanner | 規則文字存在，可用 fixture 模擬掃描結果 | 縮排／巢狀／`- [X]`／`- [xx]`／`- []`／`1. [ ]` 等格式錯誤，以及任務區內混入其他清單項（含以連結開頭的 `- [參考](…)`）時，實作（approval gate 前）、修訂與歸檔停止並報行號；放棄 preflight 是唯一例外——不停止、改為降級 |
-| 放棄 preflight | 規則文字存在 | 「放棄」／「取消提案」只回報進度、警告程式碼不復原、把兩份檔案的 hash 列在回報中後停止；狀態、目錄與 INDEX 均未變。`tasks.md` 格式錯誤不擋放棄：回報行號、標明任務計數與已完成清單不可靠，照常產生 snapshot |
-| 確認放棄 | 規則文字存在 | 一字不差的「確認放棄 <短名稱>」，snapshot 值先通過 `^[0-9a-f]{64}$` 格式驗證再由系統指令對兩份 hash 與重算值做等值比對、全數通過才執行——agent 只依比對結果行動、不目視比對 hex；名稱不符、缺 snapshot（含新 session）、snapshot 格式不符或任一 hash 變更時重新 preflight |
+| deterministic read 與 managed mutation path | `SKILL.md` 只定義 CLI orchestration；parser、transition 與 failure-injection tests 可重現結果 | agent 不自行解析 artifact，也不直接改既有 status、checkbox、metadata、archive location 或 INDEX；嚴格錯誤在 mutation 前停止，只有放棄 preflight 降級計數 |
+| 放棄 preflight | `abandon-preflight` fixtures 驗證警告、計數與 snapshot | 「放棄」／「取消提案」只回報 CLI 進度、警告與兩個 hash 後停止；狀態、目錄與 INDEX 均未變 |
+| 確認放棄 | CLI terminal tests、snapshot 比對與 Skill rule | 一字不差的「確認放棄 <短名稱>」才重跑 preflight；執行環境比對 transcript 與最新 JSON 內的兩個 hash，不目視比對；相符時呼叫 `abandon`，不符時重新確認 |
 | 「取消」語意 | 規則文字存在 | 裸「取消」或指涉不明時先詢問要復原程式碼還是放棄提案，不直接執行任一種；明確指向程式碼的取消當一般復原請求處理——先確認範圍，絕不觸碰提案；未指名階段的選單列「取消提案」，不出現裸「取消」 |
-| 完成歸檔 | 規則文字存在 | 日期來自執行環境、終態 `completed`；先搬移目錄並驗證成功，才於 `archive/INDEX.md` 新增摘要 |
-| 共用歸檔程序 | SKILL.md 僅有一份 Terminal archive procedure，參數表涵蓋兩種終態 | 完成歸檔與放棄歸檔走同一份程序，行為只差終態字串、目錄後綴與最終回報文字 |
+| 完成歸檔 | terminal transition 與 failure-injection tests | `archive` 驗證 snapshot/manifest/attestation，directory move 是 commit point，完成後由 archive records 全量重建 INDEX |
+| 共用終止程序 | SKILL.md 僅有一份 Terminal result procedure，CLI 共用 transaction engine | `archive` 與 `abandon` 共享 staging、move、retry 與 INDEX rebuild；move 後 INDEX 失敗不反向搬移 |
+| Managed-state drift | attestation/doctor tests | 正常正文修改不造成 drift；status、checkbox 或 metadata 不符回報 `OUT_OF_BAND_DRIFT`，不得宣稱辨識修改者 |
+| Schema v2 | Schema v2 fixtures、common-model 與 research archive tests | 新提案含明確 version；六種類型可讀；研究結論可歸檔重建；v1/legacy 不 migration，future version fail closed |
+| 團隊／worktree 邊界 | CI contract、install matrix、worktree 與 concurrency tests | 同 proposal 維持單一 owner；不同 short name／worktree 不互相污染；stale INDEX 可偵測並重建 |
 | git 行為 | 規則文字存在 | 全程未經使用者要求不建立 commit |
 
 ### Codex 子代理輔助驗收（可選）

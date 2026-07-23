@@ -25,8 +25,9 @@ sdd-workflow/
 └── skills/
     └── sdd-workflow/           # ← canonical skill, the only source of workflow rules
         ├── SKILL.md
-        └── agents/
-            └── openai.yaml     # Codex UI/invocation metadata only, no workflow rules
+        ├── scripts/                # deterministic readonly CLI and Python core
+        └── agents/
+            └── openai.yaml     # Codex UI/invocation metadata only, no workflow rules
 ```
 
 ### Keep the skill folder clean
@@ -53,6 +54,12 @@ sdd-workflow/
    python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/sdd-workflow
    ```
 
+## CI and team concurrency
+
+Protected branches use five stable checks that can be required independently: `unit`, `fixtures`, `package-validation`, `docs-consistency`, and `install-smoke`. The unit and install matrices cover macOS/Linux and minimum/latest Python; release packages, Claude/Codex destinations, and dev links are verified in isolated temporary directories. Any check addition or rename must update `.github/workflows/ci.yml`, `tests/test_ci_contract.py`, and `tests/docs_consistency.py` together.
+
+One proposal has one owner at a time. Independent changes use distinct short names and separate Git worktrees when implementation files may overlap. The current owner stops mutation before handoff and provides the latest status; the receiver must rerun `status` and never reuse the handed-off snapshot. Archive directories are authoritative. If concurrent terminal work leaves `INDEX.md` stale, run `validate-index`, `rebuild-index`, then `doctor`; never merge INDEX manually. See [`docs/team-operations.md`](./docs/team-operations.md) for the complete contract.
+
 ## Acceptance responsibility (interactive testing is done by a human)
 
 Automation can only cover **static and hermetic** checks (skill structure, frontmatter, docs, dev-link behavior).
@@ -70,15 +77,18 @@ Automation can only cover **static and hermetic** checks (skill structure, front
 | Item | Statically provable | Fresh-session interactive acceptance |
 | --- | --- | --- |
 | Proposal creation | Template contains `## 狀態` with value `draft` | Stops for approval after creation; no product code touched |
-| Approval semantics | Rule text present | `實作` on a `draft` asks; `開始實作` persists and verifies `approved` |
+| Approval semantics | CLI transition tests and Skill command rule | `實作` on a `draft` asks; `開始實作` calls `approve` with the snapshot and verifies manifest, metadata, and `approved` |
 | Missing-artifact guard | Rule text present | Missing directory or artifact demands `提案` first; no code changes |
 | Revision | Rule text present | Preserves checked tasks, keeps at most 10 unchecked tasks, resets `draft` and waits again; a goal-changing amendment is redirected to a new change |
-| Task scanner | Rule text present; scan result reproducible on a fixture | Malformed checkboxes — indented, nested, `- [X]`, `- [xx]`, `- []`, `1. [ ]` — stop implementation (before the approval gate), revision, and archive with line numbers; the abandonment preflight is the single exception — it degrades instead of stopping |
-| Abandonment preflight | Rule text present | `放棄` / `取消提案` only reports progress, warns code is not reverted, records hashes, then stops; status, directory, and INDEX all unchanged. Format errors in `tasks.md` never block it: line numbers are reported, task counts and the completed-task list are marked unreliable, and the snapshot is still produced |
-| Abandonment confirmation | Rule text present | Only the exact `確認放棄 <short-name>` executes, and only after each snapshot value passes the `^[0-9a-f]{64}$` format check and a system-command equality check passes for both hashes against the recomputed values — the agent acts on the comparison result, never eyeballs hex strings; a mismatched name, missing or malformed snapshot (incl. new session), or changed hash re-runs the preflight |
+| Deterministic read and managed mutation path | `SKILL.md` defines only CLI orchestration; parser, transition, and failure-injection tests reproduce outcomes | The agent never parses artifacts or directly edits existing status, checkbox, metadata, archive location, or INDEX; strict errors stop before mutation, while only abandonment preflight degrades counts |
+| Abandonment preflight | `abandon-preflight` fixtures verify warnings, counts, and snapshot | `放棄` / `取消提案` reports only CLI progress, warning, and both hashes before stopping; status, directory, and INDEX remain unchanged |
+| Abandonment confirmation | CLI terminal tests, snapshot comparison, and Skill rule | Only exact `確認放棄 <short-name>` reruns preflight; the environment compares both transcript and current JSON hashes without eyeballing, calls `abandon` only on a match, and requires a new confirmation otherwise |
 | Bare `取消` | Rule text present | Always asks whether to revert code or abandon the proposal; never does either directly; the no-phase menu offers `取消提案`, never a bare `取消` |
-| Completed archive | Rule text present | Date from the execution environment, terminal `completed`; the directory move is verified first, and only then is the summary appended to `archive/INDEX.md` |
-| Shared archive procedure | SKILL.md has exactly one Terminal archive procedure, with a parameter table covering both terminal states | Completed and abandoned archives run the same procedure, differing only in terminal status, directory suffix, and final report |
+| Completed archive | Terminal transition and failure-injection tests | `archive` validates snapshot/manifest/attestation, treats the directory move as the commit point, then rebuilds INDEX from all archive records |
+| Shared terminal procedure | SKILL.md has exactly one Terminal result procedure; the CLI uses one transaction engine | `archive` and `abandon` share staging, move, retry, and INDEX rebuild; an INDEX failure after move never moves the directory back |
+| Managed-state drift | Attestation and doctor tests | Ordinary prose edits do not cause drift; status, checkbox, or metadata mismatch reports `OUT_OF_BAND_DRIFT` without claiming who changed it |
+| Schema v2 | Schema v2 fixtures, common-model, and research archive tests | New proposals declare a version; all six types parse; research conclusions reconstruct from archives; v1/legacy remain unmigrated and future versions fail closed |
+| Team/worktree boundary | CI contract, install matrix, worktree, and concurrency tests | One owner per proposal; distinct short names/worktrees do not contaminate each other; stale INDEX is detected and rebuilt |
 | Git behavior | Rule text present | No commit is created unless the user asks |
 
 ### Optional: Codex sub-agent assisted acceptance

@@ -1,0 +1,12 @@
+{
+  "fixture_version": 1,
+  "proposal_base64": "IyBwcm9wb3NhbA0KdHJhaWxpbmcgIA0K",
+  "tasks_base64": "77u/IyB0YXNrcwotIFsgXSBvbmUK",
+  "expected_payload_ascii": "{\"proposal_sha256\":\"dddce583b9a1444318229184829b196035f0a04d292fcfcf71ded80d19c14aa1\",\"snapshot_version\":1,\"tasks_sha256\":\"13d4c5f6b6b0e309c7f4e50c796b716b80dc51ad1e3399c89a3241348e88328d\"}",
+  "expected": {
+    "snapshot_version": 1,
+    "proposal_sha256": "dddce583b9a1444318229184829b196035f0a04d292fcfcf71ded80d19c14aa1",
+    "tasks_sha256": "13d4c5f6b6b0e309c7f4e50c796b716b80dc51ad1e3399c89a3241348e88328d",
+    "snapshot_digest": "64f253abecbe06dde7be353d302efcb4bb2ffb6eb1905a3759d22bdff2d02d39"
+  }
+}
