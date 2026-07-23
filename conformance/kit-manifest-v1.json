@@ -1,0 +1,13 @@
+{
+  "kit_version": 1,
+  "protocol_version": "sdd-protocol-draft-0",
+  "registry": "conformance/protocol-rules-v1.json",
+  "reference_runtime_manifest": "conformance/runtime-manifest-v1.json",
+  "reference_runtime": "skills/sdd-workflow/scripts/sdd.py",
+  "expected_envelopes": "conformance/expected-envelopes-v1.json",
+  "runner": "scripts/run-conformance-kit",
+  "fixture_manifests": [
+    "tests/fixtures/baseline/MANIFEST.json",
+    "tests/fixtures/schema-v2/MANIFEST.json"
+  ]
+}

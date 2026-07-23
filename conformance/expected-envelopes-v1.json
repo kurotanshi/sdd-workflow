@@ -1,0 +1,117 @@
+{
+  "expectation_version": 1,
+  "output_version": 1,
+  "cases": [
+    {
+      "id": "version-success",
+      "argv": [
+        "--json",
+        "--version"
+      ],
+      "exit_code": 0,
+      "assertions": {
+        "/command": "version",
+        "/data/maximum_schema_version": 2,
+        "/data/minimum_schema_version": 1,
+        "/errors": [],
+        "/ok": true,
+        "/output_version": 1,
+        "/warnings": []
+      }
+    },
+    {
+      "id": "status-success",
+      "setup": {
+        "destination": "sdd/valid-simple",
+        "fixture": "tests/fixtures/baseline/valid-simple"
+      },
+      "argv": [
+        "--root",
+        "{root}",
+        "--json",
+        "status",
+        "valid-simple"
+      ],
+      "exit_code": 0,
+      "assertions": {
+        "/command": "status",
+        "/data/adapter": "v1",
+        "/data/completed_count": 1,
+        "/data/mutation_safe": true,
+        "/data/short_name": "valid-simple",
+        "/data/snapshot/snapshot_version": 1,
+        "/data/status": "draft",
+        "/data/task_count": 2,
+        "/data/task_counts_reliable": true,
+        "/data/tasks/0/canonical_text": "Preserve one completed task",
+        "/data/tasks/0/completed": true,
+        "/data/tasks/1/canonical_text": "Preserve one pending task",
+        "/data/tasks/1/completed": false,
+        "/errors": [],
+        "/ok": true,
+        "/output_version": 1,
+        "/warnings": []
+      }
+    },
+    {
+      "id": "invalid-short-name",
+      "argv": [
+        "--root",
+        "{root}",
+        "--json",
+        "status",
+        "../escape"
+      ],
+      "exit_code": 1,
+      "assertions": {
+        "/command": "status",
+        "/data": {},
+        "/errors/0/action": "choose_short_name",
+        "/errors/0/code": "ERROR_INVALID_SHORT_NAME",
+        "/ok": false,
+        "/output_version": 1,
+        "/warnings": []
+      }
+    },
+    {
+      "id": "future-schema-fails-closed",
+      "setup": {
+        "destination": "sdd/future-version",
+        "fixture": "tests/fixtures/schema-v2/future-version"
+      },
+      "argv": [
+        "--root",
+        "{root}",
+        "--json",
+        "status",
+        "future-version"
+      ],
+      "exit_code": 1,
+      "assertions": {
+        "/command": "status",
+        "/errors/0/action": "use_supported_engine",
+        "/errors/0/code": "ERROR_UNSUPPORTED_SCHEMA_VERSION",
+        "/ok": false,
+        "/output_version": 1,
+        "/warnings": []
+      }
+    },
+    {
+      "id": "usage-error",
+      "argv": [
+        "--json",
+        "status"
+      ],
+      "exit_code": 2,
+      "assertions": {
+        "/command": "usage",
+        "/data": {},
+        "/errors/0/action": "fix_command_arguments",
+        "/errors/0/code": "ERROR_USAGE",
+        "/ok": false,
+        "/output_version": 1,
+        "/warnings": []
+      }
+    }
+  ]
+}

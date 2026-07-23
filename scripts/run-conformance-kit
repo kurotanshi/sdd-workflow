@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""Run public, implementation-neutral SDD protocol envelope cases."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+KIT_PATH = ROOT / "conformance/kit-manifest-v1.json"
+OUTPUT_VERSION = 1
+
+
+class KitError(Exception):
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
+def read_object(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise KitError(
+            "ERROR_KIT_CONFIG",
+            f"cannot read {path.relative_to(ROOT)}: {error}",
+        ) from error
+    if not isinstance(value, dict):
+        raise KitError("ERROR_KIT_CONFIG", f"{path.relative_to(ROOT)} is not an object")
+    return value
+
+
+def rooted(relative: object) -> Path:
+    if not isinstance(relative, str) or not relative:
+        raise KitError("ERROR_KIT_CONFIG", "kit path must be a non-empty string")
+    candidate = (ROOT / relative).resolve()
+    try:
+        candidate.relative_to(ROOT.resolve())
+    except ValueError as error:
+        raise KitError("ERROR_KIT_CONFIG", f"kit path escapes root: {relative}") from error
+    if not candidate.is_file() and not candidate.is_dir():
+        raise KitError("ERROR_KIT_CONFIG", f"kit path is missing: {relative}")
+    return candidate
+
+
+def load_kit() -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+    kit = read_object(KIT_PATH)
+    if kit.get("kit_version") != 1:
+        raise KitError("ERROR_UNSUPPORTED_KIT", "only kit version 1 is supported")
+    registry = read_object(rooted(kit.get("registry")))
+    if kit.get("protocol_version") != registry.get("protocol_version"):
+        raise KitError("ERROR_KIT_CONFIG", "kit and registry protocol versions differ")
+    runtime_manifest = read_object(rooted(kit.get("reference_runtime_manifest")))
+    if runtime_manifest.get("registry") != kit.get("registry"):
+        raise KitError("ERROR_KIT_CONFIG", "reference manifest selects another registry")
+    for fixture_manifest in kit.get("fixture_manifests", []):
+        read_object(rooted(fixture_manifest))
+    expectations = read_object(rooted(kit.get("expected_envelopes")))
+    if expectations.get("expectation_version") != 1:
+        raise KitError(
+            "ERROR_UNSUPPORTED_EXPECTATIONS",
+            "only expectation version 1 is supported",
+        )
+    cases = expectations.get("cases")
+    if not isinstance(cases, list) or not cases:
+        raise KitError("ERROR_KIT_CONFIG", "expected envelopes require cases")
+    return kit, expectations, cases
+
+
+def json_pointer(document: object, pointer: str) -> object:
+    if pointer == "":
+        return document
+    if not pointer.startswith("/"):
+        raise KitError("ERROR_KIT_CONFIG", f"invalid JSON Pointer: {pointer}")
+    value = document
+    for encoded in pointer[1:].split("/"):
+        token = encoded.replace("~1", "/").replace("~0", "~")
+        if isinstance(value, list):
+            try:
+                value = value[int(token)]
+            except (ValueError, IndexError) as error:
+                raise KeyError(pointer) from error
+        elif isinstance(value, dict) and token in value:
+            value = value[token]
+        else:
+            raise KeyError(pointer)
+    return value
+
+
+def runtime_command(runtime: Path) -> list[str]:
+    if runtime.suffix == ".py":
+        return [sys.executable, str(runtime)]
+    if not os.access(runtime, os.X_OK):
+        raise KitError("ERROR_RUNTIME_NOT_EXECUTABLE", f"runtime is not executable: {runtime}")
+    return [str(runtime)]
+
+
+def run_case(
+    case: dict[str, Any],
+    runtime: Path,
+    timeout_seconds: float,
+) -> dict[str, Any]:
+    case_id = case.get("id")
+    argv = case.get("argv")
+    assertions = case.get("assertions")
+    expected_exit = case.get("exit_code")
+    if (
+        not isinstance(case_id, str)
+        or not isinstance(argv, list)
+        or not all(isinstance(value, str) for value in argv)
+        or not isinstance(assertions, dict)
+        or not isinstance(expected_exit, int)
+    ):
+        raise KitError("ERROR_KIT_CONFIG", f"invalid case: {case_id!r}")
+
+    with tempfile.TemporaryDirectory(prefix="sdd-conformance-kit-") as directory:
+        project_root = Path(directory) / "project"
+        project_root.mkdir()
+        (project_root / "sdd").mkdir()
+        setup = case.get("setup")
+        if setup is not None:
+            if not isinstance(setup, dict):
+                raise KitError("ERROR_KIT_CONFIG", f"invalid setup: {case_id}")
+            fixture = rooted(setup.get("fixture"))
+            destination_value = setup.get("destination")
+            if not isinstance(destination_value, str):
+                raise KitError("ERROR_KIT_CONFIG", f"invalid destination: {case_id}")
+            destination = (project_root / destination_value).resolve()
+            try:
+                destination.relative_to(project_root.resolve())
+            except ValueError as error:
+                raise KitError(
+                    "ERROR_KIT_CONFIG",
+                    f"setup destination escapes project: {case_id}",
+                ) from error
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(fixture, destination)
+
+        rendered = [
+            str(project_root) if argument == "{root}" else argument
+            for argument in argv
+        ]
+        environment = os.environ.copy()
+        environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        environment["PYTHONUTF8"] = "1"
+        started = time.monotonic()
+        try:
+            completed = subprocess.run(
+                [*runtime_command(runtime), *rendered],
+                cwd=project_root,
+                env=environment,
+                text=True,
+                capture_output=True,
+                timeout=timeout_seconds,
+                check=False,
+            )
+            timed_out = False
+        except subprocess.TimeoutExpired:
+            return {
+                "case_id": case_id,
+                "passed": False,
+                "timed_out": True,
+                "duration_ms": round((time.monotonic() - started) * 1000),
+                "differences": [
+                    {
+                        "path": "/process",
+                        "expected": f"complete within {timeout_seconds:g}s",
+                        "actual": "timeout",
+                    }
+                ],
+            }
+
+        differences: list[dict[str, Any]] = []
+        if completed.returncode != expected_exit:
+            differences.append(
+                {
+                    "path": "/exit_code",
+                    "expected": expected_exit,
+                    "actual": completed.returncode,
+                }
+            )
+        if completed.stderr:
+            differences.append(
+                {
+                    "path": "/stderr",
+                    "expected": "",
+                    "actual": completed.stderr,
+                }
+            )
+        try:
+            document = json.loads(completed.stdout)
+        except json.JSONDecodeError:
+            document = None
+            differences.append(
+                {
+                    "path": "/stdout",
+                    "expected": "one JSON document",
+                    "actual": completed.stdout,
+                }
+            )
+        if document is not None:
+            for pointer, expected in sorted(assertions.items()):
+                try:
+                    actual = json_pointer(document, pointer)
+                except KeyError:
+                    actual = {"missing": True}
+                if actual != expected:
+                    differences.append(
+                        {
+                            "path": pointer,
+                            "expected": expected,
+                            "actual": actual,
+                        }
+                    )
+        return {
+            "case_id": case_id,
+            "passed": not differences,
+            "timed_out": timed_out,
+            "duration_ms": round((time.monotonic() - started) * 1000),
+            "differences": differences,
+        }
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Run implementation-neutral SDD protocol conformance cases.",
+    )
+    parser.add_argument("--runtime", type=Path)
+    parser.add_argument("--case", action="append", default=[], dest="case_ids")
+    parser.add_argument("--timeout-seconds", type=float, default=30.0)
+    parser.add_argument("--list", action="store_true", dest="list_only")
+    parser.add_argument("--json", action="store_true", dest="json_output")
+    return parser
+
+
+def emit_error(error: KitError, json_output: bool) -> int:
+    document = {
+        "output_version": OUTPUT_VERSION,
+        "ok": False,
+        "errors": [{"code": error.code, "message": str(error)}],
+    }
+    if json_output:
+        print(json.dumps(document, ensure_ascii=False, sort_keys=True))
+    else:
+        print(f"{error.code}: {error}", file=sys.stderr)
+    return 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    arguments = build_parser().parse_args(argv)
+    if arguments.timeout_seconds <= 0:
+        return emit_error(
+            KitError("ERROR_INVALID_TIMEOUT", "timeout must be greater than zero"),
+            arguments.json_output,
+        )
+    try:
+        kit, expectations, cases = load_kit()
+        known = {
+            case["id"]
+            for case in cases
+            if isinstance(case, dict) and isinstance(case.get("id"), str)
+        }
+        unknown = sorted(set(arguments.case_ids) - known)
+        if unknown:
+            raise KitError("ERROR_UNKNOWN_CASE", f"unknown case(s): {', '.join(unknown)}")
+        selected = [
+            case
+            for case in cases
+            if not arguments.case_ids or case.get("id") in arguments.case_ids
+        ]
+        if arguments.list_only:
+            document = {
+                "output_version": OUTPUT_VERSION,
+                "ok": True,
+                "mode": "list",
+                "kit_version": kit["kit_version"],
+                "protocol_version": kit["protocol_version"],
+                "expectation_version": expectations["expectation_version"],
+                "cases": [case["id"] for case in selected],
+            }
+            if arguments.json_output:
+                print(json.dumps(document, ensure_ascii=False, sort_keys=True))
+            else:
+                for case in document["cases"]:
+                    print(case)
+            return 0
+
+        runtime = (
+            arguments.runtime.expanduser().resolve()
+            if arguments.runtime
+            else rooted(kit.get("reference_runtime"))
+        )
+        if not runtime.is_file():
+            raise KitError("ERROR_RUNTIME_NOT_FOUND", f"runtime is missing: {runtime}")
+        results = [
+            run_case(case, runtime, arguments.timeout_seconds)
+            for case in selected
+        ]
+    except KitError as error:
+        return emit_error(error, arguments.json_output)
+
+    ok = all(result["passed"] for result in results)
+    document = {
+        "output_version": OUTPUT_VERSION,
+        "ok": ok,
+        "mode": "run",
+        "kit_version": kit["kit_version"],
+        "protocol_version": kit["protocol_version"],
+        "expectation_version": expectations["expectation_version"],
+        "runtime": str(runtime),
+        "selected_cases": [result["case_id"] for result in results],
+        "results": results,
+    }
+    if arguments.json_output:
+        print(json.dumps(document, ensure_ascii=False, sort_keys=True))
+    else:
+        for result in results:
+            label = "PASS" if result["passed"] else "FAIL"
+            print(f"[{label}] {result['case_id']}")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
