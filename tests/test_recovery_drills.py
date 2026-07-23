@@ -77,7 +77,103 @@ def prepare_complete(root: Path, short_name: str = "recovery-item") -> dict[str,
     return invoke(root, "status", short_name)[1]["data"]  # type: ignore[return-value]
 
 
+def copy_named_fixture(root: Path, short_name: str) -> Path:
+    target = root / "sdd" / short_name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(FIXTURE, target)
+    proposal = target / "proposal.md"
+    tasks = target / "tasks.md"
+    proposal.write_text(
+        proposal.read_text(encoding="utf-8").replace("valid-simple", short_name, 1),
+        encoding="utf-8",
+    )
+    tasks.write_text(
+        tasks.read_text(encoding="utf-8").replace("valid-simple", short_name, 1),
+        encoding="utf-8",
+    )
+    return target
+
+
+def file_bytes(directory: Path) -> dict[str, bytes]:
+    return {
+        path.relative_to(directory).as_posix(): path.read_bytes()
+        for path in sorted(directory.rglob("*"))
+        if path.is_file()
+    }
+
+
 class RecoveryDrillsTests(unittest.TestCase):
+    def test_renamed_proposal_does_not_retarget_other_active_proposal(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = copy_named_fixture(root, "rename-source")
+            other = copy_named_fixture(root, "untouched")
+            other_before = file_bytes(other)
+            snapshot = invoke(root, "status", "rename-source")[1]["data"]["snapshot"][  # type: ignore[index]
+                "snapshot_digest"
+            ]
+            moved = source.with_name("renamed-source")
+            source.rename(moved)
+
+            code, missing = invoke(
+                root,
+                "approve",
+                "rename-source",
+                "--expected-snapshot",
+                snapshot,
+            )
+            self.assertEqual(code, 1)
+            self.assertEqual(
+                missing["errors"][0]["code"],  # type: ignore[index]
+                "ERROR_PROPOSAL_NOT_FOUND",
+            )
+            listed = invoke(root, "list", "--state", "active")[1]["data"]["candidates"]  # type: ignore[index]
+            self.assertEqual(
+                {candidate["short_name"] for candidate in listed},
+                {"renamed-source", "untouched"},
+            )
+            self.assertIn("\ndraft\n", (moved / "proposal.md").read_text(encoding="utf-8"))
+            self.assertFalse((moved / ".sdd").exists())
+            self.assertEqual(file_bytes(other), other_before)
+            self.assertFalse((other / ".sdd").exists())
+
+    def test_proposal_moved_outside_sdd_is_not_discovered_or_mutated(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = copy_named_fixture(root, "move-source")
+            other = copy_named_fixture(root, "untouched")
+            other_before = file_bytes(other)
+            snapshot = invoke(root, "status", "move-source")[1]["data"]["snapshot"][  # type: ignore[index]
+                "snapshot_digest"
+            ]
+            external = root / "external-source"
+            source.rename(external)
+
+            code, missing = invoke(
+                root,
+                "approve",
+                "move-source",
+                "--expected-snapshot",
+                snapshot,
+            )
+            self.assertEqual(code, 1)
+            self.assertEqual(
+                missing["errors"][0]["code"],  # type: ignore[index]
+                "ERROR_PROPOSAL_NOT_FOUND",
+            )
+            listed = invoke(root, "list", "--state", "active")[1]["data"]["candidates"]  # type: ignore[index]
+            self.assertEqual(
+                [candidate["short_name"] for candidate in listed],
+                ["untouched"],
+            )
+            self.assertIn(
+                "\ndraft\n",
+                (external / "proposal.md").read_text(encoding="utf-8"),
+            )
+            self.assertFalse((external / ".sdd").exists())
+            self.assertEqual(file_bytes(other), other_before)
+            self.assertFalse((other / ".sdd").exists())
+
     def test_second_process_with_same_snapshot_stably_fails_stale(self) -> None:
         for attempt in range(3):
             with self.subTest(attempt=attempt):

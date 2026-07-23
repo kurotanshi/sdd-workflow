@@ -24,7 +24,8 @@ The v1 groups cover:
 - committed archive authority across post-move INDEX failure and rebuild;
 - concurrent archive/INDEX convergence;
 - repeated second-process stale-snapshot rejection; and
-- compatibility and future-version fail-closed behavior.
+- compatibility and future-version fail-closed behavior; and
+- proposal rename/external-move discovery isolation.
 
 The manifest reuses the canonical regression modules rather than copying
 their logic into a second drill implementation. A drill failure is a release
