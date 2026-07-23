@@ -64,9 +64,21 @@ def validate_docs() -> None:
             raise AssertionError("README is missing ROADMAP link")
         if "`取消提案`" not in readme:
             raise AssertionError("README is missing explicit cancellation trigger")
-        for runtime_term in ("CPython 3.11", "breaking minor", "v0.3.0"):
-            if runtime_term not in readme:
-                raise AssertionError(f"README is missing upgrade contract term: {runtime_term}")
+        for category in (
+            "docs/concepts/",
+            "docs/operations/",
+            "docs/compatibility/",
+            "docs/design/",
+            "docs/troubleshooting/",
+        ):
+            if category not in readme:
+                raise AssertionError(
+                    f"README is missing advanced documentation category: {category}"
+                )
+        if "~/.agents/skills/sdd-workflow/" not in readme:
+            raise AssertionError("README is missing the current Codex install root")
+        if "~/.codex/skills/" in readme:
+            raise AssertionError("README still recommends the legacy Codex install root")
 
     for changelog_term in (
         "## v0.3.0",
