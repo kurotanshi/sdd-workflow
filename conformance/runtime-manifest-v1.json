@@ -159,6 +159,7 @@
       "selectors": [
         "tests.test_runtime",
         "tests.test_runtime_discovery",
+        "tests.test_install_channels",
         "tests.test_install_smoke",
         "tests.test_ci_contract",
         "tests.test_release_baseline",
