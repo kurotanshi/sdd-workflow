@@ -83,7 +83,7 @@ sdd-workflow/
 | deterministic read 與 managed mutation path | `SKILL.md` 只定義 CLI orchestration；parser、transition 與 failure-injection tests 可重現結果 | agent 不自行解析 artifact，也不直接改既有 status、checkbox、metadata、archive location 或 INDEX；嚴格錯誤在 mutation 前停止，只有放棄 preflight 降級計數 |
 | 放棄 preflight | `abandon-preflight` fixtures 驗證警告、計數與 snapshot | 「放棄」／「取消提案」只回報 CLI 進度、警告與兩個 hash 後停止；狀態、目錄與 INDEX 均未變 |
 | 確認放棄 | CLI terminal tests、snapshot 比對與 Skill rule | 一字不差的「確認放棄 <短名稱>」才重跑 preflight；執行環境比對 transcript 與最新 JSON 內的兩個 hash，不目視比對；相符時呼叫 `abandon`，不符時重新確認 |
-| 「取消」語意 | 規則文字存在 | 裸「取消」或指涉不明時先詢問要復原程式碼還是放棄提案，不直接執行任一種；明確指向程式碼的取消當一般復原請求處理——先確認範圍，絕不觸碰提案；未指名階段的選單列「取消提案」，不出現裸「取消」 |
+| 「取消」語意 | 規則文字存在 | 單獨輸入「取消」或指涉不明時先詢問要復原程式碼還是放棄提案，不直接執行任一種；明確指向程式碼的取消當一般復原請求處理——先確認範圍，絕不觸碰提案；未指名階段的選單列「取消提案」，不出現單獨的「取消」選項 |
 | 完成歸檔 | terminal transition 與 failure-injection tests | `archive` 驗證 snapshot/manifest/attestation，directory move 是 commit point，完成後由 archive records 全量重建 INDEX |
 | 共用終止程序 | SKILL.md 僅有一份 Terminal result procedure，CLI 共用 transaction engine | `archive` 與 `abandon` 共享 staging、move、retry 與 INDEX rebuild；move 後 INDEX 失敗不反向搬移 |
 | Managed-state drift | attestation/doctor tests | 正常正文修改不造成 drift；status、checkbox 或 metadata 不符回報 `OUT_OF_BAND_DRIFT`，不得宣稱辨識修改者 |

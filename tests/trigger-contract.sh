@@ -116,12 +116,12 @@ for readme_file in "$readme_zh" "$readme_en"; do
   }
 done
 
-grep -Fq '裸 `取消` 不是直接 Skill trigger' "$readme_zh" || {
+grep -Fq '單獨輸入「取消」（未指明目標）不是直接 Skill trigger' "$readme_zh" || {
   echo "trigger-contract: README.md must exclude bare 取消 from direct routing" >&2
   exit 1
 }
 
-grep -Fq 'A bare `取消` is not a direct Skill trigger' "$readme_en" || {
+grep -Fq 'A standalone `取消` (without a target) is not a direct Skill trigger' "$readme_en" || {
   echo "trigger-contract: README.en.md must exclude bare 取消 from direct routing" >&2
   exit 1
 }
