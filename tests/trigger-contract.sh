@@ -115,18 +115,18 @@ for readme_file in "$readme_zh" "$readme_en"; do
     echo "trigger-contract: $readme_file must document explicit 取消提案" >&2
     exit 1
   }
-  grep -Fq 'code-revert' "$readme_file" || {
+  grep -Fq 'Source-control rollback' "$readme_file" || {
     echo "trigger-contract: $readme_file must document the code-revert boundary" >&2
     exit 1
   }
 done
 
-grep -Fq '單獨輸入「取消」（未指明目標）不是直接 Skill trigger' "$readme_zh" || {
+grep -Fq '單獨說「取消」只會先詢問' "$readme_zh" || {
   echo "trigger-contract: README.md must exclude bare 取消 from direct routing" >&2
   exit 1
 }
 
-grep -Fq 'A standalone `取消` (without a target) is not a direct Skill trigger' "$readme_en" || {
+grep -Fq 'A standalone `取消` only asks whether' "$readme_en" || {
   echo "trigger-contract: README.en.md must exclude bare 取消 from direct routing" >&2
   exit 1
 }

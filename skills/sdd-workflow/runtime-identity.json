@@ -6,7 +6,7 @@
   "compatible_engine_generation": "0.6",
   "minimum_schema_version": 1,
   "maximum_schema_version": 2,
-  "skill_sha256": "8c6cff2d9aaf0a37c899ba93cea743a9b496a48bcbb714ae94c13b2d28f832df",
+  "skill_sha256": "3ecc09d8130dabd4ed48c74a342e528b0523404ececd22f4fc5caa23646c2e83",
   "required_capabilities": [
     "approval-manifest-v1",
     "archive-model-v1",

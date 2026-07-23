@@ -23,6 +23,8 @@ def validate_package() -> None:
         "SKILL.md",
         "agents/openai.yaml",
         "runtime-identity.json",
+        "references/proposal-authoring.md",
+        "references/runtime-recovery.md",
         "scripts/discover-runtime.py",
         "scripts/sdd",
         "scripts/sdd.py",
