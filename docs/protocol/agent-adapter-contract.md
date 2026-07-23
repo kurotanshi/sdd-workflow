@@ -1,6 +1,6 @@
 # Agent Adapter Contract v1
 
-Status: normative for `sdd-protocol-draft-0`
+Status: stable normative adapter contract for `sdd-protocol-1.0`
 
 An Agent adapter translates human conversation into SDD protocol operations.
 It is not a parser, state-transition engine, source-control manager, or

@@ -1,6 +1,6 @@
 {
   "registry_version": 1,
-  "protocol_version": "sdd-protocol-draft-0",
+  "protocol_version": "sdd-protocol-1.0",
   "rules": [
     {
       "id": "SDD-PROJ-001",

@@ -21,7 +21,7 @@ class ConformanceManifestTests(unittest.TestCase):
         self.assertEqual(self.registry["registry_version"], 1)
         self.assertEqual(
             self.registry["protocol_version"],
-            "sdd-protocol-draft-0",
+            "sdd-protocol-1.0",
         )
         rules = self.registry["rules"]
         ids = [rule["id"] for rule in rules]

@@ -47,7 +47,7 @@ class AdapterContractTests(unittest.TestCase):
         self.assertEqual(self.scenarios["adapter_contract_version"], 1)
         self.assertEqual(
             self.scenarios["protocol_version"],
-            "sdd-protocol-draft-0",
+            "sdd-protocol-1.0",
         )
         cases = self.scenarios["scenarios"]
         ids = [case["id"] for case in cases]

@@ -50,7 +50,7 @@ class PublicConformanceKitTests(unittest.TestCase):
         self.assertTrue(document["ok"])
         self.assertEqual(document["kit_version"], 1)
         self.assertEqual(document["expectation_version"], 1)
-        self.assertEqual(document["protocol_version"], "sdd-protocol-draft-0")
+        self.assertEqual(document["protocol_version"], "sdd-protocol-1.0")
         self.assertEqual(
             document["cases"],
             [

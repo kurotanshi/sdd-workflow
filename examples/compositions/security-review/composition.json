@@ -2,7 +2,7 @@
   "composition_version": 1,
   "name": "security-review",
   "domain": "security-review",
-  "lower_level_protocol": "sdd-protocol-draft-0",
+  "lower_level_protocol": "sdd-protocol-1.0",
   "state_model": "sdd-protocol-only",
   "core_extensions": [],
   "persistent_artifacts": [

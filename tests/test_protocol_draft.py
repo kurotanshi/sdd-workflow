@@ -7,11 +7,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL = ROOT / "docs/protocol-draft.md"
+PROTOCOL = ROOT / "docs/protocol/core-v1.md"
 REGISTRY = ROOT / "conformance/protocol-rules-v1.json"
 
 
-class ProtocolDraftTests(unittest.TestCase):
+class CoreProtocolV1Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.text = PROTOCOL.read_text(encoding="utf-8")
@@ -49,6 +49,26 @@ class ProtocolDraftTests(unittest.TestCase):
             "Evolution",
         }
         self.assertLessEqual(required, headings)
+
+    def test_v1_freeze_names_scope_and_non_goals(self) -> None:
+        self.assertIn("Status: stable normative contract", self.text)
+        for term in (
+            "authority",
+            "lifecycle",
+            "approval",
+            "attestation",
+            "transaction",
+            "recovery",
+            "compatibility",
+            "trust",
+            "Schema v3",
+            "locking",
+            "Web UI",
+            "external-platform",
+            "multi-Agent orchestration",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, self.text)
 
     def test_every_registered_rule_has_one_normative_protocol_clause(self) -> None:
         registered = {rule["id"] for rule in self.registry["rules"]}

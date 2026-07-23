@@ -17,7 +17,7 @@ class SecurityReviewCompositionTests(unittest.TestCase):
     def test_manifest_declares_no_protocol_extension_or_domain_state(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         self.assertEqual(manifest["composition_version"], 1)
-        self.assertEqual(manifest["lower_level_protocol"], "sdd-protocol-draft-0")
+        self.assertEqual(manifest["lower_level_protocol"], "sdd-protocol-1.0")
         self.assertEqual(manifest["state_model"], "sdd-protocol-only")
         self.assertEqual(manifest["core_extensions"], [])
         self.assertEqual(
