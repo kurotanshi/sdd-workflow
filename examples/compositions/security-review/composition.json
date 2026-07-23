@@ -1,0 +1,22 @@
+{
+  "composition_version": 1,
+  "name": "security-review",
+  "domain": "security-review",
+  "lower_level_protocol": "sdd-protocol-draft-0",
+  "state_model": "sdd-protocol-only",
+  "core_extensions": [],
+  "persistent_artifacts": [
+    "proposal.md",
+    "tasks.md",
+    ".sdd/approval-manifest.json",
+    ".sdd/metadata.json"
+  ],
+  "primitives": [
+    "status",
+    "approve",
+    "complete-task",
+    "archive",
+    "doctor"
+  ],
+  "smoke": "run-smoke.py"
+}
