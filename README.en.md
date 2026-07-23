@@ -94,7 +94,7 @@ sequenceDiagram
     Agent->>Files: Create draft proposal.md & tasks.md
     Agent->>User: Display proposal spec, checklist, and acceptance criteria
     Note over Agent: Stop and wait — no code modification yet
-    Note over User, Files: Other paths: revision resets draft; abandonment runs a preflight and archives as abandoned only after "確認放棄 <short-name>", then updates INDEX.md
+    Note over User, Files: Other paths: revision resets draft. Abandonment runs a preflight and archives as abandoned only after "確認放棄 SHORT_NAME" and then updates INDEX.md
 
     Note over User, Agent: 2. Implement Phase
     User->>Agent: "開始實作" (Approve and start)
