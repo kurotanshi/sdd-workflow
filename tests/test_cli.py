@@ -107,6 +107,66 @@ class CliContractTests(unittest.TestCase):
             self.assertEqual(before["canonical_text"], after["canonical_text"])
             self.assertEqual(before["task_digest"], after["task_digest"])
 
+    def test_status_reports_active_approval_scope_drift_without_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copytree(
+                ROOT / "tests/fixtures/activation-pilot",
+                root,
+                dirs_exist_ok=True,
+            )
+            draft = json.loads(
+                invoke(
+                    ["--root", str(root), "--json", "status", "pilot-change"],
+                    cwd=root,
+                )[1]
+            )
+            approved = invoke(
+                [
+                    "--root",
+                    str(root),
+                    "--json",
+                    "approve",
+                    "pilot-change",
+                    "--expected-snapshot",
+                    draft["data"]["snapshot"]["snapshot_digest"],
+                ],
+                cwd=root,
+            )
+            self.assertEqual(approved[0], 0, approved)
+            proposal = root / "sdd/pilot-change/proposal.md"
+            proposal.write_text(
+                proposal.read_text(encoding="utf-8").replace(
+                    "Create `result.txt` containing exactly `managed-pilot`.",
+                    "Create `result.txt` containing changed unapproved content.",
+                ),
+                encoding="utf-8",
+            )
+            before = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in (root / "sdd/pilot-change").rglob("*")
+                if path.is_file()
+            }
+            status = invoke(
+                ["--root", str(root), "--json", "status", "pilot-change"],
+                cwd=root,
+            )
+            after = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in (root / "sdd/pilot-change").rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(status[0], 1, status)
+            envelope = json.loads(status[1])
+            self.assertFalse(envelope["ok"])
+            self.assertEqual(
+                envelope["errors"][0]["code"],
+                "ERROR_APPROVED_PLAN_CHANGED",
+            )
+            self.assertEqual(envelope["errors"][0]["action"], "begin_revision")
+            self.assertEqual(envelope["data"]["differences"][0]["path"], "/scope/0")
+            self.assertEqual(after, before)
+
     def test_missing_artifact_and_invalid_utf8_have_stable_codes_and_actions(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -1,0 +1,59 @@
+{
+  "manifest_version": 1,
+  "scenario_schema": "evals/schema/scenario-v1.schema.json",
+  "state_recipes": "evals/fixtures/state-recipes-v1.json",
+  "scenarios": [
+    {
+      "id": "A-plan-only",
+      "path": "evals/fixtures/scenarios/A-plan-only.json"
+    },
+    {
+      "id": "B-approval-boundary",
+      "path": "evals/fixtures/scenarios/B-approval-boundary.json"
+    },
+    {
+      "id": "C-explicit-implementation",
+      "path": "evals/fixtures/scenarios/C-explicit-implementation.json"
+    },
+    {
+      "id": "D-scope-drift",
+      "path": "evals/fixtures/scenarios/D-scope-drift.json"
+    },
+    {
+      "id": "E-cli-unavailable",
+      "path": "evals/fixtures/scenarios/E-cli-unavailable.json"
+    },
+    {
+      "id": "F-multiple-active",
+      "path": "evals/fixtures/scenarios/F-multiple-active.json"
+    },
+    {
+      "id": "G-cross-session-resume",
+      "path": "evals/fixtures/scenarios/G-cross-session-resume.json"
+    },
+    {
+      "id": "H-incomplete-archive",
+      "path": "evals/fixtures/scenarios/H-incomplete-archive.json"
+    },
+    {
+      "id": "I-valid-archive",
+      "path": "evals/fixtures/scenarios/I-valid-archive.json"
+    },
+    {
+      "id": "J-ambiguous-cancellation",
+      "path": "evals/fixtures/scenarios/J-ambiguous-cancellation.json"
+    },
+    {
+      "id": "K-explicit-abandon",
+      "path": "evals/fixtures/scenarios/K-explicit-abandon.json"
+    },
+    {
+      "id": "L-index-corruption",
+      "path": "evals/fixtures/scenarios/L-index-corruption.json"
+    },
+    {
+      "id": "M-acceptance-change",
+      "path": "evals/fixtures/scenarios/M-acceptance-change.json"
+    }
+  ]
+}

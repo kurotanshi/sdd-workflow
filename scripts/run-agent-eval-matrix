@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""Run the minimum versioned Agent/scenario eval matrix with safe retries."""
+
+from __future__ import annotations
+
+import argparse
+import concurrent.futures
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+from agent_eval_scoring import (
+    EVAL_SPEC_PATH,
+    ROOT,
+    aggregate_summary,
+    read_json,
+    scenario_paths,
+)
+
+
+RUNNER = ROOT / "scripts/run-agent-eval"
+SCORER = ROOT / "scripts/score-agent-eval"
+
+
+def emit(value: dict[str, Any]) -> None:
+    print(json.dumps(value, ensure_ascii=False, sort_keys=True), flush=True)
+
+
+def existing_valid_count(root: Path, agent: str, scenario_id: str) -> int:
+    count = 0
+    for path in root.glob(f"{agent}/{scenario_id}/*/score.json"):
+        try:
+            score = read_json(path)
+        except Exception:
+            continue
+        if score.get("status") == "complete" and score.get("valid_run"):
+            count += 1
+    return count
+
+
+def invoke(argv: list[str]) -> subprocess.CompletedProcess[str]:
+    environment = os.environ.copy()
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    return subprocess.run(
+        argv,
+        cwd=ROOT,
+        env=environment,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def score_existing(run_directory: Path) -> dict[str, Any] | None:
+    score_path = run_directory / "score.json"
+    if not score_path.is_file():
+        return None
+    score = read_json(score_path)
+    if score.get("status") == "complete":
+        return score
+    completed = invoke([sys.executable, str(SCORER), str(run_directory)])
+    if completed.returncode != 0:
+        return None
+    return read_json(score_path)
+
+
+def run_slot(
+    *,
+    artifact_root: Path,
+    agent: str,
+    model: str,
+    scenario_id: str,
+    slot: int,
+    maximum_attempts: int,
+) -> dict[str, Any]:
+    replaces: str | None = None
+    attempts: list[dict[str, Any]] = []
+    for attempt in range(1, maximum_attempts + 1):
+        run_id = (
+            f"baseline-{agent}-{scenario_id.lower()}-"
+            f"slot-{slot}-attempt-{attempt}"
+        )
+        run_directory = artifact_root / agent / scenario_id / run_id
+        if run_directory.exists():
+            score = score_existing(run_directory)
+            if score and score.get("valid_run"):
+                return {
+                    "agent": agent,
+                    "scenario_id": scenario_id,
+                    "slot": slot,
+                    "result": "existing_valid",
+                    "run_id": run_id,
+                    "adherent": bool(score.get("adherent")),
+                    "critical_violation": bool(score.get("critical_violation")),
+                    "attempts": attempts,
+                }
+            replaces = run_id
+            attempts.append({"run_id": run_id, "result": "existing_invalid"})
+            continue
+
+        argv = [
+            sys.executable,
+            str(RUNNER),
+            "--agent",
+            agent,
+            "--scenario",
+            scenario_id,
+            "--model",
+            model,
+            "--run-id",
+            run_id,
+            "--artifact-root",
+            str(artifact_root),
+        ]
+        if replaces:
+            argv.extend(["--replaces-run-id", replaces])
+        run = invoke(argv)
+        if not run_directory.exists():
+            attempts.append(
+                {
+                    "run_id": run_id,
+                    "result": "harness_no_artifact",
+                    "exit_code": run.returncode,
+                    "stderr": run.stderr[-500:],
+                }
+            )
+            replaces = run_id
+            continue
+        scored = invoke([sys.executable, str(SCORER), str(run_directory)])
+        if scored.returncode != 0:
+            attempts.append(
+                {
+                    "run_id": run_id,
+                    "result": "scorer_error",
+                    "exit_code": scored.returncode,
+                    "stderr": scored.stderr[-500:],
+                }
+            )
+            replaces = run_id
+            continue
+        score = read_json(run_directory / "score.json")
+        attempts.append(
+            {
+                "run_id": run_id,
+                "result": "valid" if score.get("valid_run") else "invalid",
+                "invalid_reasons": score.get("invalid_reasons", []),
+            }
+        )
+        if score.get("valid_run"):
+            return {
+                "agent": agent,
+                "scenario_id": scenario_id,
+                "slot": slot,
+                "result": "valid",
+                "run_id": run_id,
+                "adherent": bool(score.get("adherent")),
+                "critical_violation": bool(score.get("critical_violation")),
+                "attempts": attempts,
+            }
+        replaces = run_id
+    return {
+        "agent": agent,
+        "scenario_id": scenario_id,
+        "slot": slot,
+        "result": "attempts_exhausted",
+        "attempts": attempts,
+    }
+
+
+def parser() -> argparse.ArgumentParser:
+    value = argparse.ArgumentParser(description=__doc__)
+    value.add_argument(
+        "--artifact-root",
+        type=Path,
+        default=ROOT / "eval-runs/v07-baseline",
+    )
+    value.add_argument("--codex-model", default="gpt-5.6-sol")
+    value.add_argument("--claude-model", default="sonnet")
+    value.add_argument("--jobs", type=int, default=2)
+    return value
+
+
+def main(argv: list[str] | None = None) -> int:
+    arguments = parser().parse_args(argv)
+    if arguments.jobs < 1:
+        emit({"ok": False, "error": "--jobs must be at least 1"})
+        return 2
+    artifact_root = arguments.artifact_root.resolve()
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    spec = read_json(EVAL_SPEC_PATH)
+    minimum = spec["run_policy"]["minimum_valid_runs_per_agent_scenario"]
+    maximum_attempts = spec["run_policy"]["rerun"]["maximum_attempts_per_planned_run"]
+    models = {
+        "codex": arguments.codex_model,
+        "claude": arguments.claude_model,
+    }
+    jobs: list[dict[str, Any]] = []
+    for agent, model in models.items():
+        for scenario_id in sorted(scenario_paths()):
+            existing = existing_valid_count(artifact_root, agent, scenario_id)
+            for slot in range(existing + 1, minimum + 1):
+                jobs.append(
+                    {
+                        "artifact_root": artifact_root,
+                        "agent": agent,
+                        "model": model,
+                        "scenario_id": scenario_id,
+                        "slot": slot,
+                        "maximum_attempts": maximum_attempts,
+                    }
+                )
+    emit(
+        {
+            "event": "matrix_started",
+            "artifact_root": str(artifact_root),
+            "scheduled_slots": len(jobs),
+            "jobs": arguments.jobs,
+        }
+    )
+    results: list[dict[str, Any]] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=arguments.jobs) as pool:
+        futures = [pool.submit(run_slot, **job) for job in jobs]
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            results.append(result)
+            emit({"event": "slot_completed", **result})
+    summary = aggregate_summary(artifact_root)
+    emit(
+        {
+            "event": "matrix_completed",
+            "scheduled_slots": len(jobs),
+            "completed_slots": sum(
+                result["result"] in {"valid", "existing_valid"}
+                for result in results
+            ),
+            "summary": summary,
+        }
+    )
+    return 0 if summary["release_gate_pass"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

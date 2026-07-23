@@ -26,10 +26,16 @@ from .parser_v1 import (
 )
 from .scanner import scan_tasks
 from .snapshot import SnapshotManifest, build_snapshot
-from .active_metadata import ActiveMetadataError
-from .approval import ApprovalManifestError
+from .active_metadata import ActiveMetadataError, parse_active_metadata
+from .approval import (
+    ApprovalManifestError,
+    approval_manifest_sha256,
+    compare_approval_manifests,
+    parse_approval_manifest,
+    project_approval_manifest,
+)
 from .transitions import TransitionError, approve_proposal, begin_revision, complete_task
-from .managed_state import ManagedStateError
+from .managed_state import ManagedStateError, compare_attested_state
 from .task_identity import task_digest
 from .archive_model import load_archive_records
 from .archive_index import rebuild_archive_index, validate_archive_index
@@ -288,13 +294,9 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
 
     root = discover_project_root(explicit_root=namespace.root, cwd=cwd)
     if namespace.command == "status":
-        parsed = _parse_one(root.path, namespace.short_name)
-        return _outcome_result(
-            "status",
-            namespace.short_name,
-            parsed.outcome,
-            snapshot=parsed.snapshot,
-        )
+        paths = resolve_proposal_paths(root.path, namespace.short_name)
+        parsed = _parse_paths(paths)
+        return _status_result(paths, parsed)
     if namespace.command == "validate" and not namespace.validate_all:
         parsed = _parse_one(root.path, namespace.short_name)
         outcome = parsed.outcome
@@ -719,6 +721,103 @@ def _outcome_result(
         warnings=tuple(warnings),
         errors=tuple(errors),
         exit_code=1 if errors else 0,
+    )
+
+
+def _status_result(paths: ProposalPaths, parsed: ParsedProposal) -> CommandResult:
+    """Project status and fail closed when an active approval is observably invalid."""
+
+    base = _outcome_result(
+        "status",
+        paths.directory.name,
+        parsed.outcome,
+        snapshot=parsed.snapshot,
+    )
+    model = parsed.outcome.model
+    if not base.ok or model is None or model.status != "approved":
+        return base
+
+    machine = paths.directory / ".sdd"
+    manifest_path = machine / "approval-manifest.json"
+    metadata_path = machine / "metadata.json"
+    present = (manifest_path.is_file(), metadata_path.is_file())
+    # An existing legacy approved proposal can still be inspected before the
+    # caller explicitly establishes its first managed approval baseline.
+    if present == (False, False):
+        return base
+    if (
+        present[0] != present[1]
+        or machine.is_symlink()
+        or manifest_path.is_symlink()
+        or metadata_path.is_symlink()
+    ):
+        raise TransitionError(
+            "ERROR_APPROVAL_MANIFEST_REQUIRED",
+            "establish_approval_manifest",
+            "Approved proposal has no valid machine approval baseline",
+        )
+
+    manifest_bytes = manifest_path.read_bytes()
+    manifest = parse_approval_manifest(manifest_bytes)
+    metadata = parse_active_metadata(metadata_path.read_bytes())
+    if approval_manifest_sha256(manifest_bytes) != metadata.manifest_sha256:
+        raise TransitionError(
+            "ERROR_APPROVAL_MANIFEST_IDENTITY_MISMATCH",
+            "inspect_machine_metadata",
+            "Approval Manifest bytes do not match active metadata identity",
+        )
+    if metadata.approval_state != "active" or metadata.revision is not None:
+        raise TransitionError(
+            "ERROR_METADATA_STATE_MISMATCH",
+            "inspect_machine_metadata",
+            "Approved status requires active approval metadata without a revision marker",
+        )
+
+    if metadata.attestation is not None:
+        drift = compare_attested_state(metadata.attestation, model, metadata)
+        if drift:
+            issue = CliIssue(
+                code="OUT_OF_BAND_DRIFT",
+                action="inspect_managed_state_drift",
+                message=(
+                    "Current managed fields differ from the last attested state; "
+                    "the editor or cause is unknown"
+                ),
+                severity="error",
+            )
+            return CommandResult(
+                command="status",
+                data={
+                    **base.data,
+                    "differences": [item.to_dict() for item in drift],
+                },
+                warnings=base.warnings,
+                errors=(issue,),
+                exit_code=1,
+            )
+
+    current_manifest = project_approval_manifest(
+        model,
+        approval_model_version=manifest.approval_model_version,
+    )
+    differences = compare_approval_manifests(manifest, current_manifest)
+    if not differences:
+        return base
+    issue = CliIssue(
+        code="ERROR_APPROVED_PLAN_CHANGED",
+        action="begin_revision",
+        message="Current approval-relevant content differs from the Approval Manifest",
+        severity="error",
+    )
+    return CommandResult(
+        command="status",
+        data={
+            **base.data,
+            "differences": [item.to_dict() for item in differences],
+        },
+        warnings=base.warnings,
+        errors=(issue,),
+        exit_code=1,
     )
 
 

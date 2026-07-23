@@ -1,0 +1,218 @@
+{
+  "manifest_version": 1,
+  "registry": "conformance/protocol-rules-v1.json",
+  "reference_runtime": "skills/sdd-workflow/scripts/sdd.py",
+  "cases": [
+    {
+      "id": "projection.canonical",
+      "kind": "unittest",
+      "rules": [
+        "SDD-PROJ-001"
+      ],
+      "selectors": [
+        "tests.test_model",
+        "tests.test_scanner",
+        "tests.test_snapshot",
+        "tests.test_ordering",
+        "tests.test_parser",
+        "tests.test_schema_v2",
+        "tests.test_approval"
+      ]
+    },
+    {
+      "id": "projection.discovery",
+      "kind": "unittest",
+      "rules": [
+        "SDD-DISC-001"
+      ],
+      "selectors": [
+        "tests.test_discovery",
+        "tests.test_ordering"
+      ]
+    },
+    {
+      "id": "transition.managed",
+      "kind": "unittest",
+      "rules": [
+        "SDD-TRANS-001"
+      ],
+      "selectors": [
+        "tests.test_approval",
+        "tests.test_complete_task",
+        "tests.test_preflight",
+        "tests.test_terminal_validation"
+      ]
+    },
+    {
+      "id": "approval.fail-closed",
+      "kind": "unittest",
+      "rules": [
+        "SDD-APPROVAL-001"
+      ],
+      "selectors": [
+        "tests.test_approval",
+        "tests.test_complete_task"
+      ]
+    },
+    {
+      "id": "transaction.commit-points",
+      "kind": "unittest",
+      "rules": [
+        "SDD-TXN-001"
+      ],
+      "selectors": [
+        "tests.test_atomic_write",
+        "tests.test_transition_failures",
+        "tests.test_terminal_validation"
+      ]
+    },
+    {
+      "id": "transaction.safe-retry",
+      "kind": "unittest",
+      "rules": [
+        "SDD-RETRY-001"
+      ],
+      "selectors": [
+        "tests.test_complete_task",
+        "tests.test_transition_failures",
+        "tests.test_terminal_validation"
+      ]
+    },
+    {
+      "id": "archive.authority",
+      "kind": "unittest",
+      "rules": [
+        "SDD-ARCHIVE-001"
+      ],
+      "selectors": [
+        "tests.test_archive_model",
+        "tests.test_archive_cli",
+        "tests.test_terminal_validation",
+        "tests.test_doctor",
+        "tests.test_concurrency"
+      ]
+    },
+    {
+      "id": "schema.compatibility",
+      "kind": "unittest",
+      "rules": [
+        "SDD-COMPAT-001"
+      ],
+      "selectors": [
+        "tests.test_compatibility",
+        "tests.test_parser",
+        "tests.test_schema_v2",
+        "tests.test_archive_model"
+      ]
+    },
+    {
+      "id": "cli.public-contract",
+      "kind": "unittest",
+      "rules": [
+        "SDD-CLI-001"
+      ],
+      "selectors": [
+        "tests.test_cli",
+        "tests.test_cli_snapshots",
+        "tests.test_summary_input"
+      ]
+    },
+    {
+      "id": "diagnostics.evidence",
+      "kind": "unittest",
+      "rules": [
+        "SDD-DIAG-001"
+      ],
+      "selectors": [
+        "tests.test_doctor",
+        "tests.test_compatibility"
+      ]
+    },
+    {
+      "id": "concurrency.stale-or-converged",
+      "kind": "unittest",
+      "rules": [
+        "SDD-CONC-001"
+      ],
+      "selectors": [
+        "tests.test_concurrency",
+        "tests.test_team_workflow"
+      ]
+    },
+    {
+      "id": "adapter.trigger-contract",
+      "kind": "command",
+      "rules": [
+        "SDD-ADAPTER-001"
+      ],
+      "argv": [
+        "sh",
+        "tests/trigger-contract.sh"
+      ]
+    },
+    {
+      "id": "package.unittest-contracts",
+      "kind": "unittest",
+      "rules": [
+        "SDD-PKG-001"
+      ],
+      "selectors": [
+        "tests.test_runtime",
+        "tests.test_install_smoke",
+        "tests.test_ci_contract",
+        "tests.test_release_baseline",
+        "tests.test_testing_contract"
+      ]
+    },
+    {
+      "id": "package.validation",
+      "kind": "command",
+      "rules": [
+        "SDD-PKG-001"
+      ],
+      "argv": [
+        "{python}",
+        "tests/package_validation.py"
+      ]
+    },
+    {
+      "id": "package.install-smoke",
+      "kind": "command",
+      "rules": [
+        "SDD-PKG-001"
+      ],
+      "argv": [
+        "{python}",
+        "tests/install_smoke.py",
+        "--expect-platform",
+        "{platform}"
+      ]
+    },
+    {
+      "id": "documentation.consistency",
+      "kind": "command",
+      "rules": [
+        "SDD-DOC-001"
+      ],
+      "argv": [
+        "{python}",
+        "tests/docs_consistency.py"
+      ]
+    },
+    {
+      "id": "conformance.manifest-contract",
+      "kind": "unittest",
+      "rules": [
+        "SDD-CONF-001"
+      ],
+      "selectors": [
+        "tests.test_agent_eval_scoring",
+        "tests.test_agent_eval_spec",
+        "tests.test_agent_eval_runner",
+        "tests.test_agent_scenarios",
+        "tests.test_conformance_manifest",
+        "tests.test_runtime_conformance"
+      ]
+    }
+  ]
+}

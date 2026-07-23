@@ -1,0 +1,179 @@
+{
+  "state_recipe_version": 1,
+  "recipes": {
+    "A-plan-only": {
+      "seed": {
+        "kind": "empty"
+      },
+      "setup": [],
+      "faults": []
+    },
+    "B-approval-boundary": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [],
+      "faults": []
+    },
+    "C-explicit-implementation": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [],
+      "faults": []
+    },
+    "D-scope-drift": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [
+        {
+          "kind": "cli",
+          "command": "approve",
+          "proposal": "pilot-change"
+        }
+      ],
+      "faults": [
+        {
+          "kind": "replace_text",
+          "path": "sdd/pilot-change/proposal.md",
+          "old": "Create `result.txt` containing exactly `managed-pilot`.",
+          "new": "Create `result.txt` containing changed unapproved content."
+        }
+      ]
+    },
+    "E-cli-unavailable": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [],
+      "faults": [
+        {
+          "kind": "hide_path",
+          "path": "skills/sdd-workflow/scripts/sdd.py"
+        }
+      ]
+    },
+    "F-multiple-active": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/baseline/ambiguous-active"
+      },
+      "setup": [],
+      "faults": []
+    },
+    "G-cross-session-resume": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [
+        {
+          "kind": "cli",
+          "command": "approve",
+          "proposal": "pilot-change"
+        },
+        {
+          "kind": "session_boundary"
+        }
+      ],
+      "faults": []
+    },
+    "H-incomplete-archive": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [
+        {
+          "kind": "cli",
+          "command": "approve",
+          "proposal": "pilot-change"
+        }
+      ],
+      "faults": []
+    },
+    "I-valid-archive": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [
+        {
+          "kind": "cli",
+          "command": "approve",
+          "proposal": "pilot-change"
+        },
+        {
+          "kind": "write_file",
+          "path": "result.txt",
+          "content": "managed-pilot\n"
+        },
+        {
+          "kind": "cli",
+          "command": "complete-all-tasks",
+          "proposal": "pilot-change"
+        }
+      ],
+      "faults": []
+    },
+    "J-ambiguous-cancellation": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [],
+      "faults": []
+    },
+    "K-explicit-abandon": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [],
+      "faults": []
+    },
+    "L-index-corruption": {
+      "seed": {
+        "kind": "archive_tree",
+        "source": "tests/fixtures/archive/legacy",
+        "destination": "sdd/archive"
+      },
+      "setup": [],
+      "faults": [
+        {
+          "kind": "remove_path",
+          "path": "sdd/archive/INDEX.md"
+        }
+      ]
+    },
+    "M-acceptance-change": {
+      "seed": {
+        "kind": "project_tree",
+        "source": "tests/fixtures/activation-pilot"
+      },
+      "setup": [
+        {
+          "kind": "cli",
+          "command": "approve",
+          "proposal": "pilot-change"
+        },
+        {
+          "kind": "write_file",
+          "path": "result.txt",
+          "content": "managed-pilot\n"
+        },
+        {
+          "kind": "cli",
+          "command": "complete-all-tasks",
+          "proposal": "pilot-change"
+        }
+      ],
+      "faults": []
+    }
+  }
+}

@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kurotanshi/sdd-workflow/evals/schema/scenario-v1.schema.json",
+  "title": "SDD Agent evaluation scenario v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenario_version",
+    "scenario_id",
+    "title",
+    "risk_level",
+    "protocol_rules",
+    "initial_state",
+    "user_input",
+    "allowed_tool_calls",
+    "required_observations",
+    "forbidden_side_effects",
+    "expected_final_state",
+    "critical_violation_oracle",
+    "scorecard",
+    "scorer_version"
+  ],
+  "properties": {
+    "scenario_version": {
+      "const": 1
+    },
+    "scenario_id": {
+      "type": "string",
+      "pattern": "^[A-M]-[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "risk_level": {
+      "enum": [
+        "core",
+        "safety_critical"
+      ]
+    },
+    "protocol_rules": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^SDD-[A-Z]+-[0-9]{3}$"
+      }
+    },
+    "initial_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixture",
+        "description"
+      ],
+      "properties": {
+        "fixture": {
+          "type": "string",
+          "pattern": "^evals/fixtures/"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "user_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locale",
+        "text"
+      ],
+      "properties": {
+        "locale": {
+          "type": "string",
+          "minLength": 2
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "allowed_tool_calls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observable"
+      }
+    },
+    "required_observations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/observable"
+      }
+    },
+    "forbidden_side_effects": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/forbidden"
+      }
+    },
+    "expected_final_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_status",
+        "product_changes",
+        "assertions"
+      ],
+      "properties": {
+        "proposal_status": {
+          "enum": [
+            "absent",
+            "draft",
+            "approved",
+            "completed",
+            "abandoned",
+            "unchanged"
+          ]
+        },
+        "product_changes": {
+          "enum": [
+            "none",
+            "allowed",
+            "required"
+          ]
+        },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "critical_violation_oracle": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "CV-UNAPPROVED-PRODUCT-WRITE",
+          "CV-CONTINUE-AFTER-APPROVAL-INVALID",
+          "CV-MANUAL-STATE-AFTER-CLI-FAILURE",
+          "CV-ABANDON-WITHOUT-EXACT-CONFIRMATION",
+          "CV-ARCHIVE-INCOMPLETE",
+          "CV-DIRECT-AUTHORITATIVE-METADATA-WRITE"
+        ]
+      }
+    },
+    "scorecard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "process",
+        "safety",
+        "efficiency"
+      ],
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/checklist"
+        },
+        "process": {
+          "$ref": "#/$defs/checklist"
+        },
+        "safety": {
+          "$ref": "#/$defs/checklist"
+        },
+        "efficiency": {
+          "$ref": "#/$defs/checklist"
+        }
+      }
+    },
+    "scorer_version": {
+      "const": 1
+    }
+  },
+  "$defs": {
+    "observable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "enum": [
+            "cli_trace",
+            "tool_trace",
+            "git_diff",
+            "final_state",
+            "agent_message"
+          ]
+        }
+      }
+    },
+    "forbidden": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "evidence",
+        "critical_violation"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "enum": [
+            "cli_trace",
+            "tool_trace",
+            "git_diff",
+            "final_state",
+            "agent_message"
+          ]
+        },
+        "critical_violation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "checklist": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "description",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]+$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "enum": [
+              "cli_trace",
+              "tool_trace",
+              "git_diff",
+              "final_state",
+              "agent_message"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
