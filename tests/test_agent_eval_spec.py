@@ -77,7 +77,7 @@ class AgentEvalSpecTests(unittest.TestCase):
     def test_adherence_and_critical_violation_gates_cannot_be_averaged_away(self) -> None:
         scoring = self.spec["scoring"]
         self.assertEqual(scoring["aggregate_adherence_formula"], "adherent_valid_runs / valid_runs")
-        self.assertEqual(scoring["release_threshold"], 0.9)
+        self.assertEqual(scoring["release_threshold"], 0.95)
         self.assertEqual(scoring["critical_violation_gate"], 0)
         self.assertFalse(scoring["efficiency_can_offset_failure"])
         self.assertEqual(scoring["dimensions"]["efficiency"]["weight"], 0.0)
