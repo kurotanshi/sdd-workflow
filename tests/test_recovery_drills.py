@@ -15,6 +15,7 @@ FIXTURE = ROOT / "tests/fixtures/baseline/valid-simple"
 sys.path.insert(0, str(ROOT / "skills/sdd-workflow/scripts"))
 
 from sdd_core.cli import main  # noqa: E402
+from sdd_core.atomic_write import atomic_replace_bytes  # noqa: E402
 
 
 def invoke(root: Path, *arguments: str) -> tuple[int, dict[str, object]]:
@@ -75,6 +76,90 @@ def prepare_complete(root: Path, short_name: str = "recovery-item") -> dict[str,
 
 
 class RecoveryDrillsTests(unittest.TestCase):
+    def test_atomic_metadata_replace_never_exposes_partial_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            machine = Path(directory) / ".sdd"
+            machine.mkdir()
+            metadata = machine / "metadata.json"
+            metadata.write_text('{"state":"before"}\n', encoding="utf-8")
+            with mock.patch(
+                "sdd_core.atomic_write.os.replace",
+                side_effect=OSError("injected metadata replace failure"),
+            ):
+                with self.assertRaises(OSError):
+                    atomic_replace_bytes(metadata, b'{"state":"after"}\n')
+            self.assertEqual(
+                json.loads(metadata.read_text(encoding="utf-8")),
+                {"state": "before"},
+            )
+            self.assertEqual(list(machine.glob(".metadata.json.*.tmp")), [])
+
+    def test_precommit_metadata_failure_preserves_draft_authority(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            active = root / "sdd/recovery-item"
+            active.parent.mkdir(parents=True)
+            shutil.copytree(FIXTURE, active)
+            proposal = active / "proposal.md"
+            tasks = active / "tasks.md"
+            proposal.write_text(
+                proposal.read_text(encoding="utf-8").replace(
+                    "valid-simple",
+                    "recovery-item",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            tasks.write_text(
+                tasks.read_text(encoding="utf-8").replace(
+                    "valid-simple",
+                    "recovery-item",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            status = invoke(root, "status", "recovery-item")[1]["data"]
+            calls = 0
+
+            def fail_metadata(path: Path, data: bytes) -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("injected metadata write failure")
+                atomic_replace_bytes(path, data)
+
+            arguments = (
+                "approve",
+                "recovery-item",
+                "--expected-snapshot",
+                status["snapshot"]["snapshot_digest"],  # type: ignore[index]
+            )
+            with mock.patch(
+                "sdd_core.transitions.atomic_replace_bytes",
+                side_effect=fail_metadata,
+            ):
+                code, failed = invoke(root, *arguments)
+            self.assertEqual(code, 70)
+            self.assertEqual(failed["errors"][0]["code"], "ERROR_INTERNAL")  # type: ignore[index]
+            self.assertIn("\ndraft\n", proposal.read_text(encoding="utf-8"))
+            manifest = active / ".sdd/approval-manifest.json"
+            metadata = active / ".sdd/metadata.json"
+            self.assertIsInstance(json.loads(manifest.read_text(encoding="utf-8")), dict)
+            self.assertFalse(metadata.exists())
+            self.assertEqual(list(active.rglob("*.tmp")), [])
+
+            doctor_code, doctor = invoke(root, "doctor")
+            self.assertEqual(doctor_code, 1)
+            finding_codes = {
+                finding["code"] for finding in doctor["data"]["findings"]  # type: ignore[index]
+            }
+            self.assertIn("PARTIAL_TRANSITION_DETECTED", finding_codes)
+
+            retry_code, retry = invoke(root, *arguments)
+            self.assertEqual(retry_code, 0, retry)
+            self.assertIn("\napproved\n", proposal.read_text(encoding="utf-8"))
+            self.assertIsInstance(json.loads(metadata.read_text(encoding="utf-8")), dict)
+
     def test_archive_commit_survives_index_failure_and_rebuilds(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

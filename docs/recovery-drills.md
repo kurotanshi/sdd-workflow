@@ -19,6 +19,7 @@ The v1 groups cover:
 
 - transaction retry and terminal commit classification;
 - atomic writer interruption behavior;
+- partial metadata replacement and pre-commit approval authority;
 - archive authority and evidence-bounded doctor findings;
 - committed archive authority across post-move INDEX failure and rebuild;
 - concurrent archive/INDEX convergence; and

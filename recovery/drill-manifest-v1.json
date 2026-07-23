@@ -14,6 +14,13 @@
       ]
     },
     {
+      "id": "atomic-write.partial-metadata",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_atomic_metadata_replace_never_exposes_partial_bytes",
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_precommit_metadata_failure_preserves_draft_authority"
+      ]
+    },
+    {
       "id": "archive.authority-and-diagnostics",
       "selectors": [
         "tests.test_archive_cli",
