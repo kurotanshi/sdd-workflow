@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdd-workflow.local/schema/team-evidence-v1.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "evidence_version": {
+      "const": 1
+    },
+    "environments": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_host": {
+            "enum": [
+              "claude",
+              "codex",
+              "hermetic",
+              "human_only"
+            ]
+          },
+          "os_family": {
+            "enum": [
+              "linux",
+              "macos",
+              "windows",
+              "other"
+            ]
+          },
+          "runtime_version": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_host",
+          "os_family",
+          "runtime_version"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "friction_entry_ids": {
+      "items": {
+        "pattern": "^F-[0-9]{8}-[0-9]{2}$",
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "metrics": {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z][a-z0-9_]+$": {
+          "additionalProperties": false,
+          "properties": {
+            "denominator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "numerator": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "unit": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "numerator",
+            "denominator",
+            "unit"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "observation_period": {
+      "additionalProperties": false,
+      "properties": {
+        "finished_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "started_at": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "started_at",
+        "finished_at"
+      ],
+      "type": "object"
+    },
+    "privacy": {
+      "additionalProperties": false,
+      "properties": {
+        "collection_mode": {
+          "const": "manual_opt_in"
+        },
+        "contains_direct_identifiers": {
+          "const": false
+        },
+        "contains_proposal_content": {
+          "const": false
+        },
+        "contains_raw_transcripts": {
+          "const": false
+        },
+        "default_telemetry_enabled": {
+          "const": false
+        },
+        "raw_retention_days": {
+          "const": 0
+        },
+        "uploads_enabled": {
+          "const": false
+        }
+      },
+      "required": [
+        "collection_mode",
+        "contains_direct_identifiers",
+        "contains_proposal_content",
+        "contains_raw_transcripts",
+        "default_telemetry_enabled",
+        "raw_retention_days",
+        "uploads_enabled"
+      ],
+      "type": "object"
+    },
+    "sample": {
+      "additionalProperties": false,
+      "properties": {
+        "mutation_attempts": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "operators": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "proposals": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sessions": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operators",
+        "sessions",
+        "proposals",
+        "mutation_attempts"
+      ],
+      "type": "object"
+    },
+    "study_id": {
+      "pattern": "^[a-z0-9][a-z0-9-]+$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "evidence_version",
+    "study_id",
+    "observation_period",
+    "sample",
+    "environments",
+    "metrics",
+    "friction_entry_ids",
+    "privacy"
+  ],
+  "type": "object"
+}

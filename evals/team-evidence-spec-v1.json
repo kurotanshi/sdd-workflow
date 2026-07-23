@@ -1,0 +1,55 @@
+{
+  "evidence_version": 1,
+  "metric_definitions": {
+    "multi_operator_proposals": {
+      "denominator": "observed_proposals",
+      "numerator": "observed proposals touched by more than one operator",
+      "unit": "proposals"
+    },
+    "concurrent_mutation_attempts": {
+      "denominator": "mutation_attempts",
+      "numerator": "mutation attempts whose execution windows overlapped for one proposal",
+      "unit": "attempts"
+    },
+    "snapshot_stale_results": {
+      "denominator": "mutation_attempts",
+      "numerator": "mutation attempts returning ERROR_SNAPSHOT_MISMATCH",
+      "unit": "attempts"
+    },
+    "short_name_conflicts": {
+      "denominator": "proposal_creation_attempts",
+      "numerator": "creation attempts blocked by an already observed active short name",
+      "unit": "attempts"
+    },
+    "index_conflicts": {
+      "denominator": "terminal_or_index_merge_operations",
+      "numerator": "operations producing a stale or conflicting derived archive INDEX",
+      "unit": "operations"
+    },
+    "worktree_isolation_runs": {
+      "denominator": "parallel_work_runs",
+      "numerator": "parallel runs using separate Git worktrees and proposal short names",
+      "unit": "runs"
+    },
+    "recovery_interventions": {
+      "denominator": "observed_lifecycle_incidents",
+      "numerator": "incidents requiring a documented recovery action before work continued",
+      "unit": "incidents"
+    },
+    "workflow_bypass_observations": {
+      "denominator": "observed_lifecycle_operations",
+      "numerator": "operations with observable direct managed-state mutation outside the CLI",
+      "unit": "operations"
+    }
+  },
+  "privacy_defaults": {
+    "collection_mode": "manual_opt_in",
+    "contains_direct_identifiers": false,
+    "contains_proposal_content": false,
+    "contains_raw_transcripts": false,
+    "default_telemetry_enabled": false,
+    "raw_retention_days": 0,
+    "uploads_enabled": false
+  },
+  "report_schema": "evals/schema/team-evidence-v1.schema.json"
+}

@@ -235,6 +235,7 @@
         "tests.test_quickstart_docs",
         "tests.test_sample_web_api",
         "tests.test_skill_reduction",
+        "tests.test_team_evidence_contract",
         "tests.test_runtime_conformance"
       ]
     }

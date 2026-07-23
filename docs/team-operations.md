@@ -44,3 +44,7 @@ Provide only reviewed, de-identified evidence:
 - worktree layout, short names involved, and whether ownership overlapped.
 
 Do not attach credentials, proprietary proposal text, full metadata, or complete agent transcripts by default.
+
+Aggregate team trials follow the opt-in, numerator/denominator, and retention
+contract in [`team-evidence.md`](./team-evidence.md). Runtime and Skill use
+does not enable collection automatically.
