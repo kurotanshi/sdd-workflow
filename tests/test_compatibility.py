@@ -21,6 +21,37 @@ from sdd_core.cli import main  # noqa: E402
 
 
 class CompatibilityTests(unittest.TestCase):
+    def test_v1_versioning_policy_covers_every_release_boundary(self) -> None:
+        document = (
+            ROOT / "docs/protocol/versioning-policy-v1.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Policy version: `1.0.0`", document)
+        for heading in (
+            "## 1. Independent version axes",
+            "## 2. Semantic Versioning classification",
+            "## 3. Deprecation policy",
+            "## 4. Proposal schema support",
+            "## 5. Wire and machine-envelope support",
+            "## 6. Migration release gate",
+            "## 7. Rollback policy",
+            "## 8. Release evidence",
+        ):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, document)
+        for term in (
+            "PATCH",
+            "MINOR",
+            "MAJOR",
+            "implicit/explicit Schema v1 and explicit Schema v2",
+            "`direct`",
+            "`finish-or-abandon`",
+            "`restore-backup`",
+            "`forward-recovery`",
+            "Deleting `.sdd`",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, document)
+
     def test_portable_compatibility_matrix_is_fail_closed(self) -> None:
         document = (ROOT / "docs/compatibility.md").read_text(encoding="utf-8")
         for fact in (

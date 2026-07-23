@@ -1,6 +1,10 @@
 # Compatibility axes
 
-Status: v0.8 portable-distribution contract over the v0.6 engine
+Status: v1 compatibility contract (candidate until the v1.0.0 release gate)
+
+Version classification, deprecation, schema evolution, migration, and rollback
+rules are normative in
+[`protocol/versioning-policy-v1.md`](./protocol/versioning-policy-v1.md).
 
 | Axis | Current version | Consumer | Unknown version behavior |
 | --- | --- | --- | --- |

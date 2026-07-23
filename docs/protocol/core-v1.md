@@ -2,6 +2,8 @@
 
 Protocol identifier: `sdd-protocol-1.0`
 
+Protocol version: `1.0.0`
+
 Status: stable normative contract
 
 Normative language: RFC 2119 / RFC 8174
@@ -438,5 +440,6 @@ Detailed schemas and recovery matrices remain in the linked design documents:
 [`archive-model.md`](../archive-model.md),
 [`schema-v2.md`](../schema-v2.md),
 [`Reference Runtime and CLI Contract v1`](./runtime-cli-v1.md),
+[`v1 Versioning and Deprecation Policy`](./versioning-policy-v1.md),
 [`cli-contract.md`](../cli-contract.md), and
 [`compatibility.md`](../compatibility.md).
