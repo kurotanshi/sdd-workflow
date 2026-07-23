@@ -225,6 +225,7 @@
         "tests.test_agent_scenarios",
         "tests.test_public_eval_report",
         "tests.test_conformance_manifest",
+        "tests.test_protocol_draft",
         "tests.test_runtime_conformance"
       ]
     }
