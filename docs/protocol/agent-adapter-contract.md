@@ -1,6 +1,10 @@
-# Agent Adapter Contract v1
+# Agent Adapter Contract v1.0
 
-Status: stable normative adapter contract for `sdd-protocol-1.0`
+Contract version: `1.0.0`
+
+Protocol: `sdd-protocol-1.0`
+
+Status: stable normative contract
 
 An Agent adapter translates human conversation into SDD protocol operations.
 It is not a parser, state-transition engine, source-control manager, or
@@ -22,6 +26,25 @@ An adapter claiming version 1 conformance MUST declare:
 A hermetic or scripted adapter MUST identify itself as a test implementation.
 Passing its tests MUST NOT be presented as support for a real Agent host.
 
+## Stable trigger inventory
+
+An adapter claiming the complete SDD workflow MUST recognize these explicit
+phase triggers:
+
+| Trigger | Phase |
+| --- | --- |
+| `提案` | Create or revise a proposal draft only. |
+| `開始實作` | Explicitly approve the named/current canonical draft and begin implementation. |
+| `實作` | Continue an already approved proposal; a draft still requires approval. |
+| `歸檔` | Archive an approved proposal only after every reliable task is complete. |
+| `放棄`, `取消提案` | Start proposal-abandonment preflight; do not treat this as Git rollback. |
+| `確認放棄` | Confirm the exact proposal abandonment after preflight. |
+
+The adapter MAY recognize equivalent phrases only when the same phase and
+target are unambiguous. A bare `取消`, a generic implementation request, user
+silence, approval of older bytes, or acceptance of implementation output MUST
+NOT be promoted to `開始實作`, `確認放棄`, or any other lifecycle authority.
+
 ## Runtime discovery
 
 At the first SDD operation in a session, the adapter MUST invoke the
@@ -40,6 +63,22 @@ The adapter MUST use the resolved runtime path returned by discovery for the
 session. It MUST NOT search `PATH`, guess another package directory, choose
 between distinct candidates, or silently downgrade after a discovery or
 handshake failure.
+
+## CLI unavailable or incompatible
+
+If discovery cannot find exactly one compatible package-local runtime, the
+adapter MUST stop before reading proposal Markdown as protocol state. It MUST
+report the stable discovery code and action, the package path or ambiguity
+evidence when available, and the exact repair or selection required from the
+human.
+
+The adapter MUST NOT:
+
+- parse or edit lifecycle fields and checkboxes in prose as a fallback;
+- invoke a same-named executable found on `PATH`;
+- copy one runtime file out of another package;
+- continue implementation from remembered status; or
+- claim that a proposal is approved, complete, or archived.
 
 ## Noninteractive invocation
 
@@ -77,6 +116,12 @@ Approval is valid only for the canonical Approval Manifest. A generic
 implementation request, prior approval of different bytes, successful task
 work, or user silence MUST NOT be interpreted as approval.
 
+The approval handoff for a draft MUST name the selected short name, canonical
+scope, acceptance conditions, ordered task count, and authoritative proposal
+path. It MUST ask for an explicit `開始實作 <short-name>` or an equally clear
+statement approving that exact current plan. Wording such as `實作`,
+`看起來可以`, `繼續`, or `驗收通過` is insufficient for draft approval.
+
 ## Ambiguity and proposal selection
 
 The adapter MUST ask the human to choose when:
@@ -91,6 +136,12 @@ The adapter MUST ask the human to choose when:
 
 While waiting, the adapter MUST NOT mutate artifacts, Git state, proposal
 status, completion markers, archive paths, or the archive index.
+
+When several proposals are active, the adapter MUST present their stable short
+names and canonical states in deterministic order. It MUST NOT select by
+recency, directory order, similarity to the request, most completed tasks, or
+an earlier-session choice. Only the human's current explicit selection
+authorizes the next proposal-specific read.
 
 ## Mutation boundary
 
@@ -137,6 +188,11 @@ An adapter response at a handoff MUST state:
 It MUST NOT claim an actor, cause, approval, repair, or successful mutation that
 the runtime result does not prove.
 
+This human handoff shape applies equally to ambiguity, runtime unavailability,
+approval requests, stale state, revision/reapproval, and terminal recovery.
+When state is unknown, the adapter MUST say it is unknown instead of filling a
+field from memory.
+
 ## Terminal safety
 
 Archive requires reliable task counts and every task complete. Abandonment is a
@@ -158,3 +214,13 @@ Agent evaluation defined by the release policy.
 
 The authoring procedure and a minimal implementation outline are in
 [`adapter-authoring-guide.md`](../adapter-authoring-guide.md).
+
+## Contract evolution
+
+The adapter contract uses Semantic Versioning independently from the Agent
+host, model, Skill package, protocol, runtime, CLI output, and scenario-schema
+versions. Compatible clarifications and new optional diagnostics increment the
+patch version. New optional adapter capability groups increment the minor
+version. Any change to phase authority, approval wording, ambiguity stop
+boundaries, managed mutation ownership, binding error actions, or required
+human handoff increments the major version.

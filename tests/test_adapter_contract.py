@@ -20,7 +20,9 @@ class AdapterContractTests(unittest.TestCase):
 
     def test_contract_covers_required_boundaries(self) -> None:
         for heading in (
+            "## Stable trigger inventory",
             "## Runtime discovery",
+            "## CLI unavailable or incompatible",
             "## Noninteractive invocation",
             "## Phase and approval mapping",
             "## Ambiguity and proposal selection",
@@ -38,6 +40,37 @@ class AdapterContractTests(unittest.TestCase):
             "acceptance",
             "begin-revision",
             "required human action",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, self.contract)
+
+    def test_v1_contract_freezes_triggers_approval_and_handoff(self) -> None:
+        self.assertIn("Contract version: `1.0.0`", self.contract)
+        self.assertIn("Protocol: `sdd-protocol-1.0`", self.contract)
+        for trigger in (
+            "`提案`",
+            "`開始實作`",
+            "`實作`",
+            "`歸檔`",
+            "`放棄`",
+            "`取消提案`",
+            "`確認放棄`",
+        ):
+            with self.subTest(trigger=trigger):
+                self.assertIn(trigger, self.contract)
+        for insufficient in (
+            "`實作`",
+            "`看起來可以`",
+            "`繼續`",
+            "`驗收通過`",
+        ):
+            with self.subTest(insufficient=insufficient):
+                self.assertIn(insufficient, self.contract)
+        for term in (
+            "MUST NOT select by\nrecency",
+            "parse or edit lifecycle fields and checkboxes in prose as a fallback",
+            "current canonical state",
+            "exact required human action",
         ):
             with self.subTest(term=term):
                 self.assertIn(term, self.contract)
