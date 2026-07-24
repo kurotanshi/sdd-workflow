@@ -108,9 +108,6 @@ Protocol 作者與 adapter 作者可直接閱讀
 [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md)；安裝副本是可
 重新產生的 package artifact，不是第二份流程來源。
 
-歷史工程規劃與設計取捨見 [`ROADMAP.md`](./ROADMAP.md)；目前 v1.0 的完成
-狀態與驗證證據見
-[`v1.0 release gate`](./docs/reports/v1.0-release-gate.md)。
 
 ## 本機開發
 
