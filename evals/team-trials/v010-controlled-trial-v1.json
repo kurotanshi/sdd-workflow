@@ -1,0 +1,73 @@
+{
+  "environments": [
+    {
+      "agent_host": "hermetic",
+      "os_family": "macos",
+      "runtime_version": "0.6.0"
+    }
+  ],
+  "evidence_version": 1,
+  "friction_entry_ids": [],
+  "metrics": {
+    "concurrent_mutation_attempts": {
+      "denominator": 6,
+      "numerator": 0,
+      "unit": "attempts"
+    },
+    "index_conflicts": {
+      "denominator": 3,
+      "numerator": 1,
+      "unit": "operations"
+    },
+    "multi_operator_proposals": {
+      "denominator": 2,
+      "numerator": 1,
+      "unit": "proposals"
+    },
+    "recovery_interventions": {
+      "denominator": 1,
+      "numerator": 1,
+      "unit": "incidents"
+    },
+    "short_name_conflicts": {
+      "denominator": 2,
+      "numerator": 0,
+      "unit": "attempts"
+    },
+    "snapshot_stale_results": {
+      "denominator": 6,
+      "numerator": 0,
+      "unit": "attempts"
+    },
+    "workflow_bypass_observations": {
+      "denominator": 6,
+      "numerator": 0,
+      "unit": "operations"
+    },
+    "worktree_isolation_runs": {
+      "denominator": 1,
+      "numerator": 1,
+      "unit": "runs"
+    }
+  },
+  "observation_period": {
+    "finished_at": "2026-07-23T13:46:39.817578+00:00",
+    "started_at": "2026-07-23T13:46:38.485722+00:00"
+  },
+  "privacy": {
+    "collection_mode": "manual_opt_in",
+    "contains_direct_identifiers": false,
+    "contains_proposal_content": false,
+    "contains_raw_transcripts": false,
+    "default_telemetry_enabled": false,
+    "raw_retention_days": 0,
+    "uploads_enabled": false
+  },
+  "sample": {
+    "mutation_attempts": 6,
+    "operators": 2,
+    "proposals": 2,
+    "sessions": 3
+  },
+  "study_id": "v010-controlled-team-trial-20260723"
+}

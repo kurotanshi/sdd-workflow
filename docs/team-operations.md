@@ -1,8 +1,8 @@
 # Team operation contract
 
-Status: v0.6 team-readiness contract
+Status: stable v1 team-operations contract
 
-## Ownership boundary
+## Cooperative coordination
 
 One proposal has exactly one active agent/operator at a time. Snapshot CAS catches stale inputs but is not a lease, lock, or proof that another process is absent. Do not run two mutating commands for the same short name concurrently.
 
@@ -14,6 +14,30 @@ Parallel work uses both:
 Before handing a proposal to another agent, the current owner stops all commands and reports the exact short name, `sdd.py --json --version` envelope, latest successful `status` snapshot, last completed task, validation result, and any doctor finding. The receiving owner reruns `status`; it never reuses the handed-off snapshot for mutation.
 
 Do not copy an active proposal directory between worktrees, share one uncommitted `.sdd` envelope, or merge two versions of machine metadata by hand. Resolve source-control conflicts first, then rerun `status`/`doctor`. Machine metadata is an artifact, not a distributed coordination protocol.
+
+## Presentation-only ownership
+
+A team may coordinate in an external issue or handoff note, but the current
+protocol has no owner field. A future versioned owner label would be
+presentation-only unless a separately approved contract says otherwise: it
+does not grant mutation authority, block a transition, prove exclusive use,
+or replace a fresh status check.
+
+Do not add an unversioned owner key to proposal or machine artifacts. Any
+ownership extension requires a separate SDD proposal defining authority,
+approval projection, unknown-version behavior, migration, and removal.
+
+## Locking and leases
+
+v0.10 does not implement a lock or lease. It has no timeout, heartbeat,
+owner-death detection, remote coordinator, or stale-lease recovery. Snapshot
+CAS rejects stale caller context but does not serialize callers that both
+validated before either write.
+
+The quantified decision is
+[`decisions/2026-07-23-v010-lock-lease.md`](./decisions/2026-07-23-v010-lock-lease.md).
+Until a separate approved proposal meets that gate, keep the cooperative
+one-operator boundary and use distinct proposals/worktrees for parallel work.
 
 ## Worktrees and engine generation
 
@@ -44,3 +68,7 @@ Provide only reviewed, de-identified evidence:
 - worktree layout, short names involved, and whether ownership overlapped.
 
 Do not attach credentials, proprietary proposal text, full metadata, or complete agent transcripts by default.
+
+Aggregate team trials follow the opt-in, numerator/denominator, and retention
+contract in [`team-evidence.md`](./team-evidence.md). Runtime and Skill use
+does not enable collection automatically.

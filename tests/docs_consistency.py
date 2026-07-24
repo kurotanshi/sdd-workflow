@@ -57,16 +57,28 @@ def validate_docs() -> None:
     en_version = re.search(r"^> Version (v\d+\.\d+\.\d+)", readme_en, re.MULTILINE)
     if not zh_version or not en_version or zh_version.group(1) != en_version.group(1):
         raise AssertionError("README versions are inconsistent")
-    if zh_version.group(1) != "v0.6.0":
+    if zh_version.group(1) != "v1.0.0":
         raise AssertionError("README version does not match the active engine")
     for readme in (readme_zh, readme_en):
         if "[`ROADMAP.md`](./ROADMAP.md)" not in readme:
             raise AssertionError("README is missing ROADMAP link")
         if "`取消提案`" not in readme:
             raise AssertionError("README is missing explicit cancellation trigger")
-        for runtime_term in ("CPython 3.11", "breaking minor", "v0.3.0"):
-            if runtime_term not in readme:
-                raise AssertionError(f"README is missing upgrade contract term: {runtime_term}")
+        for category in (
+            "docs/concepts/",
+            "docs/operations/",
+            "docs/compatibility/",
+            "docs/design/",
+            "docs/troubleshooting/",
+        ):
+            if category not in readme:
+                raise AssertionError(
+                    f"README is missing advanced documentation category: {category}"
+                )
+        if "~/.agents/skills/sdd-workflow/" not in readme:
+            raise AssertionError("README is missing the current Codex install root")
+        if "~/.codex/skills/" in readme:
+            raise AssertionError("README still recommends the legacy Codex install root")
 
     for changelog_term in (
         "## v0.3.0",
@@ -336,9 +348,9 @@ def validate_docs() -> None:
     ):
         if decision_term not in team_decision:
             raise AssertionError(f"team-readiness decision is missing: {decision_term}")
-    if "| Engine/release | `0.6.0` active |" not in compatibility:
+    if "| Engine/release | `1.0.0` active |" not in compatibility:
         raise AssertionError("compatibility engine version is not current")
-    if "## v0.6.0" not in changelog:
+    if "## v1.0.0" not in changelog:
         raise AssertionError("CHANGELOG is missing the active release")
 
 

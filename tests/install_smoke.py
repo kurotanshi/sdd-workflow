@@ -44,6 +44,7 @@ def run_smoke(expected_platform: str) -> None:
             cwd=outside_checkout,
         )
         _assert_version(installed_result)
+        _assert_discovery(installed, outside_checkout)
 
         launcher = subprocess.run(
             [str(installed / "scripts/sdd"), "--version"],
@@ -54,7 +55,7 @@ def run_smoke(expected_platform: str) -> None:
             stderr=subprocess.PIPE,
             text=True,
         )
-        if launcher.returncode != 0 or "sdd-workflow 0.6.0" not in launcher.stdout:
+        if launcher.returncode != 0 or "sdd-workflow 1.0.0" not in launcher.stdout:
             raise AssertionError(
                 f"installed launcher failed: {launcher.returncode} {launcher.stderr}"
             )
@@ -66,11 +67,12 @@ def run_smoke(expected_platform: str) -> None:
 def _tool_directory_smoke(temporary: Path, consumer: Path) -> None:
     for tool, relative in (
         ("claude", Path("claude-home/skills/sdd-workflow")),
-        ("codex", Path("codex-home/skills/sdd-workflow")),
+        ("codex", Path("agents-home/skills/sdd-workflow")),
     ):
         installed = temporary / relative
         shutil.copytree(PACKAGE, installed)
         _assert_version(_run_version(installed / "scripts/sdd.py", cwd=consumer))
+        _assert_discovery(installed, consumer)
         if not (installed / "SKILL.md").is_file():
             raise AssertionError(f"{tool} install lacks SKILL.md")
         if tool == "codex" and not (installed / "agents/openai.yaml").is_file():
@@ -105,6 +107,7 @@ def _dev_link_smoke(temporary: Path, consumer: Path) -> None:
         if not link.is_symlink() or link.resolve() != PACKAGE.resolve():
             raise AssertionError(f"invalid dev link: {link}")
         _assert_version(_run_version(link / "scripts/sdd.py", cwd=consumer))
+        _assert_discovery(link, consumer)
     unlink = subprocess.run(
         [*command, "--unlink"],
         cwd=consumer,
@@ -177,6 +180,7 @@ def _release_package_smoke(temporary: Path, consumer: Path) -> None:
             target.chmod(member.mode)
     installed = extracted / "sdd-workflow"
     _assert_version(_run_version(installed / "scripts/sdd.py", cwd=consumer))
+    _assert_discovery(installed, consumer)
     if any(path.name == "__pycache__" or path.suffix == ".pyc" for path in installed.rglob("*")):
         raise AssertionError("release package contains generated Python files")
 
@@ -200,11 +204,33 @@ def _assert_version(result: subprocess.CompletedProcess[str]) -> None:
         )
     envelope = json.loads(result.stdout)
     if not envelope["ok"] or envelope["data"] != {
-        "engine_version": "0.6.0",
+        "engine_version": "1.0.0",
         "maximum_schema_version": 2,
         "minimum_schema_version": 1,
     }:
         raise AssertionError(f"unexpected version envelope: {envelope}")
+
+
+def _assert_discovery(package: Path, cwd: Path) -> None:
+    result = subprocess.run(
+        [sys.executable, str(package / "scripts/discover-runtime.py")],
+        cwd=cwd,
+        env=_clean_environment(),
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode != 0 or result.stderr:
+        raise AssertionError(
+            f"runtime discovery failed: {result.returncode} {result.stderr}"
+        )
+    envelope = json.loads(result.stdout)
+    if (
+        not envelope["ok"]
+        or envelope["runtime"]["handshake"]["distribution_id"] != "sdd-workflow"
+    ):
+        raise AssertionError(f"unexpected discovery envelope: {envelope}")
 
 
 def _clean_environment() -> dict[str, str]:

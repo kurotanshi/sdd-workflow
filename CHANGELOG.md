@@ -2,6 +2,34 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.0.0 — 2026-07-23
+
+### Added
+- 凍結 `sdd-protocol-1.0` 的 Core protocol、Reference runtime／CLI 與 Agent adapter 三組穩定契約。
+- 新增 v1 Semantic Versioning／deprecation policy、security/trust model、non-goals、v0.6→v1 migration 與 rollback guides。
+- 新增公開 conformance kit、portable runtime discovery／handshake、sample repository、上層 composition example、team evidence 與 10 組 recovery drill groups。
+
+### Changed
+- Engine release 更新為 `1.0.0`、package-compatible generation 更新為 `1.0`；proposal schema 仍為 v1/v2，CLI、handshake 與所有 machine envelopes 維持既有版本。
+- Agent release gate 提高為至少 95% adherence 且 Critical Violation 必須為零；v1 候選矩陣為 76/78（97.4%）、Critical 0，驗收期需求變更情境為 6/6。
+- Skill 保留精簡 adapter，managed lifecycle mutation 持續只由 package-local runtime 執行。
+
+### Deprecated
+- None.
+
+### Removed
+- None.
+
+### Security
+- 明確限制本系統為 cooperative local change control，不提供 authenticated identity、process isolation、access control 或 workspace-wide tamper resistance。
+- Public eval reports 僅保留 aggregate evidence；raw prompts、transcripts、event payloads、credentials、個資與絕對使用者路徑不得發布。
+
+### Migration
+- 從 v0.6.0 替換完整 package 後重新執行 discovery、handshake、status、doctor 與 index validation；本 release 不重寫 proposal 或 machine envelopes。
+
+### Rollback
+- 在只存在 v0.6 支援的 Schema v1/v2 與 version-1 envelopes、且無 partial transition 時，可完整 package 直接 pin 回 v0.6.0；不得刪除 `.sdd`、版本標記或改動 SDD lifecycle。
+
 ## v0.6.0 — 2026-07-22
 
 ### Added

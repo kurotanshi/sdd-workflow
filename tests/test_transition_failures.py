@@ -101,9 +101,6 @@ class TransitionFailureTests(unittest.TestCase):
             ]
             self.assertEqual(invoke(approve_args, root)[0], 0)
             proposal = target / "proposal.md"
-            proposal.write_text(
-                proposal.read_text().replace("Add deterministic parsing.", "Changed scope.")
-            )
             expected = status_snapshot(root)
             arguments = [
                 "--root", str(root), "--json", "begin-revision", "valid-simple",
@@ -133,7 +130,11 @@ class TransitionFailureTests(unittest.TestCase):
             "abandon <short-name>",
         ):
             self.assertIn(command, skill)
-        self.assertIn("Never edit these managed fields directly", skill)
+        self.assertIn(
+            "Never directly edit lifecycle status, checkbox markers, machine metadata, "
+            "archive paths, or INDEX",
+            skill,
+        )
 
     def test_complete_task_retry_finishes_staged_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

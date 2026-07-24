@@ -14,7 +14,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "skills/sdd-workflow/scripts"))
 
-from sdd_core.cli import main  # noqa: E402
+from sdd_core.cli import CliIssue, CommandResult, _write_human, main  # noqa: E402
 
 
 def invoke(arguments: list[str], *, cwd: Path = ROOT) -> tuple[int, str, str]:
@@ -27,7 +27,7 @@ def invoke(arguments: list[str], *, cwd: Path = ROOT) -> tuple[int, str, str]:
 class CliContractTests(unittest.TestCase):
     def test_version_human_and_json_contract(self) -> None:
         human = invoke(["--version"])
-        self.assertEqual(human, (0, "sdd-workflow 0.6.0 (schema 1..2)\n", ""))
+        self.assertEqual(human, (0, "sdd-workflow 1.0.0 (schema 1..2)\n", ""))
 
         exit_code, stdout, stderr = invoke(["--json", "--version"])
         self.assertEqual(exit_code, 0)
@@ -71,6 +71,14 @@ class CliContractTests(unittest.TestCase):
             self.assertEqual(error[0], 1)
             self.assertEqual(error[1], "")
             self.assertIn("ERROR_INVALID_SHORT_NAME:", error[2])
+            for field in (
+                "current state: blocked",
+                "next action: choose short name",
+                "blocked reason: ERROR_INVALID_SHORT_NAME:",
+                "required user action: provide a valid proposal short name",
+                "authoritative path: unknown",
+            ):
+                self.assertIn(field, error[2])
             proposal = target / "proposal.md"
             proposal.write_text(proposal.read_text().replace("draft", "approved", 1))
             status = invoke(["--root", str(root), "status", "valid-simple"], cwd=root)
@@ -78,6 +86,45 @@ class CliContractTests(unittest.TestCase):
             self.assertEqual(status[2], "")
             for field in ("adapter=", "status=approved", "type=", "tasks=", "counts=", "snapshot="):
                 self.assertIn(field, status[1])
+            for field in (
+                "current state: approved",
+                "next action: complete task 2",
+                "blocked reason: none",
+                "required user action: none",
+                "authoritative path: sdd/valid-simple",
+            ):
+                self.assertIn(field, status[1])
+
+    def test_human_terminal_guidance_preserves_committed_authority(self) -> None:
+        result = CommandResult(
+            command="archive",
+            data={
+                "short_name": "valid-simple",
+                "committed": True,
+                "destination": "sdd/archive/2026-07-23-valid-simple",
+            },
+            errors=(
+                CliIssue(
+                    code="COMMITTED_DERIVED_ARTIFACT_STALE",
+                    action="rebuild_index",
+                    message="Terminal bundle committed but INDEX is stale",
+                    severity="error",
+                ),
+            ),
+            exit_code=1,
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        _write_human(result, stdout=stdout, stderr=stderr)
+        self.assertIn("archive committed", stdout.getvalue())
+        for field in (
+            "current state: completed",
+            "next action: rebuild index",
+            "blocked reason: COMMITTED_DERIVED_ARTIFACT_STALE:",
+            "required user action: none",
+            "authoritative path: sdd/archive/2026-07-23-valid-simple",
+        ):
+            self.assertIn(field, stderr.getvalue())
 
     def test_status_exposes_task_source_canonical_text_and_stable_digest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -106,6 +153,66 @@ class CliContractTests(unittest.TestCase):
             self.assertNotEqual(before["source_text"], after["source_text"])
             self.assertEqual(before["canonical_text"], after["canonical_text"])
             self.assertEqual(before["task_digest"], after["task_digest"])
+
+    def test_status_reports_active_approval_scope_drift_without_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copytree(
+                ROOT / "tests/fixtures/activation-pilot",
+                root,
+                dirs_exist_ok=True,
+            )
+            draft = json.loads(
+                invoke(
+                    ["--root", str(root), "--json", "status", "pilot-change"],
+                    cwd=root,
+                )[1]
+            )
+            approved = invoke(
+                [
+                    "--root",
+                    str(root),
+                    "--json",
+                    "approve",
+                    "pilot-change",
+                    "--expected-snapshot",
+                    draft["data"]["snapshot"]["snapshot_digest"],
+                ],
+                cwd=root,
+            )
+            self.assertEqual(approved[0], 0, approved)
+            proposal = root / "sdd/pilot-change/proposal.md"
+            proposal.write_text(
+                proposal.read_text(encoding="utf-8").replace(
+                    "Create `result.txt` containing exactly `managed-pilot`.",
+                    "Create `result.txt` containing changed unapproved content.",
+                ),
+                encoding="utf-8",
+            )
+            before = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in (root / "sdd/pilot-change").rglob("*")
+                if path.is_file()
+            }
+            status = invoke(
+                ["--root", str(root), "--json", "status", "pilot-change"],
+                cwd=root,
+            )
+            after = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in (root / "sdd/pilot-change").rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(status[0], 1, status)
+            envelope = json.loads(status[1])
+            self.assertFalse(envelope["ok"])
+            self.assertEqual(
+                envelope["errors"][0]["code"],
+                "ERROR_APPROVED_PLAN_CHANGED",
+            )
+            self.assertEqual(envelope["errors"][0]["action"], "begin_revision")
+            self.assertEqual(envelope["data"]["differences"][0]["path"], "/scope/0")
+            self.assertEqual(after, before)
 
     def test_missing_artifact_and_invalid_utf8_have_stable_codes_and_actions(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

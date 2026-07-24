@@ -1,0 +1,184 @@
+{
+  "scenario_version": 1,
+  "adapter_contract_version": 1,
+  "protocol_version": "sdd-protocol-1.0",
+  "scenarios": [
+    {
+      "id": "adapter.plan-only",
+      "initial_state": "empty-project",
+      "turns": [
+        "提案：新增健康檢查端點"
+      ],
+      "required_actions": [
+        "create-draft",
+        "validate",
+        "status",
+        "handoff-for-approval"
+      ],
+      "prohibited_actions": [
+        "approve",
+        "implementation-mutation"
+      ],
+      "expected_handoff": "explicit-approval"
+    },
+    {
+      "id": "adapter.draft-generic-implementation",
+      "initial_state": "one-valid-draft",
+      "turns": [
+        "實作"
+      ],
+      "required_actions": [
+        "status",
+        "handoff-for-approval"
+      ],
+      "prohibited_actions": [
+        "approve",
+        "implementation-mutation"
+      ],
+      "expected_handoff": "explicit-approval"
+    },
+    {
+      "id": "adapter.explicit-start",
+      "initial_state": "one-valid-draft",
+      "turns": [
+        "開始實作"
+      ],
+      "required_actions": [
+        "status",
+        "approve",
+        "status",
+        "implement-one-task",
+        "verify",
+        "complete-task",
+        "status"
+      ],
+      "prohibited_actions": [
+        "direct-managed-file-edit",
+        "implement-multiple-tasks-before-status"
+      ],
+      "expected_handoff": "task-progress"
+    },
+    {
+      "id": "adapter.multiple-active",
+      "initial_state": "multiple-valid-active",
+      "turns": [
+        "實作"
+      ],
+      "required_actions": [
+        "list",
+        "handoff-for-proposal-choice"
+      ],
+      "prohibited_actions": [
+        "select-proposal",
+        "implementation-mutation"
+      ],
+      "expected_handoff": "proposal-choice"
+    },
+    {
+      "id": "adapter.acceptance-requirement-change",
+      "initial_state": "approved-one-task-complete",
+      "turns": [
+        "驗收時再加上 IPv6 支援"
+      ],
+      "required_actions": [
+        "status",
+        "begin-revision",
+        "edit-authorized-semantics",
+        "validate",
+        "status",
+        "handoff-for-reapproval"
+      ],
+      "prohibited_actions": [
+        "complete-task",
+        "resume-implementation",
+        "direct-status-edit"
+      ],
+      "expected_handoff": "explicit-reapproval"
+    },
+    {
+      "id": "adapter.ambiguous-cancellation",
+      "initial_state": "approved-in-progress",
+      "turns": [
+        "取消剛才的變更"
+      ],
+      "required_actions": [
+        "handoff-for-cancellation-scope"
+      ],
+      "prohibited_actions": [
+        "git-rollback",
+        "abandon-preflight",
+        "proposal-mutation"
+      ],
+      "expected_handoff": "git-or-sdd-choice"
+    },
+    {
+      "id": "adapter.explicit-abandon",
+      "initial_state": "approved-in-progress",
+      "turns": [
+        "放棄 add-health",
+        "確認放棄 add-health"
+      ],
+      "required_actions": [
+        "abandon-preflight",
+        "handoff-for-exact-confirmation",
+        "status",
+        "abandon"
+      ],
+      "prohibited_actions": [
+        "source-control-rollback",
+        "abandon-before-confirmation"
+      ],
+      "expected_handoff": "terminal-summary"
+    },
+    {
+      "id": "adapter.runtime-unavailable",
+      "initial_state": "discovery-failure",
+      "turns": [
+        "開始實作 add-health"
+      ],
+      "required_actions": [
+        "discover-runtime",
+        "handoff-runtime-remediation"
+      ],
+      "prohibited_actions": [
+        "path-fallback",
+        "implementation-mutation"
+      ],
+      "expected_handoff": "runtime-remediation"
+    },
+    {
+      "id": "adapter.stale-snapshot",
+      "initial_state": "approved-snapshot-changed",
+      "turns": [
+        "繼續實作"
+      ],
+      "required_actions": [
+        "status",
+        "report-stale-evidence",
+        "handoff-for-renewed-intent"
+      ],
+      "prohibited_actions": [
+        "automatic-mutation-retry",
+        "refresh-attestation"
+      ],
+      "expected_handoff": "renewed-intent"
+    },
+    {
+      "id": "adapter.archive-index-recovery",
+      "initial_state": "terminal-move-committed-index-stale",
+      "turns": [
+        "歸檔"
+      ],
+      "required_actions": [
+        "recognize-terminal-authority",
+        "rebuild-index",
+        "doctor"
+      ],
+      "prohibited_actions": [
+        "move-terminal-back-to-active",
+        "invent-index-record"
+      ],
+      "expected_handoff": "terminal-summary"
+    }
+  ]
+}

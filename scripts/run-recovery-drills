@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+"""Run versioned release-level recovery drill groups."""
+
+from recovery_drill_runner import main
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

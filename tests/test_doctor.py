@@ -7,12 +7,14 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "skills/sdd-workflow/scripts"))
 
 from sdd_core.cli import main  # noqa: E402
+from sdd_core.doctor import diagnose_runtime_package  # noqa: E402
 
 
 def invoke(root: Path, arguments: list[str]) -> tuple[int, dict[str, object]]:
@@ -29,6 +31,39 @@ def invoke(root: Path, arguments: list[str]) -> tuple[int, dict[str, object]]:
 
 
 class DoctorTests(unittest.TestCase):
+    def test_environment_evidence_uses_unknown_instead_of_guessing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "sdd/archive").mkdir(parents=True)
+            (root / "sdd/archive/INDEX.md").write_text(
+                "# SDD Archive\n\n",
+                encoding="utf-8",
+            )
+            code, result = invoke(root, ["doctor"])
+        self.assertEqual(code, 0)
+        evidence = result["data"]["environment"]
+        self.assertEqual(evidence["agent_environment"], "unknown")
+        self.assertEqual(evidence["package_source"], "unknown")
+        self.assertEqual(evidence["discovery_source"], "unknown")
+        self.assertEqual(evidence["skill"]["version"], "unknown")
+        self.assertEqual(evidence["runtime"]["distribution_id"], "sdd-workflow")
+        self.assertEqual(evidence["schema"]["runtime_supported"], [1, 2])
+        self.assertEqual(evidence["repository"]["health"], "healthy")
+        self.assertFalse(evidence["version_skew"]["detected"])
+
+    def test_runtime_skill_skew_has_exact_remediation(self) -> None:
+        with mock.patch(
+            "sdd_core.doctor.load_identity",
+            return_value={"skill_sha256": "0" * 64},
+        ):
+            findings = diagnose_runtime_package()
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].code, "RUNTIME_SKILL_VERSION_SKEW")
+        self.assertEqual(
+            findings[0].action,
+            "reinstall_complete_distribution",
+        )
+
     def test_detects_collision_terminal_active_stale_index_and_temp(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

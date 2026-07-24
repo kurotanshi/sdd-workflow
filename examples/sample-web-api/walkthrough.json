@@ -1,0 +1,20 @@
+{
+  "walkthrough_version": 1,
+  "short_name": "add-health-endpoint",
+  "expected_drift_code": "ERROR_APPROVED_PLAN_CHANGED",
+  "expected_drift_action": "begin_revision",
+  "stages": [
+    "proposal",
+    "approval",
+    "task-1",
+    "scope-drift",
+    "revision",
+    "reapproval",
+    "task-2",
+    "task-3",
+    "acceptance",
+    "archive",
+    "index-delete",
+    "index-rebuild"
+  ]
+}

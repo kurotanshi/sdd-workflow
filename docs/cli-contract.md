@@ -1,6 +1,6 @@
 # CLI contract
 
-Status: v0.5 internal consumer contract  
+Status: v1 stable implementation contract
 Output version: `1`
 
 `skills/sdd-workflow/scripts/sdd.py` is a non-interactive adapter from project artifacts to the deterministic core. It never prompts, reads a selection from stdin, or chooses among multiple active proposals. Read and managed-mutation commands are the formal v0.4 Skill path.
@@ -54,6 +54,8 @@ JSON mode uses the same exit status as human mode. A nonzero exit does not make 
 - `status` prints short name, adapter, status, type, completed/total tasks, count reliability, and snapshot digest.
 - `abandon-preflight` prints progress, the non-revert warning, and separate labeled 64-character lowercase SHA-256 values for `proposal.md` and `tasks.md`. Task-format diagnostics degrade counts to unreliable warnings instead of blocking preflight. Structural, path, or unsupported-schema failures remain blocking.
 - `--version` prints engine version and the supported schema range.
+- Lifecycle command output ends with labeled `current state`, `next action`, `blocked reason`, `required user action`, and `authoritative path` fields. Successful guidance is written to stdout; blocking guidance accompanies errors on stderr. A committed terminal transition remains reported as completed/abandoned when only the derived INDEX is stale.
+- Guidance is derived from the same command result but is not a machine contract. Automation continues to use `--json`, stable `code`/`action`, and the versioned envelope.
 
 ## JSON output
 
@@ -90,7 +92,7 @@ Data contains `state: "active"` and a sorted `candidates` array. Each candidate 
 
 ### `status`
 
-Data contains the canonical summary fields needed by the Skill: short name, adapter, status, change type, ordered tasks, completed and total counts, count reliability, compatibility flags, and the snapshot manifest. Each task includes its one-based `ordinal`, exact scanner `source_text`, parser-owned `canonical_text`, compatibility alias `text`, `completed` state, source line, and `task_digest`. The digest is lowercase SHA-256 of the canonical text's UTF-8 bytes without Unicode normalization; ordinal and completion are intentionally excluded. Schema v2 research also exposes `research_conclusion` as an ordered string array. Other arbitrary canonical extensions remain internal.
+Data contains the canonical summary fields needed by the Skill: short name, adapter, status, change type, ordered tasks, completed and total counts, count reliability, compatibility flags, and the snapshot manifest. Each task includes its one-based `ordinal`, exact scanner `source_text`, parser-owned `canonical_text`, compatibility alias `text`, `completed` state, source line, and `task_digest`. The digest is lowercase SHA-256 of the canonical text's UTF-8 bytes without Unicode normalization; ordinal and completion are intentionally excluded. Schema v2 research also exposes `research_conclusion` as an ordered string array. Other arbitrary canonical extensions remain internal. For an approved proposal with a managed approval baseline, `status` also checks manifest identity, attested managed fields, and approval-relevant semantic equality. Observable drift returns a nonzero envelope with field-level `differences` before implementation can start; this readonly check never refreshes metadata.
 
 ### `abandon-preflight`
 

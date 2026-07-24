@@ -26,14 +26,24 @@ from .parser_v1 import (
 )
 from .scanner import scan_tasks
 from .snapshot import SnapshotManifest, build_snapshot
-from .active_metadata import ActiveMetadataError
-from .approval import ApprovalManifestError
+from .active_metadata import ActiveMetadataError, parse_active_metadata
+from .approval import (
+    ApprovalManifestError,
+    approval_manifest_sha256,
+    compare_approval_manifests,
+    parse_approval_manifest,
+    project_approval_manifest,
+)
 from .transitions import TransitionError, approve_proposal, begin_revision, complete_task
-from .managed_state import ManagedStateError
+from .managed_state import ManagedStateError, compare_attested_state
 from .task_identity import task_digest
 from .archive_model import load_archive_records
 from .archive_index import rebuild_archive_index, validate_archive_index
-from .doctor import diagnose_project
+from .doctor import (
+    collect_environment_evidence,
+    diagnose_project,
+    diagnose_runtime_package,
+)
 from .summary_input import SummaryInputError
 from .summary_input import read_summary
 from .terminal_transitions import (
@@ -44,9 +54,10 @@ from .terminal_transitions import (
     validate_archive,
 )
 from .version import ENGINE_VERSION
+from .runtime_identity import CLI_OUTPUT_VERSION, runtime_handshake
 
 
-OUTPUT_VERSION = 1
+OUTPUT_VERSION = CLI_OUTPUT_VERSION
 
 
 _ACTION_BY_CODE = {
@@ -154,6 +165,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--root")
     parser.add_argument("--json", action="store_true", dest="json_mode")
     parser.add_argument("--version", action="store_true")
+    parser.add_argument("--handshake", action="store_true")
     commands = parser.add_subparsers(dest="command")
 
     validate = commands.add_parser("validate")
@@ -208,10 +220,17 @@ def main(
     json_requested = "--json" in arguments
     try:
         namespace = build_parser().parse_args(arguments)
-        if namespace.version and namespace.command is not None:
-            raise UsageError("--version cannot be combined with a command")
-        if not namespace.version and namespace.command is None:
-            raise UsageError("a command or --version is required")
+        selectors = sum(
+            (
+                bool(namespace.version),
+                bool(namespace.handshake),
+                namespace.command is not None,
+            )
+        )
+        if selectors != 1:
+            raise UsageError(
+                "exactly one command, --version, or --handshake is required"
+            )
         result = execute(namespace, cwd=cwd)
     except UsageError as error:
         result = _error_result(
@@ -276,6 +295,11 @@ def main(
 
 
 def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> CommandResult:
+    if namespace.handshake:
+        return CommandResult(
+            command="handshake",
+            data=runtime_handshake(),
+        )
     if namespace.version:
         return CommandResult(
             command="version",
@@ -288,13 +312,9 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
 
     root = discover_project_root(explicit_root=namespace.root, cwd=cwd)
     if namespace.command == "status":
-        parsed = _parse_one(root.path, namespace.short_name)
-        return _outcome_result(
-            "status",
-            namespace.short_name,
-            parsed.outcome,
-            snapshot=parsed.snapshot,
-        )
+        paths = resolve_proposal_paths(root.path, namespace.short_name)
+        parsed = _parse_paths(paths)
+        return _status_result(paths, parsed)
     if namespace.command == "validate" and not namespace.validate_all:
         parsed = _parse_one(root.path, namespace.short_name)
         outcome = parsed.outcome
@@ -497,7 +517,12 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             data={"record_count": len(scan.records), "valid": True},
         )
     if namespace.command == "doctor":
-        findings = diagnose_project(root.path)
+        findings = tuple(
+            sorted(
+                (*diagnose_project(root.path), *diagnose_runtime_package()),
+                key=lambda item: item.sort_key,
+            )
+        )
         issues = tuple(
             CliIssue(
                 item.code, item.action, item.message, "error", path=item.path
@@ -509,6 +534,7 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             data={
                 "healthy": not findings,
                 "findings": [item.to_dict() for item in findings],
+                "environment": collect_environment_evidence(root.path, findings),
             },
             errors=tuple(sorted(issues, key=lambda item: item.sort_key)),
             exit_code=1 if findings else 0,
@@ -722,6 +748,103 @@ def _outcome_result(
     )
 
 
+def _status_result(paths: ProposalPaths, parsed: ParsedProposal) -> CommandResult:
+    """Project status and fail closed when an active approval is observably invalid."""
+
+    base = _outcome_result(
+        "status",
+        paths.directory.name,
+        parsed.outcome,
+        snapshot=parsed.snapshot,
+    )
+    model = parsed.outcome.model
+    if not base.ok or model is None or model.status != "approved":
+        return base
+
+    machine = paths.directory / ".sdd"
+    manifest_path = machine / "approval-manifest.json"
+    metadata_path = machine / "metadata.json"
+    present = (manifest_path.is_file(), metadata_path.is_file())
+    # An existing legacy approved proposal can still be inspected before the
+    # caller explicitly establishes its first managed approval baseline.
+    if present == (False, False):
+        return base
+    if (
+        present[0] != present[1]
+        or machine.is_symlink()
+        or manifest_path.is_symlink()
+        or metadata_path.is_symlink()
+    ):
+        raise TransitionError(
+            "ERROR_APPROVAL_MANIFEST_REQUIRED",
+            "establish_approval_manifest",
+            "Approved proposal has no valid machine approval baseline",
+        )
+
+    manifest_bytes = manifest_path.read_bytes()
+    manifest = parse_approval_manifest(manifest_bytes)
+    metadata = parse_active_metadata(metadata_path.read_bytes())
+    if approval_manifest_sha256(manifest_bytes) != metadata.manifest_sha256:
+        raise TransitionError(
+            "ERROR_APPROVAL_MANIFEST_IDENTITY_MISMATCH",
+            "inspect_machine_metadata",
+            "Approval Manifest bytes do not match active metadata identity",
+        )
+    if metadata.approval_state != "active" or metadata.revision is not None:
+        raise TransitionError(
+            "ERROR_METADATA_STATE_MISMATCH",
+            "inspect_machine_metadata",
+            "Approved status requires active approval metadata without a revision marker",
+        )
+
+    if metadata.attestation is not None:
+        drift = compare_attested_state(metadata.attestation, model, metadata)
+        if drift:
+            issue = CliIssue(
+                code="OUT_OF_BAND_DRIFT",
+                action="inspect_managed_state_drift",
+                message=(
+                    "Current managed fields differ from the last attested state; "
+                    "the editor or cause is unknown"
+                ),
+                severity="error",
+            )
+            return CommandResult(
+                command="status",
+                data={
+                    **base.data,
+                    "differences": [item.to_dict() for item in drift],
+                },
+                warnings=base.warnings,
+                errors=(issue,),
+                exit_code=1,
+            )
+
+    current_manifest = project_approval_manifest(
+        model,
+        approval_model_version=manifest.approval_model_version,
+    )
+    differences = compare_approval_manifests(manifest, current_manifest)
+    if not differences:
+        return base
+    issue = CliIssue(
+        code="ERROR_APPROVED_PLAN_CHANGED",
+        action="begin_revision",
+        message="Current approval-relevant content differs from the Approval Manifest",
+        severity="error",
+    )
+    return CommandResult(
+        command="status",
+        data={
+            **base.data,
+            "differences": [item.to_dict() for item in differences],
+        },
+        warnings=base.warnings,
+        errors=(issue,),
+        exit_code=1,
+    )
+
+
 def _issue_from_diagnostic(diagnostic: Diagnostic) -> CliIssue:
     action = _ACTION_BY_CODE.get(diagnostic.code, "fix_artifact_format")
     return CliIssue(
@@ -829,6 +952,8 @@ def _command_hint(arguments: Sequence[str]) -> str:
             return argument
     if "--version" in arguments:
         return "version"
+    if "--handshake" in arguments:
+        return "handshake"
     return "usage"
 
 
@@ -838,6 +963,12 @@ def _write_human(result: CommandResult, *, stdout: TextIO, stderr: TextIO) -> No
             f"sdd-workflow {result.data['engine_version']} "
             f"(schema {result.data['minimum_schema_version']}.."
             f"{result.data['maximum_schema_version']})\n"
+        )
+    elif result.command == "handshake" and result.ok:
+        stdout.write(
+            f"sdd-workflow handshake {result.data['handshake_version']} "
+            f"engine={result.data['engine_version']} "
+            f"capabilities={len(result.data['capabilities'])}\n"
         )
     elif result.command == "status" and result.data:
         reliability = "reliable" if result.data.get("task_counts_reliable") else "unreliable"
@@ -908,6 +1039,11 @@ def _write_human(result: CommandResult, *, stdout: TextIO, stderr: TextIO) -> No
                 f"{result.data['short_name']}: {result.command} dry-run "
                 f"destination={result.data['destination']}\n"
             )
+        elif result.data.get("committed"):
+            stdout.write(
+                f"{result.data['short_name']}: {result.command} committed "
+                f"destination={result.data['destination']}\n"
+            )
 
     for issue in (*result.warnings, *result.errors):
         location = ""
@@ -918,3 +1054,150 @@ def _write_human(result: CommandResult, *, stdout: TextIO, stderr: TextIO) -> No
                 if issue.column is not None:
                     location += f":{issue.column}"
         stderr.write(f"{issue.code}:{location} {issue.message}\n")
+
+    if result.command not in {"version", "handshake"}:
+        guidance = _human_guidance(result)
+        stream = stderr if result.errors else stdout
+        stream.write(f"current state: {guidance['current_state']}\n")
+        stream.write(f"next action: {guidance['next_action']}\n")
+        stream.write(f"blocked reason: {guidance['blocked_reason']}\n")
+        stream.write(f"required user action: {guidance['required_user_action']}\n")
+        stream.write(f"authoritative path: {guidance['authoritative_path']}\n")
+
+
+def _human_guidance(result: CommandResult) -> dict[str, str]:
+    data = result.data
+    action = result.errors[0].action if result.errors else None
+    current_state = _human_current_state(result)
+    next_action = _human_next_action(result, action)
+    blocked_reason = (
+        "; ".join(f"{issue.code}: {issue.message}" for issue in result.errors)
+        if result.errors
+        else "none"
+    )
+    return {
+        "current_state": current_state,
+        "next_action": next_action,
+        "blocked_reason": blocked_reason,
+        "required_user_action": _human_required_user_action(result, action),
+        "authoritative_path": _human_authoritative_path(result, data),
+    }
+
+
+def _human_current_state(result: CommandResult) -> str:
+    data = result.data
+    if result.command in {"archive", "abandon"} and data.get("committed"):
+        return "completed" if result.command == "archive" else "abandoned"
+    if result.command == "status" and data.get("status"):
+        return str(data["status"])
+    if result.errors:
+        return "blocked"
+    if result.command == "validate":
+        return "valid"
+    if result.command == "list":
+        return f"{len(data.get('candidates', []))} active proposal(s)"
+    if result.command == "abandon-preflight":
+        return "abandonment preflight complete"
+    if result.command == "approve":
+        return "approved"
+    if result.command == "begin-revision":
+        return "draft"
+    if result.command == "complete-task":
+        return "approved"
+    if result.command in {"archive", "abandon"} and data.get("dry_run"):
+        return f"{result.command} planned"
+    if result.command == "doctor":
+        return "healthy" if data.get("healthy") else "findings present"
+    if result.command == "validate-index":
+        return "index valid" if data.get("valid") else "index invalid"
+    if result.command == "rebuild-index":
+        return "index rebuilt"
+    return "command complete"
+
+
+def _human_next_action(result: CommandResult, action: str | None) -> str:
+    data = result.data
+    if action is not None:
+        return action.replace("_", " ")
+    if result.command == "status":
+        tasks = data.get("tasks", [])
+        next_task = next(
+            (
+                task.get("ordinal")
+                for task in tasks
+                if isinstance(task, dict) and not task.get("completed")
+            ),
+            None,
+        )
+        if data.get("status") == "draft":
+            return "approve after explicit user authorization"
+        if next_task is not None:
+            return f"complete task {next_task}"
+        return "archive after acceptance"
+    if result.command == "validate":
+        return "run status"
+    if result.command == "list":
+        return "select one proposal"
+    if result.command == "abandon-preflight":
+        return f"wait for exact confirmation: 確認放棄 {data.get('short_name')}"
+    if result.command == "approve":
+        return "implement the first incomplete task"
+    if result.command == "begin-revision":
+        return "edit and validate revised proposal scope"
+    if result.command == "complete-task":
+        return "run status and verify canonical progress"
+    if result.command in {"archive", "abandon"} and data.get("dry_run"):
+        return f"review dry-run before {result.command}"
+    if result.command == "validate-index":
+        return "continue workflow"
+    if result.command == "rebuild-index":
+        return "validate archive index"
+    if result.command == "doctor":
+        return "continue workflow" if data.get("healthy") else "inspect findings"
+    return "none"
+
+
+def _human_required_user_action(
+    result: CommandResult,
+    action: str | None,
+) -> str:
+    if action is not None:
+        user_actions = {
+            "select_project_root": "select the project root",
+            "choose_short_name": "provide a valid proposal short name",
+            "create_or_select_proposal": "create or select a proposal",
+            "refresh_status": "confirm intent again after a fresh status check",
+            "begin_revision": "authorize managed revision and reapproval",
+            "begin_revision_and_reapprove": "authorize managed revision and reapproval",
+            "establish_approval_manifest": "reconfirm the canonical approved plan",
+            "fix_command_arguments": "correct the command arguments",
+            "rebuild_index": "none",
+        }
+        return user_actions.get(action, f"follow the {action.replace('_', ' ')} remediation")
+    data = result.data
+    if result.command == "status":
+        if data.get("status") == "draft":
+            return "explicitly approve before implementation"
+        if data.get("task_count") == data.get("completed_count"):
+            return "accept completed work before archive"
+    if result.command == "abandon-preflight":
+        return f"reply exactly: 確認放棄 {data.get('short_name')}"
+    if result.command == "begin-revision":
+        return "review revised scope and explicitly approve it"
+    return "none"
+
+
+def _human_authoritative_path(
+    result: CommandResult,
+    data: dict[str, Any],
+) -> str:
+    if data.get("destination"):
+        return str(data["destination"])
+    if data.get("short_name"):
+        return f"sdd/{data['short_name']}"
+    for issue in (*result.errors, *result.warnings):
+        if issue.path is not None:
+            return issue.path
+    if result.command in {"rebuild-index", "validate-index"}:
+        return "sdd/archive/INDEX.md"
+    return "unknown"

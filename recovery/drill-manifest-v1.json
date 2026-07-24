@@ -1,0 +1,70 @@
+{
+  "drills": [
+    {
+      "id": "transaction.safe-retry",
+      "selectors": [
+        "tests.test_transition_failures",
+        "tests.test_terminal_validation"
+      ]
+    },
+    {
+      "id": "atomic-write.no-partial",
+      "selectors": [
+        "tests.test_atomic_write"
+      ]
+    },
+    {
+      "id": "atomic-write.partial-metadata",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_atomic_metadata_replace_never_exposes_partial_bytes",
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_precommit_metadata_failure_preserves_draft_authority"
+      ]
+    },
+    {
+      "id": "archive.authority-and-diagnostics",
+      "selectors": [
+        "tests.test_archive_cli",
+        "tests.test_doctor"
+      ]
+    },
+    {
+      "id": "archive.committed-index-recovery",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_archive_commit_survives_index_failure_and_rebuilds"
+      ]
+    },
+    {
+      "id": "concurrency.atomic-convergence",
+      "selectors": [
+        "tests.test_concurrency"
+      ]
+    },
+    {
+      "id": "concurrency.same-snapshot-stale",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_second_process_with_same_snapshot_stably_fails_stale"
+      ]
+    },
+    {
+      "id": "compatibility.fail-closed",
+      "selectors": [
+        "tests.test_compatibility"
+      ]
+    },
+    {
+      "id": "compatibility.future-schema-mutation",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_future_schema_blocks_read_and_mutation_without_writes"
+      ]
+    },
+    {
+      "id": "discovery.external-move",
+      "selectors": [
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_renamed_proposal_does_not_retarget_other_active_proposal",
+        "tests.test_recovery_drills.RecoveryDrillsTests.test_proposal_moved_outside_sdd_is_not_discovered_or_mutated"
+      ]
+    }
+  ],
+  "manifest_version": 1,
+  "runner": "scripts/run-recovery-drills"
+}

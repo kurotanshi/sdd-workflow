@@ -1,0 +1,16 @@
+{
+  "kit_version": 1,
+  "protocol_version": "sdd-protocol-1.0",
+  "registry": "conformance/protocol-rules-v1.json",
+  "reference_runtime_manifest": "conformance/runtime-manifest-v1.json",
+  "reference_runtime": "skills/sdd-workflow/scripts/sdd.py",
+  "expected_envelopes": "conformance/expected-envelopes-v1.json",
+  "adapter_scenarios": "conformance/adapter-scenarios-v1.json",
+  "hermetic_adapter": "conformance/hermetic_adapter.py",
+  "adapter_runner": "scripts/run-adapter-conformance",
+  "runner": "scripts/run-conformance-kit",
+  "fixture_manifests": [
+    "tests/fixtures/baseline/MANIFEST.json",
+    "tests/fixtures/schema-v2/MANIFEST.json"
+  ]
+}

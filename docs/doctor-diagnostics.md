@@ -15,6 +15,7 @@ Status: v0.4 Proposal C contract
 | `ERROR_INDEX_STALE` | Current INDEX bytes differ from deterministic rendering of complete canonical records. | That archive authority is damaged. | `rebuild_index` |
 | `ENGINE_VERSION_SKEW` | Parsed metadata names a strictly newer major/minor writer generation than the running engine. | That artifact format is incompatible, that the writer caused drift, or that timestamps decide authority. | `use_compatible_engine` |
 | `ENGINE_VERSION_UNKNOWN` | Metadata writer is not strict `MAJOR.MINOR.PATCH` SemVer. | Which engine wrote it or whether its format is unsupported. | `inspect_engine_version` |
+| `RUNTIME_SKILL_VERSION_SKEW` | The installed `SKILL.md` SHA-256 differs from the value fixed by the package identity manifest. | Which file was replaced, who replaced it, or whether either file should win. | `reinstall_complete_distribution` |
 
 More specific evidence-based codes (`ACTIVE_ARCHIVE_COLLISION`, `STATUS_LOCATION_MISMATCH`, Manifest identity/semantic mismatch, unsupported version) take precedence over a generic unknown label when their predicates are proven.
 
@@ -27,3 +28,14 @@ More specific evidence-based codes (`ACTIVE_ARCHIVE_COLLISION`, `STATUS_LOCATION
 - For `ERROR_INDEX_STALE`, run `rebuild-index` only after all archive records adapt without unknown/ambiguous/mismatch diagnostics.
 
 Every finding reports paths and observed differences when available. Wording uses “differs,” “missing,” “multiple,” or “present”; it avoids “was modified by,” “caused by,” and other historical assertions unsupported by artifacts.
+
+## Environment evidence
+
+The JSON result also contains `data.environment`. Runtime identity,
+capabilities, supported schemas, installed package path, Skill hash, version
+skew, and repository health are reported only from files and runtime values
+observed by the current process. Agent environment, Skill version, package
+source, and discovery source are `unknown` unless a future version receives
+verifiable provenance for them. `doctor` never guesses these values from a
+home-directory name, current working directory, `PATH`, or a likely host
+layout.

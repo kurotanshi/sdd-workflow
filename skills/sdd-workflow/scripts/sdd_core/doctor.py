@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,9 @@ from .archive_model import load_archive_records
 from .discovery import list_active_proposal_paths
 from .managed_state import ManagedStateError, compare_attested_state
 from .parser_v1 import parse_with_schema
+from .parser_v1 import SUPPORTED_SCHEMA_VERSIONS, select_schema_from_document
+from .runtime_discovery import RuntimeDiscoveryError, load_identity
+from .runtime_identity import PACKAGE_ROOT, SKILL_FILE, runtime_handshake
 from .scanner import scan_tasks
 from .version import ENGINE_VERSION, engine_generation
 
@@ -227,3 +231,92 @@ def diagnose_project(project_root: Path) -> tuple[DoctorFinding, ...]:
                     )
                 )
     return tuple(sorted(findings, key=lambda item: item.sort_key))
+
+
+def diagnose_runtime_package() -> tuple[DoctorFinding, ...]:
+    try:
+        identity = load_identity(PACKAGE_ROOT)
+        handshake = runtime_handshake()
+    except (OSError, RuntimeError, RuntimeDiscoveryError) as error:
+        return (
+            DoctorFinding(
+                getattr(error, "code", "RUNTIME_IDENTITY_UNKNOWN"),
+                getattr(error, "action", "reinstall_runtime"),
+                "runtime-package",
+                str(error),
+            ),
+        )
+    if identity["skill_sha256"] != handshake["skill_sha256"]:
+        return (
+            DoctorFinding(
+                "RUNTIME_SKILL_VERSION_SKEW",
+                "reinstall_complete_distribution",
+                "runtime-package",
+                "Installed Skill bytes differ from the runtime identity manifest",
+            ),
+        )
+    return ()
+
+
+def collect_environment_evidence(
+    project_root: Path,
+    findings: tuple[DoctorFinding, ...],
+) -> dict[str, Any]:
+    try:
+        handshake = runtime_handshake()
+        skill_sha256: str | None = hashlib.sha256(SKILL_FILE.read_bytes()).hexdigest()
+        install_path: str | None = str(PACKAGE_ROOT)
+    except OSError:
+        handshake = {}
+        skill_sha256 = None
+        install_path = None
+
+    observed_schemas: set[int] = set()
+    schema_observation = "known"
+    try:
+        for paths in list_active_proposal_paths(project_root):
+            selection = select_schema_from_document(
+                paths.proposal.read_text(encoding="utf-8"),
+                path=f"sdd/{paths.directory.name}/proposal.md",
+            )
+            if selection.version is None:
+                schema_observation = "unknown"
+            else:
+                observed_schemas.add(selection.version)
+    except (OSError, UnicodeDecodeError):
+        schema_observation = "unknown"
+
+    skew_codes = sorted(
+        finding.code
+        for finding in findings
+        if finding.code in {"ENGINE_VERSION_SKEW", "RUNTIME_SKILL_VERSION_SKEW"}
+    )
+    return {
+        "agent_environment": "unknown",
+        "runtime": {
+            "distribution_id": handshake.get("distribution_id", "unknown"),
+            "engine_version": handshake.get("engine_version", "unknown"),
+            "handshake_version": handshake.get("handshake_version", "unknown"),
+            "capabilities": handshake.get("capabilities", "unknown"),
+        },
+        "skill": {
+            "version": "unknown",
+            "sha256": skill_sha256 if skill_sha256 is not None else "unknown",
+        },
+        "schema": {
+            "runtime_supported": list(SUPPORTED_SCHEMA_VERSIONS),
+            "repository_observation": schema_observation,
+            "repository_observed_versions": sorted(observed_schemas),
+        },
+        "install_path": install_path if install_path is not None else "unknown",
+        "package_source": "unknown",
+        "discovery_source": "unknown",
+        "version_skew": {
+            "detected": bool(skew_codes),
+            "codes": skew_codes,
+        },
+        "repository": {
+            "health": "healthy" if not findings else "findings-present",
+            "finding_count": len(findings),
+        },
+    }

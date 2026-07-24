@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+"""Aggregate completed Agent evaluation scores."""
+
+from agent_eval_scoring import summary_main
+
+
+if __name__ == "__main__":
+    raise SystemExit(summary_main())

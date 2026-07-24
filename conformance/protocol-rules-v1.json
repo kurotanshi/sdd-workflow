@@ -1,0 +1,159 @@
+{
+  "registry_version": 1,
+  "protocol_version": "sdd-protocol-1.0",
+  "rules": [
+    {
+      "id": "SDD-PROJ-001",
+      "category": "projection",
+      "title": "Deterministic canonical projection",
+      "requirement": "The same proposal bundle bytes and supported schema generation MUST produce the same canonical projection and ordered task identities.",
+      "sources": [
+        "docs/architecture.md",
+        "docs/approval-manifest.md",
+        "docs/schema-v2.md"
+      ]
+    },
+    {
+      "id": "SDD-DISC-001",
+      "category": "projection",
+      "title": "Deterministic and contained discovery",
+      "requirement": "Project and proposal discovery MUST be deterministic, remain inside the selected project root, and reject unsafe paths.",
+      "sources": [
+        "docs/architecture.md",
+        "docs/cli-contract.md"
+      ]
+    },
+    {
+      "id": "SDD-TRANS-001",
+      "category": "transition",
+      "title": "Managed transition boundary",
+      "requirement": "Approval, revision, task completion, archive, and abandonment MUST follow the allowed state transition and compare-and-swap inputs.",
+      "sources": [
+        "docs/architecture.md",
+        "docs/transaction-protocol.md"
+      ]
+    },
+    {
+      "id": "SDD-APPROVAL-001",
+      "category": "approval_attestation",
+      "title": "Approval and attestation fail closed",
+      "requirement": "A missing, stale, or mismatched approval manifest, snapshot, task identity, or managed-state attestation MUST stop mutation.",
+      "sources": [
+        "docs/approval-manifest.md",
+        "docs/managed-state.md"
+      ]
+    },
+    {
+      "id": "SDD-TXN-001",
+      "category": "transaction_retry",
+      "title": "Atomic commit points",
+      "requirement": "Managed writes MUST preserve the documented commit point and MUST NOT expose a successful transition before its authoritative write commits.",
+      "sources": [
+        "docs/transaction-protocol.md",
+        "docs/architecture.md"
+      ]
+    },
+    {
+      "id": "SDD-RETRY-001",
+      "category": "transaction_retry",
+      "title": "Evidence-backed safe retry",
+      "requirement": "A retry after partial failure MUST use operation evidence and current authoritative state, and MUST fail closed when idempotence cannot be proven.",
+      "sources": [
+        "docs/transaction-protocol.md",
+        "docs/doctor-diagnostics.md"
+      ]
+    },
+    {
+      "id": "SDD-ARCHIVE-001",
+      "category": "archive_authority",
+      "title": "Archive bundle remains authoritative",
+      "requirement": "A committed terminal bundle MUST remain authoritative when derived INDEX maintenance fails, and INDEX MUST be reconstructable without inventing history.",
+      "sources": [
+        "docs/archive-model.md",
+        "docs/transaction-protocol.md"
+      ]
+    },
+    {
+      "id": "SDD-COMPAT-001",
+      "category": "schema_compatibility",
+      "title": "Explicit compatibility generations",
+      "requirement": "Supported legacy, Schema v1, and Schema v2 inputs MUST retain their documented behavior, while unknown future versions MUST fail closed before semantic use.",
+      "sources": [
+        "docs/compatibility.md",
+        "docs/schema-v2.md"
+      ]
+    },
+    {
+      "id": "SDD-CLI-001",
+      "category": "cli_contract",
+      "title": "Stable public CLI contract",
+      "requirement": "Public commands MUST preserve the versioned JSON envelope, stdout and stderr separation, exit classes, and stable error code and action semantics.",
+      "sources": [
+        "docs/cli-contract.md",
+        "docs/release-baseline-v1.0.md"
+      ]
+    },
+    {
+      "id": "SDD-DIAG-001",
+      "category": "cli_contract",
+      "title": "Evidence-bounded diagnostics",
+      "requirement": "Doctor and validation diagnostics MUST report only observable evidence and MUST NOT infer or rewrite ambiguous history.",
+      "sources": [
+        "docs/doctor-diagnostics.md",
+        "docs/compatibility.md"
+      ]
+    },
+    {
+      "id": "SDD-CONC-001",
+      "category": "transaction_retry",
+      "title": "Concurrent updates converge or fail stale",
+      "requirement": "Concurrent writers MUST either commit independent authoritative state safely or reject stale state without silently overwriting another operation.",
+      "sources": [
+        "docs/team-operations.md",
+        "docs/transaction-protocol.md"
+      ]
+    },
+    {
+      "id": "SDD-ADAPTER-001",
+      "category": "adapter",
+      "title": "Agent adapter phase boundary",
+      "requirement": "The Skill adapter MUST preserve explicit phase triggers, approval gates, CLI-only managed mutation, and the separation between SDD state and source-control rollback.",
+      "sources": [
+        "skills/sdd-workflow/SKILL.md",
+        "README.md",
+        "README.en.md"
+      ]
+    },
+    {
+      "id": "SDD-PKG-001",
+      "category": "packaging",
+      "title": "Portable validated package",
+      "requirement": "The installable Skill package MUST contain the declared runtime files, run on supported Python and operating-system generations, and exclude generated artifacts.",
+      "sources": [
+        "docs/runtime.md",
+        "docs/ci.md",
+        "docs/release-baseline-v1.0.md"
+      ]
+    },
+    {
+      "id": "SDD-DOC-001",
+      "category": "packaging",
+      "title": "Duplicated contract facts remain consistent",
+      "requirement": "Duplicated public version, command, runtime, and workflow facts MUST remain consistent with their canonical sources.",
+      "sources": [
+        "docs/testing.md",
+        "docs/release-baseline-v1.0.md"
+      ]
+    },
+    {
+      "id": "SDD-CONF-001",
+      "category": "conformance",
+      "title": "Versioned conformance mapping",
+      "requirement": "Every executable reference-runtime test MUST map to at least one registered protocol rule, and every registered rule MUST have executable conformance evidence.",
+      "sources": [
+        "docs/testing.md",
+        "ROADMAP.md"
+      ]
+    }
+  ]
+}

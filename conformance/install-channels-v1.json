@@ -1,0 +1,60 @@
+{
+  "matrix_version": 1,
+  "channels": [
+    {
+      "id": "claude-code",
+      "support": "supported",
+      "host_load_path": "$HOME/.claude/skills/sdd-workflow",
+      "package_layout": "complete-directory",
+      "host_loading": "native"
+    },
+    {
+      "id": "codex",
+      "support": "supported",
+      "host_load_path": "$HOME/.agents/skills/sdd-workflow",
+      "package_layout": "complete-directory",
+      "host_loading": "native"
+    },
+    {
+      "id": "legacy",
+      "support": "migration-only",
+      "host_load_path": "$HOME/.codex/skills/sdd-workflow",
+      "package_layout": "complete-directory",
+      "host_loading": "not-guaranteed"
+    },
+    {
+      "id": "manual-copy",
+      "support": "supported",
+      "host_load_path": "host-native-skill-root/sdd-workflow",
+      "package_layout": "complete-directory",
+      "host_loading": "host-dependent"
+    },
+    {
+      "id": "native-installer",
+      "support": "supported",
+      "host_load_path": "installer-selected-native-skill-root/sdd-workflow",
+      "package_layout": "complete-directory",
+      "host_loading": "native"
+    },
+    {
+      "id": "third-party-installer",
+      "support": "conditional",
+      "host_load_path": "$HOME/.agents/skills/sdd-workflow",
+      "package_layout": "complete-directory",
+      "host_loading": "must-be-verified"
+    },
+    {
+      "id": "dev-link",
+      "support": "development-only",
+      "host_load_path": "host-native-skill-root/sdd-workflow",
+      "package_layout": "complete-directory-symlink",
+      "host_loading": "host-dependent"
+    }
+  ],
+  "unsupported_layouts": [
+    "skill-md-only",
+    "runtime-only",
+    "mixed-release-files",
+    "path-command-without-package"
+  ]
+}
