@@ -1,6 +1,6 @@
 # Compatibility axes
 
-Status: v1 compatibility contract (candidate until the v1.0.0 release gate)
+Status: stable v1 compatibility contract (v1.0.0 release gate passed 2026-07-23)
 
 Version classification, deprecation, schema evolution, migration, and rollback
 rules are normative in
