@@ -18,11 +18,12 @@ sdd-workflow 會先把範圍、任務與驗收條件寫成可版控的提案，�
 在 Codex 對話中使用內建 installer：
 
 ```text
-$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow
+$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow into ~/.agents/skills
 ```
 
-目前使用者層路徑是 `~/.agents/skills/sdd-workflow/`。安裝後在下一個可用
-turn 驗證即可。
+目前使用者層路徑是 `~/.agents/skills/sdd-workflow/`；請保留指令中的目的地，
+因為部分 installer 版本仍可能使用舊的預設路徑。Codex 通常會自動偵測新
+Skill；若下一個 turn 未出現，再重新啟動 Codex。
 
 ### Claude Code
 
@@ -32,8 +33,9 @@ turn 驗證即可。
 Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into ~/.claude/skills/sdd-workflow
 ```
 
-目前使用者層路徑是 `~/.claude/skills/sdd-workflow/`。安裝或更新後請開新
-session。手動安裝、第三方 Skills CLI、更新與移除方式見
+目前使用者層路徑是 `~/.claude/skills/sdd-workflow/`。Claude Code 通常會
+自動偵測安裝或更新；若 Skill 未出現，再開新 session。手動安裝、第三方
+Skills CLI、驗證、更新與移除方式見
 [`docs/install-methods.md`](./docs/install-methods.md)。
 
 ## 第一次 workflow
@@ -57,7 +59,8 @@ session。手動安裝、第三方 Skills CLI、更新與移除方式見
    revision、更新提案，再停下等待新的 `開始實作`。
 
 4. 所有 task 完成且你驗收後，回覆 `歸檔`。提案會移至
-   `sdd/archive/`，`INDEX.md` 可由 archive records 重建。
+   `sdd/archive/`；目前 runtime 建立的 managed archive records 可用來重建
+   `INDEX.md`。
 
 完整可重播案例在 [`examples/sample-web-api/`](./examples/sample-web-api/)：
 
@@ -105,8 +108,9 @@ Protocol 作者與 adapter 作者可直接閱讀
 [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md)；安裝副本是可
 重新產生的 package artifact，不是第二份流程來源。
 
-Deterministic parser、transaction engine 與後續 schema 的分階段工程計畫及
-設計取捨，見 [`ROADMAP.md`](./ROADMAP.md)。
+歷史工程規劃與設計取捨見 [`ROADMAP.md`](./ROADMAP.md)；目前 v1.0 的完成
+狀態與驗證證據見
+[`v1.0 release gate`](./docs/reports/v1.0-release-gate.md)。
 
 ## 本機開發
 

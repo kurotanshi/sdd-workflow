@@ -20,11 +20,13 @@ Install the complete `skills/sdd-workflow/` directory, not only `SKILL.md`.
 Use the built-in installer in a Codex conversation:
 
 ```text
-$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow
+$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow into ~/.agents/skills
 ```
 
-The current user-level location is `~/.agents/skills/sdd-workflow/`. Verify it
-on the next usable turn after installation.
+The current user-level location is `~/.agents/skills/sdd-workflow/`. Keep the
+destination in the request because some installer versions still use an older
+default. Codex normally detects a new Skill automatically; restart Codex if it
+does not appear on the next turn.
 
 ### Claude Code
 
@@ -34,9 +36,10 @@ Ask Claude Code to install the complete package:
 Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into ~/.claude/skills/sdd-workflow
 ```
 
-The current user-level location is `~/.claude/skills/sdd-workflow/`. Start a
-fresh session after installing or updating. Manual installation, the
-third-party Skills CLI, updates, and removal are covered in
+The current user-level location is `~/.claude/skills/sdd-workflow/`. Claude
+Code normally detects installs and updates automatically; start a fresh
+session if the Skill does not appear. Manual installation, the third-party
+Skills CLI, verification, updates, and removal are covered in
 [`docs/install-methods.md`](./docs/install-methods.md).
 
 ## Your first workflow
@@ -62,8 +65,8 @@ Open the Agent in the project you want to change, then:
    proposal, and stops again for a new `開始實作`.
 
 4. Once every task is complete and you accept the result, reply with `歸檔`.
-   The proposal moves under `sdd/archive/`, whose `INDEX.md` can be rebuilt
-   from the archive records.
+   The proposal moves under `sdd/archive/`. Managed archive records created by
+   the current runtime can be used to rebuild `INDEX.md`.
 
 The complete replayable example is under
 [`examples/sample-web-api/`](./examples/sample-web-api/):
@@ -113,9 +116,10 @@ The **single maintained Skill source** is
 [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md). Installed
 copies are reproducible package artifacts, not a second workflow source.
 
-The staged engineering plan and design trade-offs for the deterministic
-parser, transaction engine, and later schema work are documented in
-[`ROADMAP.md`](./ROADMAP.md).
+Historical engineering plans and design trade-offs are documented in
+[`ROADMAP.md`](./ROADMAP.md). The current v1.0 completion status and evidence
+are recorded in the
+[`v1.0 release gate`](./docs/reports/v1.0-release-gate.md).
 
 ## Local development
 
