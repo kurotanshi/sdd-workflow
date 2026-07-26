@@ -43,20 +43,20 @@ Common outcomes:
 | archive index is stale | preserve archive directories and use the bundled validation/rebuild path |
 | evidence is ambiguous | stop mutation and retain the diagnostic for a maintainer |
 
-## Known v1.0.0 revision blocker
+## Upgrade from the v1.0.0 revision blocker
 
-When partially completed work is revised by appending new pending tasks,
-reapproval may stop with:
+The tagged v1.0.0 package may stop reapproval after partially completed work is
+revised by appending new pending tasks:
 
 ```text
 OUT_OF_BAND_DRIFT
 action: inspect_managed_state_drift
 ```
 
-Do not bypass approval, delete metadata, or edit the task checkboxes. Preserve
-the proposal and diagnostic. Continue the product change only after a
-maintainer-provided fix or a separately approved replacement proposal gives a
-safe path.
+This is fixed in v1.0.1. Do not bypass approval, delete metadata, or edit task
+checkboxes. Preserve the proposal and diagnostic, replace the complete installed
+package with v1.0.1, restart the Agent, verify the loaded package, then renew the
+intended action from fresh `status`.
 
 ## Cancel, abandon, or roll back
 

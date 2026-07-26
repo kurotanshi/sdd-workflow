@@ -382,8 +382,8 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
     if namespace.command == "approve":
         paths = resolve_proposal_paths(root.path, namespace.short_name)
         parsed = _parse_paths(paths)
-        base = _outcome_result("approve", namespace.short_name, parsed.outcome)
-        if not base.ok or parsed.outcome.model is None or not parsed.outcome.mutation_safe:
+        base = _mutation_outcome_result("approve", namespace.short_name, parsed.outcome)
+        if not base.ok or parsed.outcome.model is None:
             return base
         transition = approve_proposal(
             paths,
@@ -407,8 +407,10 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
     if namespace.command == "begin-revision":
         paths = resolve_proposal_paths(root.path, namespace.short_name)
         parsed = _parse_paths(paths)
-        base = _outcome_result("begin-revision", namespace.short_name, parsed.outcome)
-        if not base.ok or parsed.outcome.model is None or not parsed.outcome.mutation_safe:
+        base = _mutation_outcome_result(
+            "begin-revision", namespace.short_name, parsed.outcome
+        )
+        if not base.ok or parsed.outcome.model is None:
             return base
         transition = begin_revision(
             paths,
@@ -430,8 +432,10 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
     if namespace.command == "complete-task":
         paths = resolve_proposal_paths(root.path, namespace.short_name)
         parsed = _parse_paths(paths)
-        base = _outcome_result("complete-task", namespace.short_name, parsed.outcome)
-        if not base.ok or parsed.outcome.model is None or not parsed.outcome.mutation_safe:
+        base = _mutation_outcome_result(
+            "complete-task", namespace.short_name, parsed.outcome
+        )
+        if not base.ok or parsed.outcome.model is None:
             return base
         transition = complete_task(
             paths,
@@ -562,8 +566,8 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
         ) if parsed.outcome.model is not None else None
         if staged is not None:
             return _terminal_commit_result("archive", namespace.short_name, staged)
-        base = _outcome_result("archive", namespace.short_name, parsed.outcome)
-        if not base.ok or parsed.outcome.model is None or not parsed.outcome.mutation_safe:
+        base = _mutation_outcome_result("archive", namespace.short_name, parsed.outcome)
+        if not base.ok or parsed.outcome.model is None:
             return base
         validation = validate_archive(
             paths,
@@ -613,8 +617,8 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
         ) if parsed.outcome.model is not None else None
         if staged is not None:
             return _terminal_commit_result("abandon", namespace.short_name, staged)
-        base = _outcome_result("abandon", namespace.short_name, parsed.outcome)
-        if not base.ok or parsed.outcome.model is None or not parsed.outcome.mutation_safe:
+        base = _mutation_outcome_result("abandon", namespace.short_name, parsed.outcome)
+        if not base.ok or parsed.outcome.model is None:
             return base
         validation = validate_abandon(
             paths,
@@ -745,6 +749,34 @@ def _outcome_result(
         warnings=tuple(warnings),
         errors=tuple(errors),
         exit_code=1 if errors else 0,
+    )
+
+
+def _mutation_outcome_result(
+    command: str,
+    short_name: str,
+    outcome: ParseOutcome,
+) -> CommandResult:
+    base = _outcome_result(command, short_name, outcome)
+    if not base.ok or outcome.mutation_safe:
+        return base
+    code = outcome.mutation_block_code or "ERROR_INVALID_SOURCE_STATE"
+    issue = CliIssue(
+        code=code,
+        action=_ACTION_BY_CODE[code],
+        message=(
+            "Proposal artifact is readable but does not support managed mutation"
+            if outcome.mutation_block_code is not None
+            else "Proposal is not in a mutation-safe source state"
+        ),
+        severity="error",
+    )
+    return CommandResult(
+        command=command,
+        data=base.data,
+        warnings=base.warnings,
+        errors=(issue,),
+        exit_code=1,
     )
 
 

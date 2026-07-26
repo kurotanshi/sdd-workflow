@@ -100,6 +100,14 @@ Data contains the same ordered progress fields as `status`, a `working_tree_reve
 
 ### Managed active transitions
 
+Read compatibility never authorizes mutation. When a readable legacy proposal
+has `mutation_safe: false`, `approve`, `begin-revision`, `complete-task`,
+`archive`, and `abandon` all exit nonzero without writing and return
+`ERROR_LEGACY_MUTATION_UNSUPPORTED` with action
+`upgrade_or_recreate_proposal`. Existing parser warnings remain in the same
+envelope. A mutation command must never return a successful parse-only result
+when no transition was attempted.
+
 `approve` requires a mutation-safe draft plus its exact current snapshot. It stores the Approval Manifest and metadata before committing the status change, then returns before/after snapshots and operation evidence. `--establish-manifest` instead requires an already-approved unattested v1 proposal, represents explicit caller reconfirmation, and does not change the Markdown bytes.
 
 `begin-revision` requires an attested approved proposal and its exact current snapshot. It records field-level semantic differences, invalidates the prior approval, commits status `draft`, and returns the after snapshot. A retry with identical inputs may finalize or recognize the same revision operation; it never adopts unrelated current bytes.
@@ -124,7 +132,7 @@ Data contains the same ordered progress fields as `status`, a `working_tree_reve
 | Path escape or symlink | `ERROR_PATH_OUTSIDE_SDD` / `ERROR_SYMLINK_UNSUPPORTED` | `inspect_project_path` |
 | Unknown schema | `ERROR_UNSUPPORTED_SCHEMA_VERSION` | `use_supported_engine` |
 | Invalid/unknown schema metadata | `ERROR_INVALID_SCHEMA_METADATA` / `ERROR_UNKNOWN_SCHEMA_FIELD` | `fix_artifact_format` |
-| Legacy mutation attempted later | `ERROR_LEGACY_MUTATION_UNSUPPORTED` | `upgrade_or_recreate_proposal` |
+| Managed mutation attempted on a readable legacy proposal | `ERROR_LEGACY_MUTATION_UNSUPPORTED` | `upgrade_or_recreate_proposal` |
 | Artifact format invalid | parser diagnostic code | `fix_artifact_format` |
 | Snapshot mismatch in a later mutation | `ERROR_SNAPSHOT_MISMATCH` | `refresh_status` |
 | Task ordinal absent / task text identity changed | `ERROR_TASK_NOT_FOUND` / `ERROR_TASK_IDENTITY_MISMATCH` | `refresh_status` |

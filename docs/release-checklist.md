@@ -1,6 +1,6 @@
 # Release checklist
 
-Status: v1.0 release gate
+Status: current v1.x release gate
 
 Use an exact candidate commit and record every command result with the release
 handoff. Do not publish a moving branch as release evidence.
@@ -31,7 +31,12 @@ handoff. Do not publish a moving branch as release evidence.
 
 ## Agent-eval matrix
 
-- [ ] Run or resume the two-Agent matrix:
+For a patch release that does not change `SKILL.md`, trigger rules, or Agent
+orchestration, the latest complete passing matrix may be reused only when the
+handoff names its exact source identity and records focused cross-Agent evidence
+for every affected interaction boundary. Otherwise rerun the complete matrix.
+
+- [ ] Run or resume the two-Agent matrix when reuse is not permitted:
 
   ```text
   scripts/run-agent-eval-matrix \
@@ -50,7 +55,8 @@ handoff. Do not publish a moving branch as release evidence.
   ```
 
 - [ ] Require three valid runs for every Agent/scenario cell, at least 95%
-  aggregate adherence, and exactly zero Critical Violations.
+  aggregate adherence, and exactly zero Critical Violations, or record the
+  permitted patch-reuse evidence and rationale.
 - [ ] Classify every valid failure and invalid attempt. Do not replace a valid
   non-adherent run or erase a Critical Violation through retry.
 
@@ -80,8 +86,8 @@ handoff. Do not publish a moving branch as release evidence.
 - [ ] Confirm Core protocol, runtime/CLI, and Agent adapter contracts identify
   their stable v1 versions.
 - [ ] Confirm runtime `--version`, handshake, package identity, README,
-  compatibility matrix, CLI fixtures, and tests all report release `1.0.0`
-  and engine generation `1.0`.
+  compatibility matrix, CLI fixtures, and tests all report the exact candidate
+  release and engine generation `1.0`.
 - [ ] Review `CHANGELOG.md`, migration, rollback, security/trust, and non-goals
   documents against the candidate bytes.
 - [ ] Record the final candidate commit in the release handoff. Tagging,

@@ -27,7 +27,7 @@ def invoke(arguments: list[str], *, cwd: Path = ROOT) -> tuple[int, str, str]:
 class CliContractTests(unittest.TestCase):
     def test_version_human_and_json_contract(self) -> None:
         human = invoke(["--version"])
-        self.assertEqual(human, (0, "sdd-workflow 1.0.0 (schema 1..2)\n", ""))
+        self.assertEqual(human, (0, "sdd-workflow 1.0.1 (schema 1..2)\n", ""))
 
         exit_code, stdout, stderr = invoke(["--json", "--version"])
         self.assertEqual(exit_code, 0)
@@ -269,6 +269,155 @@ class CliContractTests(unittest.TestCase):
                 re.MULTILINE,
             )
             self.assertEqual(len(matches), 2)
+
+    def test_legacy_mutations_fail_closed_without_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "sdd/legacy-statusless"
+            target.parent.mkdir(parents=True)
+            shutil.copytree(ROOT / "tests/fixtures/baseline/legacy-statusless", target)
+            status = json.loads(
+                invoke(
+                    ["--root", str(root), "--json", "status", "legacy-statusless"],
+                    cwd=root,
+                )[1]
+            )
+            snapshot = status["data"]["snapshot"]["snapshot_digest"]
+            task = status["data"]["tasks"][0]
+            before = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in root.rglob("*")
+                if path.is_file()
+            }
+            cases = {
+                "approve": [
+                    "approve", "legacy-statusless",
+                    "--expected-snapshot", snapshot,
+                ],
+                "begin-revision": [
+                    "begin-revision", "legacy-statusless",
+                    "--expected-snapshot", snapshot,
+                ],
+                "complete-task": [
+                    "complete-task", "legacy-statusless", "1",
+                    "--expected-task-digest", task["task_digest"],
+                    "--expected-snapshot", snapshot,
+                ],
+                "archive": [
+                    "archive", "legacy-statusless",
+                    "--expected-snapshot", snapshot,
+                    "--summary", "must not archive",
+                ],
+                "abandon": [
+                    "abandon", "legacy-statusless",
+                    "--expected-snapshot", snapshot,
+                    "--summary", "must not abandon",
+                ],
+            }
+            for command, arguments in cases.items():
+                with self.subTest(command=command):
+                    exit_code, stdout, stderr = invoke(
+                        ["--root", str(root), "--json", *arguments],
+                        cwd=root,
+                    )
+                    self.assertEqual(exit_code, 1)
+                    self.assertEqual(stderr, "")
+                    result = json.loads(stdout)
+                    self.assertFalse(result["ok"])
+                    self.assertEqual(
+                        [(item["code"], item["action"]) for item in result["errors"]],
+                        [
+                            (
+                                "ERROR_LEGACY_MUTATION_UNSUPPORTED",
+                                "upgrade_or_recreate_proposal",
+                            )
+                        ],
+                    )
+                    self.assertEqual(
+                        [item["code"] for item in result["warnings"]],
+                        ["WARNING_LEGACY_STATUS_MISSING"],
+                    )
+                    self.assertTrue(target.is_dir())
+                    after = {
+                        path.relative_to(root).as_posix(): path.read_bytes()
+                        for path in root.rglob("*")
+                        if path.is_file()
+                    }
+                    self.assertEqual(after, before)
+
+    def test_legacy_read_commands_preserve_readability_and_warnings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "sdd/legacy-statusless"
+            target.parent.mkdir(parents=True)
+            shutil.copytree(ROOT / "tests/fixtures/baseline/legacy-statusless", target)
+            archive = root / "sdd/archive"
+            archive.mkdir()
+            (archive / "INDEX.md").write_text("# SDD Archive\n\n", encoding="utf-8")
+            before = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in root.rglob("*")
+                if path.is_file()
+            }
+            cases = {
+                "status": ["status", "legacy-statusless"],
+                "validate": ["validate", "legacy-statusless"],
+                "list": ["list", "--state", "active"],
+                "abandon-preflight": ["abandon-preflight", "legacy-statusless"],
+            }
+            for command, arguments in cases.items():
+                with self.subTest(command=command):
+                    exit_code, stdout, stderr = invoke(
+                        ["--root", str(root), "--json", *arguments],
+                        cwd=root,
+                    )
+                    self.assertEqual(exit_code, 0)
+                    self.assertEqual(stderr, "")
+                    result = json.loads(stdout)
+                    self.assertTrue(result["ok"])
+                    self.assertEqual(result["errors"], [])
+                    self.assertEqual(
+                        [item["code"] for item in result["warnings"]],
+                        ["WARNING_LEGACY_STATUS_MISSING"],
+                    )
+                    data = result["data"]
+                    if command == "list":
+                        self.assertEqual(len(data["candidates"]), 1)
+                        data = data["candidates"][0]
+                    elif command == "validate":
+                        self.assertEqual(
+                            data["results"],
+                            [
+                                {
+                                    "short_name": "legacy-statusless",
+                                    "valid": True,
+                                    "adapter": "legacy",
+                                }
+                            ],
+                        )
+                        continue
+                    self.assertEqual(data["adapter"], "legacy")
+                    self.assertTrue(data["readable"])
+                    self.assertFalse(data["mutation_safe"])
+                    self.assertTrue(data["abandonment_readable"])
+
+            doctor_code, doctor_stdout, doctor_stderr = invoke(
+                ["--root", str(root), "--json", "doctor"],
+                cwd=root,
+            )
+            self.assertEqual(doctor_code, 0)
+            self.assertEqual(doctor_stderr, "")
+            doctor = json.loads(doctor_stdout)
+            self.assertTrue(doctor["ok"])
+            self.assertTrue(doctor["data"]["healthy"])
+            self.assertEqual(doctor["warnings"], [])
+            self.assertEqual(doctor["errors"], [])
+            after = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in root.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(after, before)
 
     def test_malformed_validate_reports_every_scanner_error(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

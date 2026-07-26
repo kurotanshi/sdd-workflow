@@ -2,6 +2,21 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.0.1 — 2026-07-27
+
+### Fixed
+- 修正 authorized revision 在已完成部分 task 後新增或移除尾端待辦 task 時，重新核准被誤判為 `OUT_OF_BAND_DRIFT`；status、machine metadata 與已完成 task 的未授權變更仍然 fail closed。
+- 修正 reapproval 在 Approval Manifest 或 metadata 寫入中斷後無法安全重試；相同 operation 可恢復，後續竄改仍會被拒絕。
+- 修正可讀但不可變更的 legacy proposal 對 `approve`、`begin-revision`、`complete-task`、`archive`、`abandon` 誤報成功；現在回傳 `ERROR_LEGACY_MUTATION_UNSUPPORTED`／`upgrade_or_recreate_proposal` 且不寫入。
+
+### Changed
+- 重寫中英文 README，明確說明 Skill 目標、適用情境、安裝需求、完整 workflow、使用方式與安全邊界。
+- Engine release 更新為 `1.0.1`；engine generation 維持 `1.0`，proposal schema v1/v2、JSON output v1 與所有 machine-envelope versions 不變。
+
+### Validation
+- `SKILL.md`、觸發規則與 Agent orchestration 未變；沿用 v1.0.0 的完整 78-run Agent adherence gate，並納入兩項修正的 focused cross-Agent evidence。
+- 發版候選必須通過完整 unit/integration、runtime conformance、recovery drills、package/install/full-lifecycle、examples、documentation 與 trigger gates。
+
 ## v1.0.0 — 2026-07-23
 
 ### Added

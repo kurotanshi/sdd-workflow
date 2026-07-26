@@ -6,7 +6,7 @@ The project communicates three version concepts outside the implementation:
 
 | Public concept | Current support | Meaning |
 | --- | --- | --- |
-| Skill release | `v1.0.0` | Version of the installable Skill package |
+| Skill release | `v1.0.1` | Version of the installable Skill package |
 | Proposal artifact schema | implicit/explicit `1`, explicit `2` | Format accepted for `proposal.md` and `tasks.md` |
 | JSON output | `1` | Machine envelope emitted by the bundled CLI |
 
@@ -50,6 +50,14 @@ See [`install-methods.md`](./install-methods.md) for user-facing package paths.
 Read compatibility does not imply mutation compatibility. Unknown proposal
 schema or machine metadata fails closed for the affected operation. Never
 delete schema frontmatter or `.sdd` metadata to force an older interpretation.
+
+Readable legacy proposals remain available to `status`, `list`, `validate`,
+`abandon-preflight`, and `doctor`, including their existing format warnings.
+They are not mutation-compatible: `approve`, `begin-revision`,
+`complete-task`, `archive`, and `abandon` fail without writing, using
+`ERROR_LEGACY_MUTATION_UNSUPPORTED` and action
+`upgrade_or_recreate_proposal`. A successful read result is never evidence that
+a requested lifecycle transition completed.
 
 An upgrade replaces one complete Skill package. Existing project proposals
 remain in place and are inspected with the new package before mutation. If a
