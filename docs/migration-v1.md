@@ -2,7 +2,7 @@
 
 Migration version: `1`
 
-Status: v1 release guide
+Status: historical v1.0 release evidence; not a current migration policy
 
 The v1.0.0 release freezes existing proven behavior. It does not introduce
 Schema v3 or a new machine-envelope version. Proposal Schema v1/v2 and active,

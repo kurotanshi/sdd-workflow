@@ -13,8 +13,10 @@ STABLE_CONTRACT = ROOT / "docs/protocol/runtime-cli-v1.md"
 
 
 class RuntimeContractTests(unittest.TestCase):
-    def test_stable_v1_contract_covers_the_public_runtime_boundary(self) -> None:
+    def test_frozen_v1_runtime_contract_remains_reproducible(self) -> None:
         contract = STABLE_CONTRACT.read_text(encoding="utf-8")
+        self.assertIn("historical evidence", contract)
+        self.assertIn("not a current public contract", contract)
         self.assertIn("Contract version: `1`", contract)
         self.assertIn("Protocol: `sdd-protocol-1.0`", contract)
         for heading in (

@@ -224,6 +224,7 @@
         "tests.test_agent_eval_runner",
         "tests.test_agent_scenarios",
         "tests.test_agent_eval_usage",
+        "tests.test_cost_benefit_experiment",
         "tests.test_adapter_contract",
         "tests.test_public_eval_report",
         "tests.test_conformance_manifest",

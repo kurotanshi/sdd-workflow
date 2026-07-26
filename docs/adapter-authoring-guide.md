@@ -1,12 +1,14 @@
 # Agent adapter authoring guide
 
-Status: implementation guide for Agent Adapter Contract v1
+Status: historical v1.0 implementation evidence; not a current public adapter SDK
 
-This guide shows how to integrate an Agent with SDD Workflow without importing
-the reference Python implementation. Read the normative
+This guide records how the v1.0 protocol experiment integrated an Agent without
+importing the reference Python implementation. To reproduce that historical
+work, read the former
 [`Agent Adapter Contract`](./protocol/agent-adapter-contract.md), the public
 [`protocol draft`](./protocol-draft.md), and the
-[`conformance kit`](./conformance.md) first.
+[`conformance kit`](./conformance.md). New third-party adapter support is not a
+current product commitment.
 
 ## 1. Declare the boundary
 

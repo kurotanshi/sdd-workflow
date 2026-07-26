@@ -21,11 +21,13 @@ from sdd_core.cli import main  # noqa: E402
 
 
 class CompatibilityTests(unittest.TestCase):
-    def test_v1_versioning_policy_covers_every_release_boundary(self) -> None:
+    def test_historical_v1_policy_remains_reproducible(self) -> None:
         document = (
             ROOT / "docs/protocol/versioning-policy-v1.md"
         ).read_text(encoding="utf-8")
         self.assertIn("Policy version: `1.0.0`", document)
+        self.assertIn("historical evidence", document)
+        self.assertIn("not a current deprecation policy", document)
         for heading in (
             "## 1. Independent version axes",
             "## 2. Semantic Versioning classification",
@@ -55,24 +57,25 @@ class CompatibilityTests(unittest.TestCase):
     def test_portable_compatibility_matrix_is_fail_closed(self) -> None:
         document = (ROOT / "docs/compatibility.md").read_text(encoding="utf-8")
         for fact in (
+            "| Skill release | `v1.0.0`",
+            "| Proposal artifact schema | implicit/explicit `1`, explicit `2`",
+            "| JSON output | `1`",
             "| OS | macOS and Linux/Ubuntu",
             "| Python | CPython 3.11",
-            "| Agent host | Claude Code Skills and Codex Skills",
-            "| Agent model | Model identity is not a runtime compatibility axis",
-            "| Proposal schema | implicit/explicit v1 and explicit v2",
+            "| Agent host | Claude Code and Codex",
+            "Model identity is an evaluation variable",
             "`RUNTIME_AMBIGUOUS`",
             "`RUNTIME_HANDSHAKE_FAILED`",
             "`RUNTIME_INCOMPATIBLE`",
             "`RUNTIME_SKILL_VERSION_SKEW`",
-            "no fallback to bundled or PATH runtime",
-            "Agent host/model behavior remains covered",
+            "not independently released products",
+            "Partial copies, mixed releases, `PATH` fallback",
             "install-methods.md",
-            "conformance/install-channels-v1.json",
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, document)
 
-    def test_v1_security_scope_migration_and_rollback_are_explicit(self) -> None:
+    def test_v1_security_scope_migration_and_rollback_remain_historical(self) -> None:
         documents = {
             "security": (
                 ROOT / "docs/security-trust-model.md"
@@ -87,6 +90,9 @@ class CompatibilityTests(unittest.TestCase):
                 ROOT / "docs/rollback-v1.md"
             ).read_text(encoding="utf-8"),
         }
+        self.assertIn("historical v1.0 scope evidence", documents["non_goals"])
+        self.assertIn("historical v1.0 release evidence", documents["migration"])
+        self.assertIn("historical v1.0 release evidence", documents["rollback"])
         for term in (
             "cooperative local change-control protocol",
             "Hashes, timestamps, writer strings",

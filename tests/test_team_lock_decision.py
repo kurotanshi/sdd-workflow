@@ -41,18 +41,22 @@ class TeamLockDecisionTests(unittest.TestCase):
         self.assertIn("**NO-GO** for lock, lease, enforced ownership", decision)
         self.assertIn("requires a new SDD proposal", decision)
 
-    def test_playbook_separates_coordination_presentation_and_locking(self) -> None:
+    def test_user_playbook_keeps_coordination_and_history_keeps_lock_detail(self) -> None:
         playbook = PLAYBOOK.read_text(encoding="utf-8")
-        for heading in (
-            "## Cooperative coordination",
-            "## Presentation-only ownership",
-            "## Locking and leases",
+        for term in (
+            "Use one active operator for a proposal at a time",
+            "does not provide a distributed lock",
+            "different proposal short name",
+            "separate Git worktree",
+            "must not reuse an old snapshot",
         ):
-            with self.subTest(heading=heading):
-                self.assertIn(heading, playbook)
-        self.assertIn("does not grant mutation authority", playbook)
-        self.assertIn("does not implement a lock or lease", playbook)
-        self.assertIn("2026-07-23-v010-lock-lease.md", playbook)
+            with self.subTest(term=term):
+                self.assertIn(term, playbook)
+
+        decision = DECISION.read_text(encoding="utf-8")
+        self.assertIn("Presentation-only ownership", decision)
+        self.assertIn("A label alone is not a lock", decision)
+        self.assertIn("**NO-GO** for lock, lease, enforced ownership", decision)
 
 
 if __name__ == "__main__":

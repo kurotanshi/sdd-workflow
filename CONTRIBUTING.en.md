@@ -4,13 +4,36 @@
 
 Thanks for contributing! This document explains the maintenance rules of this repo.
 
-## Single source of truth: the canonical skill
+## The only product: the canonical Skill package
 
-**All workflow behavior may only be changed in one file: [`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md).**
+**This repository maintains one product:
+[`skills/sdd-workflow/`](./skills/sdd-workflow/).**
 
-- The three phases (提案 / 實作 / 歸檔), revision/abandonment paths, state transitions, artifact formats, and progress-reporting rules all live there.
+- `SKILL.md` is the sole source for Agent behavior boundaries and trigger
+  rules. Bundled scripts and references are internal Skill implementation, not
+  a separate protocol or developer kit.
+- The deterministic runtime may enforce parsing, mutation, and archive safety.
+  A behavior change must check Skill prose, runtime, and regression together;
+  changing only one does not redefine the complete workflow.
 - Copies installed into `~/.claude/skills/`, `~/.codex/skills/`, or `~/.agents/skills/` are **reproducible install artifacts**, never a second source of truth. **Never** edit only the copy inside a tool's directory — that causes divergence.
 - Do not add per-tool command/prompt variants. Cross-tool differences appear only in *how the skill is invoked* (the trigger-syntax table in the README), never in workflow rules.
+
+## Scope and complexity budget
+
+- Label every roadmap item before implementation as subtract, fix, measure, or
+  add. An addition needs a named requester and unmet need; otherwise it stays
+  in the backlog.
+- Communicate only Skill release, proposal artifact schema, and JSON output
+  version externally. Handshake, attestation, and manifest versions are
+  internal implementation details when retained.
+- Do not create a third-party adapter program, public conformance kit, protocol
+  freeze, deprecation policy, development framework, or general orchestration
+  platform.
+- Do not add natural-language triggers, schemas, Agent adapters, references, or
+  recovery mechanisms without field evidence and a separate proposal.
+- Prefer removing duplicate promises, consolidating synchronization sources,
+  and reusing tests. Renaming files or hiding details does not reduce
+  complexity.
 
 ## Repo layout
 
@@ -25,7 +48,8 @@ sdd-workflow/
 └── skills/
     └── sdd-workflow/           # ← canonical skill, the only source of workflow rules
         ├── SKILL.md
-        ├── scripts/                # deterministic readonly CLI and Python core
+        ├── scripts/                # internal deterministic Skill runtime
+        ├── references/             # operation detail loaded on demand
         └── agents/
             └── openai.yaml     # Codex UI/invocation metadata only, no workflow rules
 ```

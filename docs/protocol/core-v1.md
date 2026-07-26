@@ -4,7 +4,7 @@ Protocol identifier: `sdd-protocol-1.0`
 
 Protocol version: `1.0.0`
 
-Status: stable normative contract
+Status: frozen v1.0 historical evidence; not a current public contract
 
 Normative language: RFC 2119 / RFC 8174
 

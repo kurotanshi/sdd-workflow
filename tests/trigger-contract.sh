@@ -107,10 +107,6 @@ grep -Fq '> Version v1.0.0' "$readme_en" || {
 }
 
 for readme_file in "$readme_zh" "$readme_en"; do
-  grep -Fq '[`ROADMAP.md`](./ROADMAP.md)' "$readme_file" || {
-    echo "trigger-contract: $readme_file must link ROADMAP.md" >&2
-    exit 1
-  }
   grep -Fq '`取消提案`' "$readme_file" || {
     echo "trigger-contract: $readme_file must document explicit 取消提案" >&2
     exit 1

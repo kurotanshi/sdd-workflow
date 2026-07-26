@@ -1,4 +1,6 @@
-# Runtime and platform contract
+# Bundled runtime maintenance
+
+Status: internal implementation support for the installable Skill
 
 ## Python
 

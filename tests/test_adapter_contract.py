@@ -11,7 +11,7 @@ GUIDE = ROOT / "docs/adapter-authoring-guide.md"
 SCENARIOS = ROOT / "conformance/adapter-scenarios-v1.json"
 
 
-class AdapterContractTests(unittest.TestCase):
+class AdapterContractHistoricalEvidenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.contract = CONTRACT.read_text(encoding="utf-8")
@@ -45,6 +45,8 @@ class AdapterContractTests(unittest.TestCase):
                 self.assertIn(term, self.contract)
 
     def test_v1_contract_freezes_triggers_approval_and_handoff(self) -> None:
+        self.assertIn("historical evidence", self.contract)
+        self.assertIn("not a current public adapter contract", self.contract)
         self.assertIn("Contract version: `1.0.0`", self.contract)
         self.assertIn("Protocol: `sdd-protocol-1.0`", self.contract)
         for trigger in (

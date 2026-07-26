@@ -4,13 +4,31 @@
 
 感謝貢獻！這份文件說明這個 repo 的維護規則。
 
-## 唯一的來源：canonical skill
+## 唯一產品：canonical Skill package
 
-**所有流程行為只能改一個檔案：[`skills/sdd-workflow/SKILL.md`](./skills/sdd-workflow/SKILL.md)。**
+**本 repo 只維護一個產品：
+[`skills/sdd-workflow/`](./skills/sdd-workflow/)。**
 
-- 三階段（提案／實作／歸檔）、修訂／放棄路徑、狀態轉移、產出格式與進度回報方式，全部住在這裡。
+- `SKILL.md` 是 Agent 行為邊界與觸發規則的唯一來源；bundled scripts 與
+  references 是 Skill 的內部實作，不是另一套 protocol 或 developer kit。
+- deterministic runtime 可以強制執行 parser、mutation 與 archive 安全性；
+  修改行為時必須同步檢查 Skill prose、runtime 與 regression，不得宣稱只改
+  其中一份就能改變完整流程。
 - 安裝到 `~/.claude/skills/`、`~/.codex/skills/`、`~/.agents/skills/` 的副本都是**可重新產生的安裝產物**，不是第二份來源。**絕對不要**只改某個工具目錄裡的副本——那會造成分歧。
 - 不要為了單一工具再開 command／prompt 變體。跨工具差異只反映在「怎麼呼叫」（README 的觸發語法表），不反映在流程規則。
+
+## Scope 與複雜度預算
+
+- 每個 roadmap 項目在動工前標成「減、修、量、加」；「加」必須記錄具名
+  requester 與未滿足需求，否則留在 backlog。
+- 對外只溝通 Skill release、proposal artifact schema、JSON output version。
+  handshake、attestation、manifest 等若保留，都是內部實作細節。
+- 不建立第三方 adapter 計畫、公開 conformance kit、protocol freeze、
+  deprecation policy、開發框架或通用 orchestration platform。
+- 不增加自然語言 trigger、schema、Agent adapter、reference 或 recovery
+  機制，除非有 field evidence 與獨立提案。
+- 優先刪除重複承諾、合併同步來源與重用既有測試；檔案改名或把細節藏起來
+  不算降低複雜度。
 
 ## Repo 版面
 
@@ -25,7 +43,8 @@ sdd-workflow/
 └── skills/
     └── sdd-workflow/           # ← canonical skill，唯一流程來源
         ├── SKILL.md
-        ├── scripts/                # deterministic readonly CLI 與 Python core
+        ├── scripts/                # Skill 內部 deterministic runtime
+        ├── references/             # 按需載入的操作細節
         └── agents/
             └── openai.yaml     # 只放 Codex UI／invocation metadata，不承載流程規則
 ```

@@ -11,13 +11,13 @@ PROTOCOL = ROOT / "docs/protocol/core-v1.md"
 REGISTRY = ROOT / "conformance/protocol-rules-v1.json"
 
 
-class CoreProtocolV1Tests(unittest.TestCase):
+class CoreProtocolV1HistoricalEvidenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.text = PROTOCOL.read_text(encoding="utf-8")
         cls.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
 
-    def test_protocol_is_self_identifying_and_uses_normative_language(self) -> None:
+    def test_frozen_protocol_evidence_is_self_identifying(self) -> None:
         self.assertIn(
             f"Protocol identifier: `{self.registry['protocol_version']}`",
             self.text,
@@ -51,7 +51,8 @@ class CoreProtocolV1Tests(unittest.TestCase):
         self.assertLessEqual(required, headings)
 
     def test_v1_freeze_names_scope_and_non_goals(self) -> None:
-        self.assertIn("Status: stable normative contract", self.text)
+        self.assertIn("Status: frozen v1.0 historical evidence", self.text)
+        self.assertIn("not a current public contract", self.text)
         for term in (
             "authority",
             "lifecycle",

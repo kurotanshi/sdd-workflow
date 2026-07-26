@@ -1,6 +1,6 @@
 # v1 non-goals
 
-Status: stable scope boundary for `sdd-protocol-1.0`
+Status: historical v1.0 scope evidence; current scope is maintained in CONTRIBUTING
 
 The v1 release stabilizes evidence-backed proposal lifecycle and Agent
 handoff. The following capabilities are deliberately not part of v1 and MUST

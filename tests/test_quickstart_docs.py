@@ -28,19 +28,24 @@ class QuickstartDocumentationTests(unittest.TestCase):
                 self.assertNotIn("transaction-protocol.md", prefix)
                 self.assertLess(len(prefix.splitlines()), 90)
 
-    def test_advanced_categories_exist_and_link_to_canonical_docs(self) -> None:
+    def test_maintainer_categories_exist_without_expanding_user_journey(self) -> None:
         categories = {
-            "concepts": "protocol-draft.md",
+            "concepts": "approval-manifest.md",
             "operations": "release-checklist.md",
             "compatibility": "compatibility.md",
-            "design": "transaction-protocol.md",
-            "troubleshooting": "doctor-diagnostics.md",
+            "design": "architecture.md",
+            "troubleshooting": "troubleshooting.md",
         }
         for category, target in categories.items():
             with self.subTest(category=category):
                 index = ROOT / "docs" / category / "README.md"
                 self.assertTrue(index.is_file())
                 self.assertIn(target, index.read_text(encoding="utf-8"))
+
+        for path in (README, README_EN):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn("docs/protocol/", text)
+            self.assertNotIn("docs/conformance.md", text)
 
     def test_readmes_are_concise_and_use_current_install_roots(self) -> None:
         for path in (README, README_EN):

@@ -4,7 +4,7 @@ Contract version: `1`
 
 Protocol: `sdd-protocol-1.0`
 
-Status: stable normative contract
+Status: frozen v1.0 historical evidence; not a current public contract
 
 This document freezes the observable v1 boundary of the reference runtime,
 its noninteractive command-line interface, and package-local discovery. Python

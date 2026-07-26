@@ -1,6 +1,6 @@
 # v1.0 release baseline
 
-Status: release candidate prepared 2026-07-23
+Status: historical release-candidate snapshot prepared 2026-07-23
 
 The final release handoff records the exact candidate commit. Tagging, pushing,
 and publication are not implied by this document.

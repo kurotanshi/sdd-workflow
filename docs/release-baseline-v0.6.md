@@ -1,6 +1,6 @@
 # v0.6 release baseline
 
-Status: recorded 2026-07-23 for conformance and Agent-eval comparison
+Status: historical snapshot recorded 2026-07-23 for regression comparison
 
 This document is an index of immutable release facts and canonical contract
 sources. It is not a second protocol specification. When a summary here and a

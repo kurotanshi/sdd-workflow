@@ -13,7 +13,7 @@ RUNNER = ROOT / "scripts/run-conformance-kit"
 MANIFEST = ROOT / "conformance/kit-manifest-v1.json"
 
 
-class PublicConformanceKitTests(unittest.TestCase):
+class HistoricalConformanceKitTests(unittest.TestCase):
     def run_kit(self, *arguments: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [sys.executable, str(RUNNER), *arguments],
@@ -23,7 +23,7 @@ class PublicConformanceKitTests(unittest.TestCase):
             check=False,
         )
 
-    def test_manifest_packages_public_components(self) -> None:
+    def test_manifest_packages_frozen_components(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         self.assertEqual(manifest["kit_version"], 1)
         registry = json.loads((ROOT / manifest["registry"]).read_text(encoding="utf-8"))
@@ -62,7 +62,7 @@ class PublicConformanceKitTests(unittest.TestCase):
             ],
         )
 
-    def test_reference_runtime_passes_public_envelope_cases(self) -> None:
+    def test_reference_runtime_passes_frozen_envelope_cases(self) -> None:
         result = self.run_kit("--json")
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(result.stderr, "")

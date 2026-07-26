@@ -4,7 +4,7 @@ Policy version: `1.0.0`
 
 Applies from release: `v1.0.0`
 
-Status: stable normative policy
+Status: frozen v1.0 historical evidence; not a current deprecation policy
 
 This policy classifies changes to the Core protocol, reference runtime, Agent
 adapter contract, schemas, machine envelopes, and conformance assets. It uses

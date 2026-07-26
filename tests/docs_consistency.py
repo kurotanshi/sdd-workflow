@@ -60,25 +60,20 @@ def validate_docs() -> None:
     if zh_version.group(1) != "v1.0.0":
         raise AssertionError("README version does not match the active engine")
     for readme in (readme_zh, readme_en):
-        if "[`ROADMAP.md`](./ROADMAP.md)" not in readme:
-            raise AssertionError("README is missing ROADMAP link")
         if "`取消提案`" not in readme:
             raise AssertionError("README is missing explicit cancellation trigger")
-        for category in (
-            "docs/concepts/",
-            "docs/operations/",
-            "docs/compatibility/",
-            "docs/design/",
-            "docs/troubleshooting/",
-        ):
-            if category not in readme:
-                raise AssertionError(
-                    f"README is missing advanced documentation category: {category}"
-                )
         if "~/.agents/skills/sdd-workflow/" not in readme:
             raise AssertionError("README is missing the current Codex install root")
         if "~/.codex/skills/" in readme:
             raise AssertionError("README still recommends the legacy Codex install root")
+        if "docs/protocol/" in readme or "docs/conformance.md" in readme:
+            raise AssertionError("README exposes historical maintainer contracts")
+    for term in ("## 適合使用", "## 通常不需要", "不是 protocol"):
+        if term not in readme_zh:
+            raise AssertionError(f"README.md is missing Skill-only scope: {term}")
+    for term in ("## Good fits", "## Usually unnecessary", "not a protocol"):
+        if term not in readme_en:
+            raise AssertionError(f"README.en.md is missing Skill-only scope: {term}")
 
     for changelog_term in (
         "## v0.3.0",
@@ -302,18 +297,13 @@ def validate_docs() -> None:
         if terminal_term not in transaction_protocol:
             raise AssertionError(f"transaction protocol is missing: {terminal_term}")
     for axis in (
-        "CLI output",
-        "Proposal schema",
-        "Canonical model",
-        "Snapshot",
-        "Active metadata",
-        "Approval model",
-        "Managed attestation",
-        "Archive model",
-        "Terminal metadata",
+        "| Skill release | `v1.0.0` |",
+        "| Proposal artifact schema | implicit/explicit `1`, explicit `2` |",
+        "| JSON output | `1` |",
+        "not independently released products",
     ):
         if axis not in compatibility:
-            raise AssertionError(f"compatibility matrix is missing axis: {axis}")
+            raise AssertionError(f"compatibility scope is missing: {axis}")
 
     required_checks = {
         "unit",
@@ -332,12 +322,11 @@ def validate_docs() -> None:
             raise AssertionError(f"contributor docs are missing required check: {check}")
 
     for team_term in (
-        "One proposal has exactly one active agent/operator at a time",
-        "a separate Git worktree",
-        "Archive directories are authoritative",
-        "validate-index",
-        "rebuild-index",
-        "A stale but rebuildable INDEX does not justify a global lock",
+        "Use one active operator for a proposal at a time",
+        "separate Git worktree",
+        "Archive directories contain completed or abandoned proposal records",
+        "validate and rebuild the index",
+        "Never append or merge index rows manually",
     ):
         if team_term not in team_operations:
             raise AssertionError(f"team operation contract is missing: {team_term}")
@@ -348,8 +337,8 @@ def validate_docs() -> None:
     ):
         if decision_term not in team_decision:
             raise AssertionError(f"team-readiness decision is missing: {decision_term}")
-    if "| Engine/release | `1.0.0` active |" not in compatibility:
-        raise AssertionError("compatibility engine version is not current")
+    if "| Skill release | `v1.0.0` |" not in compatibility:
+        raise AssertionError("compatibility Skill release is not current")
     if "## v1.0.0" not in changelog:
         raise AssertionError("CHANGELOG is missing the active release")
 

@@ -4,7 +4,7 @@ Contract version: `1.0.0`
 
 Protocol: `sdd-protocol-1.0`
 
-Status: stable normative contract
+Status: frozen v1.0 historical evidence; not a current public adapter contract
 
 An Agent adapter translates human conversation into SDD protocol operations.
 It is not a parser, state-transition engine, source-control manager, or

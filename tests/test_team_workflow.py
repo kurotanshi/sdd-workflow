@@ -82,9 +82,9 @@ class TeamWorkflowTests(unittest.TestCase):
 
     def test_documented_boundary_does_not_claim_snapshot_is_a_lock(self) -> None:
         contract = (ROOT / "docs/team-operations.md").read_text(encoding="utf-8")
-        self.assertIn("One proposal has exactly one active agent/operator at a time", contract)
-        self.assertIn("Snapshot CAS catches stale inputs but is not a lease, lock", contract)
-        self.assertIn("different short name", contract)
+        self.assertIn("Use one active operator for a proposal at a time", contract)
+        self.assertIn("rejects stale snapshots, but it does not provide a distributed lock", contract)
+        self.assertIn("different proposal short name", contract)
         self.assertIn("separate Git worktree", contract)
 
     @staticmethod

@@ -20,8 +20,9 @@ class ReleaseBaselineTests(unittest.TestCase):
         self.assertIn("`v0.6.0`", document)
         self.assertIn("`863f7691ffd96ce49a058ed87f5f8889b73946fc`", document)
 
-    def test_current_release_identity_and_version_envelope_are_exact(self) -> None:
+    def test_v10_historical_identity_and_current_envelope_are_exact(self) -> None:
         document = CURRENT_BASELINE.read_text(encoding="utf-8")
+        self.assertIn("historical release-candidate snapshot", document)
         self.assertIn("`v1.0.0`", document)
         self.assertIn("`sdd-protocol-1.0`", document)
         result = subprocess.run(

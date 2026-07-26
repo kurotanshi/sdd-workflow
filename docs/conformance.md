@@ -1,10 +1,14 @@
 # Runtime conformance
 
-Status: manifest and runner contract version 1
+Status: retained internal regression and v1.0 historical evidence
 
-Runtime conformance is a deterministic reference-runtime gate. It is separate
+The files retain the old conformance names so v1.0 evidence and tests remain
+reproducible. They are internal regression inputs for the bundled Skill, not a
+public kit for third-party conformance claims.
+
+Runtime regression is a deterministic reference-runtime gate. It is separate
 from Agent evaluation: a runtime case executes repository tests or a contract
-check and reports the protocol rules for which that case provides evidence.
+check and reports the historical rules for which that case provides evidence.
 
 ## Versioned inputs
 
@@ -13,14 +17,14 @@ check and reports the protocol rules for which that case provides evidence.
   rules without copying existing tests into another tree.
 - `scripts/run-runtime-conformance` executes manifest version 1 and emits
   output version 1.
-- `conformance/kit-manifest-v1.json` packages the public rule registry,
+- `conformance/kit-manifest-v1.json` packages the historical rule registry,
   reference manifest, fixture manifests, expected envelopes, reference
   runtime, and implementation-neutral runner.
 - `conformance/expected-envelopes-v1.json` expresses stable expected fields as
   JSON Pointer assertions. It deliberately does not require diagnostic message
   prose or JSON object key order to match.
-- `scripts/run-conformance-kit` runs those public cases against the reference
-  runtime or a candidate selected with `--runtime`.
+- `scripts/run-conformance-kit` reproduces those historical cases against the
+  reference runtime or a candidate selected with `--runtime`.
 
 Every `tests/test_*.py` module must appear in at least one manifest case, and
 every registered rule must have at least one executable case. The manifest

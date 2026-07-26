@@ -2,7 +2,7 @@
 
 Rollback version: `1`
 
-Status: v1 release guide
+Status: historical v1.0 release evidence; not a current rollback policy
 
 The v1.0.0 release changes package/release identity and freezes contracts but
 does not introduce a new proposal schema or machine-envelope version. The
