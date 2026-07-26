@@ -2,6 +2,14 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.0.2 — 2026-07-27
+
+### Changed
+- 重寫中英文 README 的產品定位：SDD 不只用於大型或跨 session 工作，而是協助 AI Agent 以可審查規格、明確核准與逐項驗證，正確完成大多數可驗收的變更任務。
+- 明確列出新功能、修 bug、重構、維運、文件與有界研究等適用類型，並保留純問答、無界探索、rollback、部署與一般取消的邊界。
+- 說明小型任務可以使用精簡 proposal，但不會跳過核准、逐條驗證與驗收歸檔；CPython 3.11 是 bundled state-management CLI 的執行環境，日常操作仍透過 Agent 對話完成。
+- 新增 README 定位回歸契約。Engine release 更新為 `1.0.2`；Skill 觸發、proposal lifecycle、engine generation `1.0`、proposal schema v1/v2、JSON output v1 與 machine envelopes 均不變。
+
 ## v1.0.1 — 2026-07-27
 
 ### Fixed

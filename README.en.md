@@ -1,42 +1,46 @@
 # sdd-workflow
 
-> Version v1.0.1 ｜ [繁體中文](./README.md)
+> Version v1.0.2 ｜ [繁體中文](./README.md)
 
-An **SDD (Spec-Driven Development) Skill** for coding agents such as Claude
-Code and Codex.
+An **SDD (Spec-Driven Development) Skill** for coding agents such as Claude Code and Codex.
 
-It turns “agree on the change before the Agent edits code” into a durable,
-recoverable workflow. Scope, tasks, acceptance conditions, approval, and
-progress stay in the project. The product in this repository is a complete
-Skill package, not a protocol, SDK, or developer kit.
+Its goal is to help AI Agents complete most change tasks by turning the expected
+outcome into a reviewable, testable specification before implementation.
+Features, fixes, refactors, maintenance, and documentation use the same
+framework, reducing wrong scope, missed acceptance, and stale requirements.
+
+SDD is not limited to large projects. Small edits use concise proposals; complex
+work describes more tasks and acceptance conditions. Both retain “agree first,
+then implement and verify,” with state that can recover across sessions. This
+repository contains a complete Skill package, not a protocol, SDK, or developer kit.
 
 ## Skill goals
 
-- Create a reviewable proposal and task checklist before any product-code change.
-- Allow implementation only for an explicitly approved proposal, one verified task at a time.
-- Stop implementation when requirements change, record the revision, and wait for reapproval.
-- Recover authoritative state across sessions, handoffs, failed writes, and final archival.
+- Define the goal, scope, and observable acceptance results so the Agent knows what completion means.
+- Split work into independently verifiable tasks and implement only an explicitly approved proposal.
+- Implement and verify one task at a time instead of producing a large batch that is difficult to review.
+- Stop code changes when requirements change, revise the proposal, and wait for reapproval.
+- Recover authoritative state across sessions, handoffs, failed writes, and archival.
 - Fail closed when state or evidence is inconsistent instead of guessing or silently repairing it.
 
 ## Good fits
 
-- Scope and acceptance conditions must be reviewed before the Agent may change code.
-- The change contains multiple independently verifiable steps.
-- Work may span sessions, Agent handoffs, or context recovery.
-- Requirements may change during implementation or acceptance and need an approval record.
+Most tasks that produce an observable project change fit the SDD framework,
+including:
 
-## Usually unnecessary
-
-- Read-only questions, code explanations, exploration, or general research.
-- A single low-risk edit that you explicitly asked the Agent to perform directly.
-- Git/code rollback, emergency recovery, or deployment; these are outside SDD proposal state.
-- Generic cancellation that does not target an SDD proposal.
+- adding a feature, API, CLI, configuration, or automation;
+- fixing a reproducible bug and adding regression validation;
+- refactoring code or architecture while preserving existing behavior;
+- updating dependencies, CI, operations settings, documentation, or public guidance;
+- researching a bounded question and recording an evidence-based conclusion; and
+- work that benefits from cross-session recovery, Agent handoff, revisions, or traceable approval.
 
 ## Install
 
-Requirements: CPython 3.11 or newer; macOS and Linux are supported, while
-Windows is best effort. Install the complete `skills/sdd-workflow/` directory,
-not only `SKILL.md`.
+The bundled state-management CLI requires CPython 3.11 or newer. macOS and Linux
+are supported; Windows is best effort. Everyday use remains Agent-driven, so you
+do not operate the Python CLI yourself. Install the complete
+`skills/sdd-workflow/` directory, not only `SKILL.md`.
 
 ### Codex
 
@@ -63,28 +67,25 @@ removal are covered in [`docs/install-methods.md`](./docs/install-methods.md).
 
 ## Your first workflow
 
-1. Create a proposal:
+1. Use `提案` to describe the result you want. Small changes fit too:
 
    ```text
-   $sdd-workflow 提案 Add a health-check API to my project
+   $sdd-workflow 提案 Fix the health-check API returning 500 when the database is offline
    ```
 
    Claude Code uses `/sdd-workflow 提案 …`. The Agent creates
-   `sdd/<short-name>/proposal.md` and `tasks.md`, validates them, and stops
-   without changing product code.
+   `sdd/<short-name>/proposal.md` and `tasks.md`, records the expected outcome
+   and acceptance conditions, validates them, and stops without changing
+   product code.
 
-2. Review the proposal, then reply `開始實作`. The Agent approves that version
-   and implements, validates, and updates tasks one at a time. Plain `實作`
-   never approves a draft automatically.
+2. Review the proposal, then reply `開始實作`. The Agent approves that version,
+   then implements and verifies one task at a time. Plain `實作` never approves a draft.
 
-3. State any changed requirement. The Agent stops code changes, revises the
-   proposal, and waits for a new `開始實作`.
+3. State changed requirements. The Agent revises the proposal and waits for a new `開始實作`.
 
-4. After every task is complete and you accept the result, reply
-   `歸檔 <short-name>`. The proposal moves under `sdd/archive/`.
+4. Accept the completed result, then reply `歸檔 <short-name>` to move it under `sdd/archive/`.
 
-Replay the complete example with
-`python3 examples/sample-web-api/run-walkthrough.py`.
+Replay the example with `python3 examples/sample-web-api/run-walkthrough.py`.
 
 ## Workflow and safety boundaries
 
@@ -110,14 +111,33 @@ metadata, archive directories, or `INDEX.md`. Follow stable error `code` and
 `action` values; never use guessing or repeated commands to hide inconsistent
 state.
 
-## v1.0.1
+## Task size and workflow
 
-This patch release keeps proposal schemas v1/v2, JSON output v1, and the
-existing Skill workflow compatible. It fixes:
+The amount of specification should match the task, but this Skill does not
+skip safety boundaries merely because a change is small:
 
-- reapproval after an authorized revision appends or removes trailing pending tasks;
-- safe reapproval retry after an interrupted manifest or metadata write; and
-- false success from mutation commands on readable but non-mutation-compatible legacy proposals.
+- Small edit: use a concise proposal, often with one task and a directly observable acceptance result.
+- Typical feature or fix: split distinct outcomes into independently verifiable tasks.
+- Cross-module or high-risk work: state the impact, regression validation, revision, and recovery considerations.
+
+Every size follows `proposal → explicit approval → task-by-task implementation
+and verification → user acceptance → archive`. This makes results easier to
+check, but does not guarantee that an Agent never makes a mistake; acceptance
+conditions and actual validation remain the evidence of completion.
+
+## Usually unnecessary
+
+- Read-only questions, code explanations, or status checks that do not change the project.
+- Open-ended exploration without a bounded question and observable conclusion.
+- Git/code rollback, emergency recovery, or deployment; these are outside SDD proposal state.
+- Generic cancellation that does not target an SDD proposal.
+
+## v1.0.2
+
+This patch positions the Skill to help AI Agents use SDD for most observable
+change tasks and clarifies small-task and bundled-Python-runtime usage. It does
+not change Skill triggers, the proposal lifecycle, approval boundaries,
+schemas, or JSON output.
 
 Replace the complete package when updating. Never mix files from different
 releases.

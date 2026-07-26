@@ -24,7 +24,7 @@
       "envelope": {
         "command": "version",
         "data": {
-          "engine_version": "1.0.1",
+          "engine_version": "1.0.2",
           "maximum_schema_version": 2,
           "minimum_schema_version": 1
         },

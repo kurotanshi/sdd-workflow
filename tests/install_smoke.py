@@ -55,7 +55,7 @@ def run_smoke(expected_platform: str) -> None:
             stderr=subprocess.PIPE,
             text=True,
         )
-        if launcher.returncode != 0 or "sdd-workflow 1.0.1" not in launcher.stdout:
+        if launcher.returncode != 0 or "sdd-workflow 1.0.2" not in launcher.stdout:
             raise AssertionError(
                 f"installed launcher failed: {launcher.returncode} {launcher.stderr}"
             )
@@ -204,7 +204,7 @@ def _assert_version(result: subprocess.CompletedProcess[str]) -> None:
         )
     envelope = json.loads(result.stdout)
     if not envelope["ok"] or envelope["data"] != {
-        "engine_version": "1.0.1",
+        "engine_version": "1.0.2",
         "maximum_schema_version": 2,
         "minimum_schema_version": 1,
     }:

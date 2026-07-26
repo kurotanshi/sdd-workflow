@@ -1,40 +1,45 @@
 # sdd-workflow
 
-> 版本 v1.0.1 ｜ [English](./README.en.md)
+> 版本 v1.0.2 ｜ [English](./README.en.md)
 
 給 Claude Code、Codex 等 coding agent 使用的
 **SDD（Spec-Driven Development，規格驅動開發）Skill**。
 
-它把「先確認要做什麼，再允許 Agent 改程式」變成可持續、可恢復的工作流程：
-範圍、任務、驗收條件、核准與進度都保存在專案內。這個 repo 的產品是完整的
-Skill package，不是 protocol、SDK 或 developer kit。
+它的目標是讓 AI Agent 在執行大多數變更任務時，先把預期成果變成可審查、
+可驗收的規格，再依序實作與驗證。新功能、修 bug、重構、維運與文件調整都能
+使用同一套框架，降低 Agent 做錯範圍、漏掉驗收或在需求改變後繼續實作的風險。
+
+SDD 不只適用於大型專案。小修改可以使用精簡的 proposal，複雜工作則寫出更完整
+的任務與驗收條件；兩者都保留「先確認、再實作、逐項驗證」的核心邊界。範圍、
+核准、進度與修訂狀態會保存在專案內，讓流程可以跨 session 恢復。這個 repo 的
+產品是完整的 Skill package，不是 protocol、SDK 或 developer kit。
 
 ## Skill 的目標
 
-- 在任何產品程式碼變更前，先建立可審查的 proposal 與 task checklist。
-- 只有明確核准的 proposal 才能進入實作；每次只完成並驗證一條 task。
-- 需求改變時停止實作、留下修訂紀錄，並等待重新核准。
-- 讓跨 session、交接、失敗重試與最後歸檔都能從專案中的權威狀態恢復。
+- 先定義目標、範圍與可觀察的驗收結果，讓 Agent 知道什麼才算完成。
+- 把工作拆成可獨立驗證的 task，只有明確核准的 proposal 才能進入實作。
+- 每次實作並驗證一條 task，避免一次產生大量難以核對的變更。
+- 需求改變時停止改碼、修訂 proposal，取得重新核准後再繼續。
+- 讓跨 session、交接、失敗重試與歸檔都能從專案中的權威狀態恢復。
 - 狀態不一致或證據不足時 fail closed，不猜測、不靜默修復。
 
 ## 適合使用
 
-- 需求需要先確認範圍與驗收條件，再允許 Agent 改碼。
-- 變更包含多個可獨立驗證的步驟。
-- 工作可能跨 session、Agent 交接或 context recovery。
-- 實作或驗收期間可能改需求，需要保留修訂與重新核准紀錄。
+只要任務會產生可驗收的專案變更，通常都適合放進 SDD 框架，例如：
 
-## 通常不需要
-
-- 唯讀問答、程式碼解釋、探索或一般研究。
-- 你已明確要求直接完成的單一、低風險小修改。
-- Git／程式碼 rollback、緊急復原或部署操作；這些不屬於 SDD proposal state。
-- 沒有指向 SDD 提案的一般「取消」。
+- 新增功能、API、CLI、設定或自動化。
+- 修正可重現的 bug 並加入回歸驗證。
+- 在保持既有行為下重構程式或調整架構。
+- 更新依賴、CI、維運設定、文件或公開說明。
+- 針對明確問題進行有界研究，並把觀察結果寫成結論。
+- 任何需要跨 session、Agent 交接、需求修訂或可追溯核准的工作。
 
 ## 安裝
 
-需求：CPython 3.11 以上；macOS 與 Linux 為支援平台，Windows 為 best effort。
-必須安裝完整的 `skills/sdd-workflow/` 目錄，不能只複製 `SKILL.md`。
+bundled state-management CLI 需要 CPython 3.11 以上；macOS 與 Linux 為支援
+平台，Windows 為 best effort。日常使用仍透過 Agent 對話完成，不需要自行操作
+Python CLI。必須安裝完整的 `skills/sdd-workflow/` 目錄，不能只複製
+`SKILL.md`。
 
 ### Codex
 
@@ -61,14 +66,15 @@ Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into
 
 ## 第一次 workflow
 
-1. 建立提案：
+1. 用 `提案` 說明想完成的結果。小修改也可以使用：
 
    ```text
-   $sdd-workflow 提案 幫我的專案新增健康檢查 API
+   $sdd-workflow 提案 修正健康檢查 API 在資料庫離線時回傳 500 的問題
    ```
 
    Claude Code 使用 `/sdd-workflow 提案 …`。Agent 會建立
-   `sdd/<短名稱>/proposal.md` 與 `tasks.md`，驗證後停下，不修改產品程式碼。
+   `sdd/<短名稱>/proposal.md` 與 `tasks.md`，寫出預期成果與驗收條件，驗證後
+   停下，不修改產品程式碼。
 
 2. 審閱提案後回覆 `開始實作`。Agent 會核准目前版本，逐條實作、驗證並更新
    task 進度。只說 `實作` 不會自動核准 draft。
@@ -102,15 +108,30 @@ bundled CLI 是 proposal 狀態、task 進度、snapshot、metadata、archive �
 `INDEX.md`。遇到錯誤時依穩定的 `code` 與 `action` 處理；不要用猜測或重跑
 掩蓋不一致。
 
-## v1.0.1
+## 任務大小與流程
 
-這個 patch release 保持 proposal schema v1/v2、JSON output v1 與既有 Skill
-流程相容，並修正：
+SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就略過安全邊界：
 
-- 已完成部分 task 後，合法修訂新增或移除尾端待辦 task 可重新核准。
-- reapproval 在 manifest／metadata 寫入中斷後可安全重試。
-- 可讀但不可變更的 legacy proposal 不再讓 mutation 指令誤報成功；它會以
-  穩定錯誤停止且不寫入。
+- 小型修改：proposal 可以很短，通常只有一條 task 與直接可觀察的驗收條件。
+- 一般功能或修正：把不同成果拆成數條可獨立驗證的 task。
+- 跨模組或高風險工作：明確記錄影響範圍、回歸驗證、修訂與恢復考量。
+
+不論規模，流程都是 `提案 → 明確核准 → 逐條實作與驗證 → 使用者驗收 → 歸檔`。
+這套流程提高結果的可核對性，但不保證 Agent 永遠不犯錯；驗收條件與實際測試仍是
+判斷完成與否的依據。
+
+## 通常不需要
+
+- 不會修改專案的唯讀問答、程式碼解釋或狀態查詢。
+- 尚未形成具體問題與可驗收結論的開放式探索。
+- Git／程式碼 rollback、緊急復原或部署操作；這些不屬於 SDD proposal state。
+- 沒有指向 SDD 提案的一般「取消」。
+
+## v1.0.2
+
+這個 patch release 將公開定位調整為「協助 AI Agent 以 SDD 框架完成大多數可
+驗收的變更任務」，並釐清小型任務與 bundled Python runtime 的使用方式。它沒有
+改變 Skill 觸發、proposal lifecycle、核准邊界、schema 或 JSON output。
 
 從舊版更新時請替換完整 package，不要混合不同版本的檔案。
 

@@ -60,6 +60,35 @@ class QuickstartDocumentationTests(unittest.TestCase):
                     re.compile(r"examples/sample-web-api/run-walkthrough\.py"),
                 )
 
+    def test_readmes_position_sdd_for_most_change_tasks_without_a_fast_path(self) -> None:
+        zh = README.read_text(encoding="utf-8")
+        en = README_EN.read_text(encoding="utf-8")
+
+        for phrase in (
+            "大多數變更任務",
+            "新功能、修 bug、重構、維運與文件調整",
+            "小修改可以使用精簡的 proposal",
+            "不會因任務很小就略過安全邊界",
+            "bundled state-management CLI",
+            "日常使用仍透過 Agent 對話完成",
+        ):
+            with self.subTest(language="zh", phrase=phrase):
+                self.assertIn(phrase, zh)
+
+        for phrase in (
+            "complete most change tasks",
+            "Features, fixes, refactors, maintenance, and documentation",
+            "Small edits use concise proposals",
+            "skip safety boundaries",
+            "bundled state-management CLI",
+            "Everyday use remains Agent-driven",
+        ):
+            with self.subTest(language="en", phrase=phrase):
+                self.assertIn(phrase, en)
+
+        self.assertNotIn("單一、低風險小修改", zh)
+        self.assertNotIn("A single low-risk edit", en)
+
 
 if __name__ == "__main__":
     unittest.main()
