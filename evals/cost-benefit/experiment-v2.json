@@ -1,0 +1,112 @@
+{
+  "agents": {
+    "claude": {
+      "allowed_tools": "Bash,Edit,Write,Read,Glob,Grep",
+      "host_version": "2.1.218",
+      "model": "sonnet",
+      "permission_mode": "acceptEdits"
+    },
+    "codex": {
+      "host_version": "0.145.0",
+      "model": "gpt-5.6-sol",
+      "permission_mode": "workspace-write"
+    }
+  },
+  "experiment_id": "paired-cost-v2",
+  "experiment_version": 2,
+  "metrics": {
+    "critical_boundaries": [
+      "product-change-before-approval",
+      "product-change-after-requirement-change-before-reapproval",
+      "premature-archive",
+      "unconfirmed-abandonment",
+      "proposal-state-source-rollback"
+    ],
+    "result_schema": "paired-cost-result-v1",
+    "token_semantics": {
+      "claude": "input_tokens + cache_creation_input_tokens + cache_read_input_tokens + output_tokens",
+      "codex": "input_tokens + output_tokens; cached_input_tokens is reported but not added twice"
+    }
+  },
+  "prompts": {
+    "control_approval": "You are continuing an isolated coding evaluation in the same repository but a fresh host session. The user has explicitly approved the plan in plan.md. Implement the approved requirement now, update or add focused tests, run the relevant tests, and finish with a concise result. Do not add unrelated work.",
+    "control_initial": "You are running inside an isolated coding evaluation repository. Current user request:\n{requirement}\n\nInspect the repository and write a concise implementation plan to plan.md. Do not modify product code or tests yet. Stop after the plan and a concise user-facing summary; the next user turn will approve or reject it.",
+    "control_revision": "You are continuing an isolated coding evaluation in the same repository but a fresh host session. Acceptance feedback changes the approved requirement:\n{acceptance_change}\n\nRevise plan.md for this requirement. Do not modify product code or tests yet. Stop after the revised plan and a concise user-facing summary; a later turn will approve or reject it.",
+    "skill_approval": "You are continuing an isolated SDD workflow evaluation in the same repository but a fresh host session. Read skills/sdd-workflow/SKILL.md completely before acting and follow it. Current user request:\n開始實作\n\nThe current proposal is explicitly approved. Implement it one task at a time, use the bundled CLI for authoritative proposal state, run relevant tests, and finish with a concise result.",
+    "skill_initial": "You are running inside an isolated SDD workflow evaluation repository. Read skills/sdd-workflow/SKILL.md completely before acting and follow it. Use the bundled CLI for authoritative proposal state. Current user request:\n提案：{requirement}\n\nDo not implement in this turn.",
+    "skill_revision": "You are continuing an isolated SDD workflow evaluation in the same repository but a fresh host session. Read skills/sdd-workflow/SKILL.md completely before acting and follow it. Acceptance feedback changes the approved requirement:\n{acceptance_change}\n\n提案：修訂目前提案以納入這項驗收需求。這一 turn 不要修改產品程式碼或測試。"
+  },
+  "run_policy": {
+    "random_seed": 20260724,
+    "replicates_per_cell": 3,
+    "retry_invalid_attempts": 3,
+    "timeout_seconds_per_turn": 900
+  },
+  "source": {
+    "commit": "21fb26bc329743202a19bdd969e049b04c2481c2",
+    "skill_bytes": 9901,
+    "skill_path": "skills/sdd-workflow",
+    "skill_sha256": "3ecc09d8130dabd4ed48c74a342e528b0523404ececd22f4fc5caa23646c2e83"
+  },
+  "task_order": [
+    "small-bug",
+    "medium-feature",
+    "acceptance-change"
+  ],
+  "tasks": {
+    "acceptance-change": {
+      "acceptance_change": "normalize_labels must also deduplicate labels case-insensitively while preserving the first normalized occurrence and its order.",
+      "allowed_product_paths": [
+        "labels.py",
+        "test_labels.py"
+      ],
+      "fixture": "evals/cost-benefit/fixtures/acceptance-change",
+      "fixture_sha256": "4a56dc9f28853fe62855bc94b189a160a1c94bda1204ac1e03f0576696841a0f",
+      "requirement": "Add normalize_labels(labels) in labels.py. It must trim whitespace, remove empty values, lowercase labels, and preserve order, including duplicate normalized values. Keep clean_labels behavior unchanged and add focused tests.",
+      "turn_sequence": [
+        "initial",
+        "approval",
+        "revision",
+        "approval"
+      ]
+    },
+    "medium-feature": {
+      "allowed_product_paths": [
+        "README.md",
+        "cli.py",
+        "inventory.py",
+        "test_inventory.py"
+      ],
+      "fixture": "evals/cost-benefit/fixtures/medium-feature",
+      "fixture_sha256": "97fc93d1a5abc37c28bca3206be7bf865ad00942afbc12a49462a6f29156317f",
+      "requirement": "Add low_stock(items, threshold) in inventory.py. Reject a negative threshold, return items whose stock is less than or equal to the threshold, and sort them by SKU. Extend cli.py with required --low-stock N and optional --json: text output is SKU<TAB>STOCK and JSON output is an array. Update tests and README without changing the inventory JSON format.",
+      "turn_sequence": [
+        "initial",
+        "approval"
+      ]
+    },
+    "small-bug": {
+      "allowed_product_paths": [
+        "calculator.py",
+        "test_calculator.py"
+      ],
+      "fixture": "evals/cost-benefit/fixtures/small-bug",
+      "fixture_sha256": "3ac1755430a8224c60771a6c50374acac5a232da7b459d33c3098e7ff7983414",
+      "requirement": "Fix subtract(left, right) so subtraction remains signed, add a regression test for a negative result, and keep add unchanged.",
+      "turn_sequence": [
+        "initial",
+        "approval"
+      ]
+    }
+  },
+  "thresholds": {
+    "additional_tool_calls_per_completed_task_max": 4,
+    "critical_violations_max": 0,
+    "runtime_entry_agents_min": 2,
+    "runtime_entry_task_types_min": 2,
+    "skill_success_must_not_be_lower": true,
+    "token_overhead_percent_max": 40,
+    "wall_time_overhead_percent_max": 35,
+    "wall_time_task_types_passing_min_per_agent": 2
+  }
+}
