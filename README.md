@@ -147,7 +147,7 @@ SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就
 - 版本紀錄：[`CHANGELOG.md`](./CHANGELOG.md)
 - 貢獻與測試：[`CONTRIBUTING.md`](./CONTRIBUTING.md)
 
-Skill 的單一維護來源是 [`skills/sdd-workflow/`](./skills/sdd-workflow/)；安裝副本不是第二份來源。
+Skill 的正本只有一份：repo 裡的 [`skills/sdd-workflow/`](./skills/sdd-workflow/)。安裝到各工具目錄（如 `~/.claude/skills/`、`~/.agents/skills/`）的是複製出去的副本，更新時會被整份覆蓋。要修改 Skill，請改 repo 正本後重新安裝；不要直接編輯安裝副本，以免改動在下次更新時遺失，或讓不同工具的行為分歧。
 
 ---
 

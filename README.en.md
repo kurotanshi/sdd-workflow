@@ -151,7 +151,7 @@ Replace the complete package when updating. Never mix files from different relea
 - Release history: [`CHANGELOG.md`](./CHANGELOG.md)
 - Contributing and tests: [`CONTRIBUTING.en.md`](./CONTRIBUTING.en.md)
 
-The single maintained source is [`skills/sdd-workflow/`](./skills/sdd-workflow/). Installed copies are not a second source of truth.
+The canonical Skill lives in one place: [`skills/sdd-workflow/`](./skills/sdd-workflow/) in this repo. Copies installed into tool directories (such as `~/.claude/skills/` or `~/.agents/skills/`) are regenerated artifacts and get overwritten on every update. To change the Skill, edit the repo source and reinstall; never edit an installed copy, or your changes will be lost on the next update and the tools will drift apart.
 
 ---
 
