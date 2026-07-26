@@ -23,7 +23,7 @@
 
 ### Validation
 - `SKILL.md`、觸發規則與 Agent orchestration 未變；沿用 v1.0.0 的完整 78-run Agent adherence gate，並納入兩項修正的 focused cross-Agent evidence。
-- 發版候選必須通過完整 unit/integration、runtime conformance、recovery drills、package/install/full-lifecycle、examples、documentation 與 trigger gates。
+- 發布候選版本必須通過完整 unit/integration、runtime conformance、recovery drills、package/install/full-lifecycle、examples、documentation 與 trigger gates。
 
 ## v1.0.0 — 2026-07-23
 
@@ -76,7 +76,7 @@
 ### Added
 - 新增明確 `schema_version: 2` frontmatter、strict `parse_v2` adapter 與 Schema v2 fixture corpus；future/unknown metadata 在 task parsing 前 fail closed。
 - 新增 `維運`、`文件`、`研究` 三種 primary type；研究沿用既有 lifecycle，並以 canonical `## 結論` 保存與重建研究輸出。
-- 新增 Schema v2 entry decision 與 evidence records；實際案例支持類型/研究結論，但不支持 impacts、labels 或 type-specific required-section matrix。
+- 新增 Schema v2 entry decision 與 evidence records；實際案例支持類型／研究結論，但不支持 impacts、labels 或 type-specific required-section matrix。
 
 ### Changed
 - 新提案預設寫入 Schema v2；既有 unversioned/explicit v1 與 legacy artifacts 繼續透過原 adapter 讀取，不原地 migration。
@@ -118,7 +118,7 @@
 - Adoption gate 通過後，Skill 的 readonly parsing path 由內附 script 擔任，`SKILL.md` 只保留意圖、核准、command orchestration、error action 與溝通邏輯。
 
 ### Breaking
-- 本專案仍處於 `0.x`，v0.3.0 但是 breaking minor：安裝環境必須提供 CPython 3.11+，readonly workflow 不再保證無 Python 的 copy-only 行為。
+- 本專案仍處於 `0.x`，但 v0.3.0 是 breaking minor：安裝環境必須提供 CPython 3.11+，readonly workflow 不再保證無 Python 的 copy-only 行為。
 
 ### Rollback
 - 若 parsing-path pilot 發現額外 tool call 導致 agent 遵循度退化，pin 回最新 prose-only release `v0.2.4`。v0.3 readonly plateau 不寫入 proposal schema 或 machine metadata，因此不需要 data migration。

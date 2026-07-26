@@ -12,14 +12,13 @@
 - `SKILL.md` 是 Agent 行為邊界與觸發規則的唯一來源；bundled scripts 與
   references 是 Skill 的內部實作，不是另一套 protocol 或 developer kit。
 - deterministic runtime 可以強制執行 parser、mutation 與 archive 安全性；
-  修改行為時必須同步檢查 Skill prose、runtime 與 regression，不得宣稱只改
-  其中一份就能改變完整流程。
+  修改行為時必須同步檢查 Skill prose、runtime 與 regression，不得宣稱只改其中一份就能改變完整流程。
 - 安裝到 `~/.claude/skills/`、`~/.codex/skills/`、`~/.agents/skills/` 的副本都是**可重新產生的安裝產物**，不是第二份來源。**絕對不要**只改某個工具目錄裡的副本——那會造成分歧。
 - 不要為了單一工具再開 command／prompt 變體。跨工具差異只反映在「怎麼呼叫」（README 的觸發語法表），不反映在流程規則。
 
 ## Scope 與複雜度預算
 
-- 每個 roadmap 項目在動工前標成「減、修、量、加」；「加」必須記錄具名
+- 每個 roadmap 項目在動工前標成「減（Reduce）、修（Fix）、量（Measure）、加（Add）」；「加」必須記錄具名
   requester 與未滿足需求，否則留在 backlog。
 - 對外只溝通 Skill release、proposal artifact schema、JSON output version。
   handshake、attestation、manifest 等若保留，都是內部實作細節。
@@ -27,8 +26,7 @@
   deprecation policy、開發框架或通用 orchestration platform。
 - 不增加自然語言 trigger、schema、Agent adapter、reference 或 recovery
   機制，除非有 field evidence 與獨立提案。
-- 優先刪除重複承諾、合併同步來源與重用既有測試；檔案改名或把細節藏起來
-  不算降低複雜度。
+- 優先刪除重複承諾、合併同步來源與重用既有測試；檔案改名或把細節藏起來不算降低複雜度。
 
 ## Repo 版面
 
@@ -85,7 +83,7 @@ sdd-workflow/
 
 **跨工具的實際流程驗收必須由人在各自的全新互動 session 操作**，不能只靠 agent 自動跑過：
 
-- Claude Code：新 session 用 `/sdd-workflow 提案 …` 走完 提案 → 批准 → 實作 → 歸檔；另在獨立 session 用自然語言確認會自動選用 skill 並停在等確認。
+- Claude Code：新 session 用 `/sdd-workflow 提案 …` 走完 提案 → 核准 → 實作 → 歸檔；另在獨立 session 用自然語言確認會自動選用 skill 並停在等確認。
 - Codex：新 session 用 `$sdd-workflow 提案 …` 走完相同三階段；另確認自然語言 implicit invocation。
 - Skill 變更後可能需要開新對話／重啟才會載入；不要把「沒載入」誤判為「通過」。
 
@@ -112,7 +110,7 @@ sdd-workflow/
 
 ### Codex 子代理輔助驗收（可選）
 
-Codex 可以建立子代理協助跑**非互動式**驗收。這適合把 noisy、可並行的檢查移出主 thread，例如文件命令核對、靜態驗證、hermetic dev-link 測試、repo 結構掃描。它不適合取代 fresh Codex TUI 驗收，因為子代理繼承目前 session、sandbox 與 workspace，不是一個全新的互動式 Codex CLI session。
+Codex 可以建立子代理協助跑**非互動式**驗收。這適合把 noisy、可並行的檢查移出主 thread，例如文件命令核對、靜態驗證、hermetic dev-link 測試、repo 結構掃描。它不適合取代 fresh Codex TUI 驗收，因為子代理繼承目前 session、sandbox 與 workspace，不是全新的互動式 Codex CLI session。
 
 建議在主 Codex thread 明確要求子代理只做 read-heavy 或 hermetic 檢查，並等全部回報後再彙整：
 
@@ -146,7 +144,7 @@ Codex 可以建立子代理協助跑**非互動式**驗收。這適合把 noisy�
 $sdd-workflow 提案 建立一個測試文字檔
 ```
 
-確認它停在提案等待批准後，再回覆「開始實作」，驗收產物，最後回覆「歸檔」。另開一個獨立 session 測自然語言觸發，例如：
+確認它停在提案等待核准後，再回覆「開始實作」，驗收產物，最後回覆「歸檔」。另開一個獨立 session 測自然語言觸發，例如：
 
 ```text
 提案：建立一個測試文字檔
