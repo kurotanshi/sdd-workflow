@@ -35,33 +35,30 @@ sequenceDiagram
     participant A as AI Coding Agent
     participant S as sdd/ 目錄 (Python CLI)
 
-    box rgba(255, 235, 59, 0.12) 1. 提案階段 (Proposal Phase)
-    U->>A: 「提案：幫專案新增 OOO 功能」
+    Note over U,S: 1. 提案階段 (Proposal Phase)
+    U->>A: 提案：幫專案新增 OOO 功能
     A->>S: 建立 draft proposal.md & tasks.md
     A->>U: 顯示提案規格、工作清單與驗收條件
-    note over A: 停下等待確認，不修改任何程式碼
-    note over U,S: 其他路徑：修訂會重設 draft；放棄先 preflight，回覆「確認放棄 <短名稱>」才歸檔為 abandoned 並更新 INDEX.md
-    end
+    Note over A: 停下等待確認，不修改任何程式碼
+    Note over U,S: 其他路徑：修訂會重設 draft；放棄先 preflight，回覆「確認放棄 <短名稱>」才歸檔為 abandoned 並更新 INDEX.md
 
-    box rgba(76, 175, 80, 0.12) 2. 實作階段 (Implementation Phase)
-    U->>A: 「開始實作」
+    Note over U,S: 2. 實作階段 (Implementation Phase)
+    U->>A: 開始實作
     A->>S: CLI approve 寫入 manifest、metadata 與 approved 狀態
     loop 逐條任務執行
         A->>S: 檢查並實作 tasks.md 中第一條未勾選任務
-        A->>A: 執行測試／驗證
+        A->>A: 執行測試 / 驗證
         A->>S: CLI complete-task 驗證 snapshot 後寫入 [x]
         A->>U: 回報「第 N 條完成」
     end
     A->>U: 全部完成，請使用者驗收
-    end
 
-    box rgba(33, 150, 243, 0.12) 3. 歸檔階段 (Archive Phase)
-    U->>A: 「歸檔」
+    Note over U,S: 3. 歸檔階段 (Archive Phase)
+    U->>A: 歸檔
     A->>S: 檢查 tasks.md 是否全數完成
     A->>S: CLI archive 標記 completed 並移至 archive
     A->>S: 從 archive records 全量重建 INDEX.md
     A->>U: 回報「歸檔完成」與單句變更摘要
-    end
 ```
 
 ---
