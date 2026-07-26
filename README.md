@@ -11,7 +11,7 @@
 它的目標是讓 AI Agent 在執行大多數變更任務時，先把預期成果變成**可審查、可驗收的規格**，再依序實作與驗證。新功能、修 bug、重構、維運與文件調整都能使用同一套框架，降低 Agent 做錯範圍、漏掉驗收或在需求改變後繼續實作的風險。
 
 > [!NOTE]
-> SDD 不只適用於大型專案。小修改可以使用精簡 proposal，複雜工作則寫出更完整的任務與驗收條件；兩者都保留「先確認、再實作、逐項驗證」的核心邊界。範圍、核准、進度與修訂狀態會保存在專案內，讓流程可以跨 session 恢復。
+> SDD 不只適用於大型專案。小修改可以使用精簡 proposal，複雜工作則寫出更完整的任務與驗收條件；兩者都保留「先確認、再實作、逐項驗證」的核心邊界。範圍、核准、進度與修訂狀態會保存在專案內，讓流程可以跨 session 恢復。這個 repository 的產品是完整的 Skill package，不是 protocol、SDK 或 developer kit。
 
 ---
 
@@ -29,15 +29,39 @@
 ## SDD 工作流程
 
 ```mermaid
-flowchart TD
-    A["提出需求 (提案)"] --> B["建立 Proposal & Tasks"]
-    B --> C{"使用者審閱"}
-    C -- "修改需求" --> A
-    C -- "核准 (開始實作)" --> D["逐條 Task 實作與驗證"]
-    D -- "遇到需求變更" --> E["停止改碼 & 修訂 Proposal"]
-    E --> C
-    D -- "所有 Task 驗收完成" --> F["使用者驗收"]
-    F -- "確認歸檔 (歸檔)" --> G["移至 sdd/archive/"]
+sequenceDiagram
+    autonumber
+    actor U as 使用者
+    participant A as AI Coding Agent
+    participant S as sdd/ 目錄 (Python CLI)
+
+    box rgba(255, 235, 59, 0.12) 1. 提案階段 (Proposal Phase)
+    U->>A: 「提案：幫專案新增 OOO 功能」
+    A->>S: 建立 draft proposal.md & tasks.md
+    A->>U: 顯示提案規格、工作清單與驗收條件
+    note over A: 停下等待確認，不修改任何程式碼
+    note over U,S: 其他路徑：修訂會重設 draft；放棄先 preflight，回覆「確認放棄 <短名稱>」才歸檔為 abandoned 並更新 INDEX.md
+    end
+
+    box rgba(76, 175, 80, 0.12) 2. 實作階段 (Implementation Phase)
+    U->>A: 「開始實作」
+    A->>S: CLI approve 寫入 manifest、metadata 與 approved 狀態
+    loop 逐條任務執行
+        A->>S: 檢查並實作 tasks.md 中第一條未勾選任務
+        A->>A: 執行測試／驗證
+        A->>S: CLI complete-task 驗證 snapshot 後寫入 [x]
+        A->>U: 回報「第 N 條完成」
+    end
+    A->>U: 全部完成，請使用者驗收
+    end
+
+    box rgba(33, 150, 243, 0.12) 3. 歸檔階段 (Archive Phase)
+    U->>A: 「歸檔」
+    A->>S: 檢查 tasks.md 是否全數完成
+    A->>S: CLI archive 標記 completed 並移至 archive
+    A->>S: 從 archive records 全量重建 INDEX.md
+    A->>U: 回報「歸檔完成」與單句變更摘要
+    end
 ```
 
 ---

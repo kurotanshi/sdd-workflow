@@ -29,15 +29,39 @@ Its goal is to help AI Agents complete most change tasks by turning the expected
 ## Workflow Lifecycle
 
 ```mermaid
-flowchart TD
-    A["Propose Requirement (提案)"] --> B["Create Proposal & Tasks"]
-    B --> C{"User Review"}
-    C -- "Change Requirement" --> A
-    C -- "Approve (開始實作)" --> D["Task-by-Task Implementation & Verification"]
-    D -- "Requirement Changes" --> E["Stop Code Edits & Revise Proposal"]
-    E --> C
-    D -- "All Tasks Completed" --> F["User Acceptance"]
-    F -- "Confirm Archival (歸檔)" --> G["Move to sdd/archive/"]
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant A as AI Coding Agent
+    participant S as sdd/ Directory (Python CLI)
+
+    box rgba(255, 235, 59, 0.12) 1. Proposal Phase
+    U->>A: "提案: Add feature XXX"
+    A->>S: Create draft proposal.md & tasks.md
+    A->>U: Display proposal spec, task list & acceptance criteria
+    note over A: Stop and wait for confirmation without product code changes
+    note over U,S: Other paths: Revision resets to draft; Abandon runs preflight first, requires "確認放棄 <short-name>" to archive as abandoned and update INDEX.md
+    end
+
+    box rgba(76, 175, 80, 0.12) 2. Implementation Phase
+    U->>A: "開始實作"
+    A->>S: CLI approve writes manifest, metadata & approved status
+    loop Execute Task-by-Task
+        A->>S: Check & implement first unchecked task in tasks.md
+        A->>A: Run tests / verification
+        A->>S: CLI complete-task verifies snapshot & writes [x]
+        A->>U: Report "Task N completed"
+    end
+    A->>U: All tasks completed, prompt user for acceptance
+    end
+
+    box rgba(33, 150, 243, 0.12) 3. Archive Phase
+    U->>A: "歸檔"
+    A->>S: Check if tasks.md is fully completed
+    A->>S: CLI archive marks completed & moves to archive
+    A->>S: Rebuild INDEX.md from archive records
+    A->>U: Report "Archival complete" & single-sentence summary
+    end
 ```
 
 ---
