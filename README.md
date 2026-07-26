@@ -11,7 +11,7 @@
 它的目標是讓 AI Agent 在執行大多數變更任務時，先把預期成果變成**可審查、可驗收的規格**，再依序實作與驗證。新功能、修 bug、重構、維運與文件調整都能使用同一套框架，降低 Agent 做錯範圍、漏掉驗收或在需求改變後繼續實作的風險。
 
 > [!NOTE]
-> SDD 不只適用於大型專案。小修改可以使用精簡 proposal，複雜工作則寫出更完整的任務與驗收條件；兩者都保留「先確認、再實作、逐項驗證」的核心邊界。範圍、核准、進度與修訂狀態會保存在專案內，讓流程可以跨 session 恢復。這個 repository 的產品是完整的 Skill package，不是 protocol、SDK 或 developer kit。
+> SDD 不只適用於大型專案。小修改可以使用精簡的 proposal，複雜工作則寫出更完整的任務與驗收條件；兩者都保留「先確認、再實作、逐項驗證」的核心邊界。範圍、核准、進度與修訂狀態會保存在專案內，讓流程可以跨 session 恢復。這個 repository 的產品是完整的 Skill package，不是 protocol、SDK 或 developer kit。
 
 ---
 
@@ -26,42 +26,25 @@
 
 ---
 
-## SDD 工作流程
+## 安裝
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as 使用者
-    participant A as AI Coding Agent
-    participant S as sdd/ 目錄 (Python CLI)
+bundled state-management CLI 需要 CPython 3.11 以上；macOS 與 Linux 為支援平台，Windows 為 best effort。日常使用仍透過 Agent 對話完成，不需要自行操作 Python CLI。必須安裝完整的 `skills/sdd-workflow/` 目錄，不能只複製 `SKILL.md`。
 
-    Note over U,S: 1. 提案階段 (Proposal Phase)
-    U->>A: 提案：幫專案新增 OOO 功能
-    A->>S: 建立 draft proposal.md & tasks.md
-    A->>U: 顯示提案規格、工作清單與驗收條件
-    Note over A: 停下等待確認，不修改任何程式碼
-    Note over U,S: 其他路徑：修訂會重設 draft；放棄先 preflight，回覆「確認放棄 <短名稱>」才歸檔為 abandoned 並更新 INDEX.md
+### Codex
 
-    Note over U,S: 2. 實作階段 (Implementation Phase)
-    U->>A: 開始實作
-    A->>S: CLI approve 寫入 manifest、metadata 與 approved 狀態
-    loop 逐條任務執行
-        A->>S: 檢查並實作 tasks.md 中第一條未勾選任務
-        A->>A: 執行測試 / 驗證
-        A->>S: CLI complete-task 驗證 snapshot 後寫入 [x]
-        A->>U: 回報「第 N 條完成」
-    end
-    A->>U: 全部完成，請使用者驗收
-
-    Note over U,S: 3. 歸檔階段 (Archive Phase)
-    U->>A: 歸檔
-    A->>S: 檢查 tasks.md 是否全數完成
-    A->>S: CLI archive 標記 completed 並移至 archive
-    A->>S: 從 archive records 全量重建 INDEX.md
-    A->>U: 回報「歸檔完成」與單句變更摘要
+```text
+$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow into ~/.agents/skills
 ```
 
----
+安裝位置是 `~/.agents/skills/sdd-workflow/`。若下一個 turn 未載入，請重新啟動 Codex。
+
+### Claude Code
+
+```text
+Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into ~/.claude/skills/sdd-workflow
+```
+
+安裝位置是 `~/.claude/skills/sdd-workflow/`。若未載入，請開新 session。其他安裝、更新與移除方式見 [`docs/install-methods.md`](./docs/install-methods.md)。
 
 ## 第一次 workflow
 
@@ -103,6 +86,21 @@ sequenceDiagram
 
 ---
 
+## SDD 工作流程
+
+```mermaid
+flowchart LR
+    A["提案"] --> B["明確核准"]
+    B --> C["逐條實作與驗證"]
+    C --> D{"需求改變？"}
+    D -- "是" --> R["修訂並重新核准"]
+    R --> C
+    D -- "否" --> E["使用者驗收"]
+    E --> F["歸檔"]
+```
+
+---
+
 ## 任務大小與流程
 
 SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就略過安全邊界：
@@ -130,32 +128,6 @@ SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就
 - 尚未形成具體問題與可驗收結論的開放式探索。
 - Git／程式碼 rollback、緊急復原或部署操作；這些不屬於 SDD proposal state。
 - 沒有指向 SDD 提案的一般「取消」。
-
----
-
-## 安裝
-
-bundled state-management CLI 需要 CPython 3.11 以上；macOS 與 Linux 為支援平台，Windows 為 best effort。日常使用仍透過 Agent 對話完成，不需要自行操作 Python CLI。必須安裝完整的 `skills/sdd-workflow/` 目錄，不能只複製 `SKILL.md`。
-
-### Codex
-
-在 Codex 對話中使用內建 installer：
-
-```text
-$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow into ~/.agents/skills
-```
-
-安裝位置是 `~/.agents/skills/sdd-workflow/`。若下一個 turn 未載入，請重新啟動 Codex。
-
-### Claude Code
-
-請 Claude Code 安裝完整 package：
-
-```text
-Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into ~/.claude/skills/sdd-workflow
-```
-
-安裝位置是 `~/.claude/skills/sdd-workflow/`。若未載入，請開新 session。手動安裝、驗證、更新與移除方式見 [`docs/install-methods.md`](./docs/install-methods.md)。
 
 ---
 

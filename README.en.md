@@ -26,44 +26,27 @@ Its goal is to help AI Agents complete most change tasks by turning the expected
 
 ---
 
-## Workflow Lifecycle
+## Install
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as User
-    participant A as AI Coding Agent
-    participant S as sdd/ Directory (Python CLI)
+The bundled state-management CLI requires CPython 3.11 or newer. macOS and Linux are supported; Windows is best effort. Everyday use remains Agent-driven, so you do not operate the Python CLI yourself. Install the complete `skills/sdd-workflow/` directory, not only `SKILL.md`.
 
-    Note over U,S: 1. Proposal Phase
-    U->>A: 提案: Add feature XXX
-    A->>S: Create draft proposal.md & tasks.md
-    A->>U: Display proposal spec, task list & acceptance criteria
-    Note over A: Stop and wait for confirmation without product code changes
-    Note over U,S: Other paths: Revision resets to draft; Abandon runs preflight first, requires "確認放棄 <short-name>" to archive as abandoned and update INDEX.md
+### Codex
 
-    Note over U,S: 2. Implementation Phase
-    U->>A: 開始實作
-    A->>S: CLI approve writes manifest, metadata & approved status
-    loop Execute Task-by-Task
-        A->>S: Check & implement first unchecked task in tasks.md
-        A->>A: Run tests / verification
-        A->>S: CLI complete-task verifies snapshot & writes [x]
-        A->>U: Report "Task N completed"
-    end
-    A->>U: All tasks completed, prompt user for acceptance
-
-    Note over U,S: 3. Archive Phase
-    U->>A: 歸檔
-    A->>S: Check if tasks.md is fully completed
-    A->>S: CLI archive marks completed & moves to archive
-    A->>S: Rebuild INDEX.md from archive records
-    A->>U: Report "Archival complete" & single-sentence summary
+```text
+$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow into ~/.agents/skills
 ```
 
----
+The install location is `~/.agents/skills/sdd-workflow/`. Restart Codex if the Skill does not appear on the next turn.
 
-## Your First Workflow
+### Claude Code
+
+```text
+Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into ~/.claude/skills/sdd-workflow
+```
+
+The install location is `~/.claude/skills/sdd-workflow/`. Start a fresh session if the Skill does not appear. Other installation, update, and removal methods are covered in [`docs/install-methods.md`](./docs/install-methods.md).
+
+## Your first workflow
 
 1. **Initiate a Proposal (`提案`)**  
    Use `提案` to describe the result you want. Small changes fit too:
@@ -107,6 +90,21 @@ sequenceDiagram
 
 ---
 
+## Workflow Lifecycle
+
+```mermaid
+flowchart LR
+    A["Proposal"] --> B["Explicit approval"]
+    B --> C["Implement and verify each task"]
+    C --> D{"Requirements changed?"}
+    D -- "Yes" --> R["Revise and reapprove"]
+    R --> C
+    D -- "No" --> E["User acceptance"]
+    E --> F["Archive"]
+```
+
+---
+
 ## Task Size and Workflow
 
 The amount of specification should match the task, but this Skill does not skip safety boundaries merely because a change is small:
@@ -134,32 +132,6 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 - Open-ended exploration without a bounded question and observable conclusion.
 - Git/code rollback, emergency recovery, or deployment; these are outside SDD proposal state.
 - Generic cancellation that does not target an SDD proposal.
-
----
-
-## Install
-
-The bundled state-management CLI requires CPython 3.11 or newer. macOS and Linux are supported; Windows is best effort. Everyday use remains Agent-driven, so you do not operate the Python CLI yourself. Install the complete `skills/sdd-workflow/` directory, not only `SKILL.md`.
-
-### Codex
-
-Use the built-in installer in a Codex conversation:
-
-```text
-$skill-installer install skills/sdd-workflow from the GitHub repo kurotanshi/sdd-workflow into ~/.agents/skills
-```
-
-The install location is `~/.agents/skills/sdd-workflow/`. Restart Codex if the Skill does not appear on the next turn.
-
-### Claude Code
-
-Ask Claude Code to install the complete package:
-
-```text
-Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into ~/.claude/skills/sdd-workflow
-```
-
-The install location is `~/.claude/skills/sdd-workflow/`. Start a fresh session if the Skill does not appear. Manual installation, verification, updates, and removal are covered in [`docs/install-methods.md`](./docs/install-methods.md).
 
 ---
 
