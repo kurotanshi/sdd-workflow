@@ -295,6 +295,125 @@ class CompleteTaskValidationTests(unittest.TestCase):
         self.assertEqual(metadata["approval"]["state"], "active")
         self.assertEqual(metadata["attestation"]["projection"]["status"], "approved")
 
+    def complete_second_task(self) -> None:
+        _, model, snapshot = parsed(self.root)
+        code, result = invoke(
+            [
+                "--root", str(self.root), "--json", "complete-task", "valid-simple", "2",
+                "--expected-task-digest", task_digest(model.tasks[1].text),
+                "--expected-snapshot", snapshot.snapshot_digest,
+            ],
+            self.root,
+        )
+        self.assertEqual(code, 0, result)
+
+    def apply_requirement_change(self) -> None:
+        """Append one pending task and one acceptance scenario, as a revision would."""
+
+        tasks = self.target / "tasks.md"
+        tasks.write_text(
+            tasks.read_text()
+            .replace(
+                "- [x] Preserve one pending task\n",
+                "- [x] Preserve one pending task\n- [ ] Handle the newly required behavior\n",
+            )
+            .replace(
+                "- 情境：task order and completion state remain stable",
+                "- 情境：task order and completion state remain stable\n"
+                "- 情境：the newly required behavior is observable",
+            )
+        )
+
+    def test_authorized_revision_may_append_task_and_change_acceptance(self) -> None:
+        self.complete_second_task()
+        revision = invoke(
+            [
+                "--root", str(self.root), "--json", "begin-revision", "valid-simple",
+                "--expected-snapshot", parsed(self.root)[2].snapshot_digest,
+            ],
+            self.root,
+        )
+        self.assertEqual(revision[0], 0, revision)
+        self.apply_requirement_change()
+        approved = invoke(
+            [
+                "--root", str(self.root), "--json", "approve", "valid-simple",
+                "--expected-snapshot", parsed(self.root)[2].snapshot_digest,
+            ],
+            self.root,
+        )
+        self.assertEqual(approved[0], 0, approved)
+        _, revised, _ = parsed(self.root)
+        self.assertEqual(revised.status, "approved")
+        self.assertEqual(
+            [(task.text, task.completed) for task in revised.tasks],
+            [
+                ("Preserve one completed task", True),
+                ("Preserve one pending task", True),
+                ("Handle the newly required behavior", False),
+            ],
+        )
+        metadata = json.loads((self.target / ".sdd/metadata.json").read_text())
+        self.assertEqual(metadata["approval"]["state"], "active")
+        self.assertIsNone(metadata["revision"])
+        self.assertEqual(
+            metadata["attestation"]["projection"]["tasks"],
+            [
+                {"completed": True, "ordinal": 1},
+                {"completed": True, "ordinal": 2},
+                {"completed": False, "ordinal": 3},
+            ],
+        )
+        manifest = json.loads((self.target / ".sdd/approval-manifest.json").read_text())
+        self.assertEqual(
+            manifest["acceptance_conditions"][-1],
+            "情境：the newly required behavior is observable",
+        )
+
+    def test_unauthorized_requirement_change_reports_drift_before_mutation(self) -> None:
+        self.complete_second_task()
+        metadata_before = (self.target / ".sdd/metadata.json").read_bytes()
+        self.apply_requirement_change()
+        _, drifted, snapshot = parsed(self.root)
+        code, result = invoke(
+            [
+                "--root", str(self.root), "--json", "complete-task", "valid-simple", "3",
+                "--expected-task-digest", task_digest(drifted.tasks[2].text),
+                "--expected-snapshot", snapshot.snapshot_digest,
+            ],
+            self.root,
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(result["errors"][0]["code"], "OUT_OF_BAND_DRIFT")
+        self.assertEqual(result["errors"][0]["action"], "inspect_managed_state_drift")
+        self.assertEqual((self.target / ".sdd/metadata.json").read_bytes(), metadata_before)
+        self.assertIn(
+            "- [ ] Handle the newly required behavior",
+            (self.target / "tasks.md").read_text(),
+        )
+
+    def test_unauthorized_reapproval_without_revision_fails_closed(self) -> None:
+        self.complete_second_task()
+        self.apply_requirement_change()
+        proposal = self.target / "proposal.md"
+        proposal.write_text(proposal.read_text().replace("approved", "draft", 1))
+        metadata_before = (self.target / ".sdd/metadata.json").read_bytes()
+        manifest_before = (self.target / ".sdd/approval-manifest.json").read_bytes()
+        code, result = invoke(
+            [
+                "--root", str(self.root), "--json", "approve", "valid-simple",
+                "--expected-snapshot", parsed(self.root)[2].snapshot_digest,
+            ],
+            self.root,
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(result["errors"][0]["code"], "ERROR_METADATA_STATE_MISMATCH")
+        self.assertEqual(result["errors"][0]["action"], "inspect_machine_metadata")
+        self.assertEqual((self.target / ".sdd/metadata.json").read_bytes(), metadata_before)
+        self.assertEqual(
+            (self.target / ".sdd/approval-manifest.json").read_bytes(), manifest_before
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

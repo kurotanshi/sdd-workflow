@@ -14,6 +14,7 @@ from .model import CanonicalProposal
 
 ATTESTATION_VERSION = 1
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_TASK_ENTRY = re.compile(r"/tasks/(\d+)")
 
 
 class ManagedStateError(ValueError):
@@ -84,6 +85,37 @@ def compare_attested_state(
     differences: list[ApprovalDifference] = []
     _diff(stored, current, "", differences)
     return tuple(differences)
+
+
+def unauthorized_revision_drift(
+    attestation: object,
+    model: CanonicalProposal,
+    metadata: ActiveMetadata,
+) -> tuple[ApprovalDifference, ...]:
+    """Attested-state drift that an open revision does not authorize.
+
+    An authorized revision may append trailing pending tasks or drop trailing
+    pending tasks it superseded. It may never change status, machine metadata,
+    or any task the approved baseline recorded as completed.
+    """
+
+    return tuple(
+        difference
+        for difference in compare_attested_state(attestation, model, metadata)
+        if not _authorized_pending_task_delta(difference)
+    )
+
+
+def _authorized_pending_task_delta(difference: ApprovalDifference) -> bool:
+    entry = _TASK_ENTRY.fullmatch(difference.path)
+    if entry is None:
+        return False
+    pending = {"ordinal": int(entry.group(1)) + 1, "completed": False}
+    if difference.kind == "added":
+        return difference.current == pending
+    if difference.kind == "removed":
+        return difference.approved == pending
+    return False
 
 
 def _projection_sha256(projection: dict[str, Any]) -> str:

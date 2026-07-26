@@ -13,6 +13,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "skills/sdd-workflow/scripts"))
 
+from sdd_core import task_digest  # noqa: E402
 from sdd_core.cli import main  # noqa: E402
 from sdd_core.atomic_write import atomic_replace_bytes as real_atomic_replace_bytes  # noqa: E402
 
@@ -38,6 +39,49 @@ def copy_fixture(root: Path) -> Path:
     target.parent.mkdir(parents=True)
     shutil.copytree(ROOT / "tests/fixtures/baseline/valid-simple", target)
     return target
+
+
+def open_authorized_revision(root: Path, target: Path) -> None:
+    """Approve, complete the pending task, open a revision, and append new work."""
+
+    approved = invoke(
+        [
+            "--root", str(root), "--json", "approve", "valid-simple",
+            "--expected-snapshot", status_snapshot(root),
+        ],
+        root,
+    )
+    assert approved[0] == 0, approved
+    completed = invoke(
+        [
+            "--root", str(root), "--json", "complete-task", "valid-simple", "2",
+            "--expected-task-digest", task_digest("Preserve one pending task"),
+            "--expected-snapshot", status_snapshot(root),
+        ],
+        root,
+    )
+    assert completed[0] == 0, completed
+    revision = invoke(
+        [
+            "--root", str(root), "--json", "begin-revision", "valid-simple",
+            "--expected-snapshot", status_snapshot(root),
+        ],
+        root,
+    )
+    assert revision[0] == 0, revision
+    tasks = target / "tasks.md"
+    tasks.write_text(
+        tasks.read_text()
+        .replace(
+            "- [x] Preserve one pending task\n",
+            "- [x] Preserve one pending task\n- [ ] Handle the newly required behavior\n",
+        )
+        .replace(
+            "- 情境：task order and completion state remain stable",
+            "- 情境：task order and completion state remain stable\n"
+            "- 情境：the newly required behavior is observable",
+        )
+    )
 
 
 def fail_atomic_call(call_number: int):
@@ -119,6 +163,135 @@ class TransitionFailureTests(unittest.TestCase):
             self.assertIn("\ndraft\n", proposal.read_text())
             metadata = json.loads((target / ".sdd/metadata.json").read_text())
             self.assertEqual(metadata["revision"]["phase"], "open")
+
+    def test_reapproval_retry_recovers_metadata_stage(self) -> None:
+        self._reapproval_retry_after_failure(2)
+
+    def test_reapproval_retry_recovers_status_stage(self) -> None:
+        self._reapproval_retry_after_failure(3)
+
+    def _reapproval_retry_after_failure(self, failure_call: int) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = copy_fixture(root)
+            open_authorized_revision(root, target)
+            arguments = [
+                "--root", str(root), "--json", "approve", "valid-simple",
+                "--expected-snapshot", status_snapshot(root),
+            ]
+            with mock.patch(
+                "sdd_core.transitions.atomic_replace_bytes",
+                side_effect=fail_atomic_call(failure_call),
+            ):
+                failed, result = invoke(arguments, root)
+            self.assertEqual(failed, 70)
+            self.assertEqual(result["errors"][0]["code"], "ERROR_INTERNAL")  # type: ignore[index]
+
+            retried, result = invoke(arguments, root)
+            self.assertEqual(retried, 0, result)
+            self.assertIn("\napproved\n", (target / "proposal.md").read_text())
+            metadata = json.loads((target / ".sdd/metadata.json").read_text())
+            self.assertEqual(metadata["approval"]["state"], "active")
+            self.assertIsNone(metadata["revision"])
+            self.assertEqual(
+                metadata["attestation"]["projection"]["tasks"],
+                [
+                    {"completed": True, "ordinal": 1},
+                    {"completed": True, "ordinal": 2},
+                    {"completed": False, "ordinal": 3},
+                ],
+            )
+            manifest = json.loads((target / ".sdd/approval-manifest.json").read_text())
+            self.assertEqual(
+                manifest["acceptance_conditions"][-1],
+                "情境：the newly required behavior is observable",
+            )
+
+    def test_reapproval_retry_still_rejects_tampered_managed_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = copy_fixture(root)
+            open_authorized_revision(root, target)
+            arguments = [
+                "--root", str(root), "--json", "approve", "valid-simple",
+                "--expected-snapshot", status_snapshot(root),
+            ]
+            with mock.patch(
+                "sdd_core.transitions.atomic_replace_bytes",
+                side_effect=fail_atomic_call(2),
+            ):
+                failed, _ = invoke(arguments, root)
+            self.assertEqual(failed, 70)
+
+            tasks = target / "tasks.md"
+            tasks.write_text(
+                tasks.read_text().replace("- [x] Preserve one pending task", "- [ ] Preserve one pending task")
+            )
+            metadata_before = (target / ".sdd/metadata.json").read_bytes()
+            code, result = invoke(
+                [
+                    "--root", str(root), "--json", "approve", "valid-simple",
+                    "--expected-snapshot", status_snapshot(root),
+                ],
+                root,
+            )
+            self.assertEqual(code, 1)
+            self.assertEqual(result["errors"][0]["code"], "OUT_OF_BAND_DRIFT")  # type: ignore[index]
+            self.assertEqual(result["errors"][0]["action"], "inspect_managed_state_drift")  # type: ignore[index]
+            self.assertEqual((target / ".sdd/metadata.json").read_bytes(), metadata_before)
+            self.assertIn("\ndraft\n", (target / "proposal.md").read_text())
+
+    def test_stale_snapshot_reapproval_writes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = copy_fixture(root)
+            stale = status_snapshot(root)
+            open_authorized_revision(root, target)
+            proposal_before = (target / "proposal.md").read_bytes()
+            metadata_before = (target / ".sdd/metadata.json").read_bytes()
+            manifest_before = (target / ".sdd/approval-manifest.json").read_bytes()
+            code, result = invoke(
+                [
+                    "--root", str(root), "--json", "approve", "valid-simple",
+                    "--expected-snapshot", stale,
+                ],
+                root,
+            )
+            self.assertEqual(code, 1)
+            self.assertEqual(result["errors"][0]["code"], "ERROR_SNAPSHOT_MISMATCH")  # type: ignore[index]
+            self.assertEqual(result["errors"][0]["action"], "refresh_status")  # type: ignore[index]
+            self.assertEqual((target / "proposal.md").read_bytes(), proposal_before)
+            self.assertEqual((target / ".sdd/metadata.json").read_bytes(), metadata_before)
+            self.assertEqual(
+                (target / ".sdd/approval-manifest.json").read_bytes(), manifest_before
+            )
+
+    def test_stale_snapshot_begin_revision_writes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = copy_fixture(root)
+            stale = status_snapshot(root)
+            approved = invoke(
+                [
+                    "--root", str(root), "--json", "approve", "valid-simple",
+                    "--expected-snapshot", stale,
+                ],
+                root,
+            )
+            self.assertEqual(approved[0], 0, approved)
+            proposal_before = (target / "proposal.md").read_bytes()
+            metadata_before = (target / ".sdd/metadata.json").read_bytes()
+            code, result = invoke(
+                [
+                    "--root", str(root), "--json", "begin-revision", "valid-simple",
+                    "--expected-snapshot", stale,
+                ],
+                root,
+            )
+            self.assertEqual(code, 1)
+            self.assertEqual(result["errors"][0]["code"], "ERROR_SNAPSHOT_MISMATCH")  # type: ignore[index]
+            self.assertEqual((target / "proposal.md").read_bytes(), proposal_before)
+            self.assertEqual((target / ".sdd/metadata.json").read_bytes(), metadata_before)
 
     def test_managed_mutation_group_is_activated_coherently(self) -> None:
         skill = (ROOT / "skills/sdd-workflow/SKILL.md").read_text(encoding="utf-8")

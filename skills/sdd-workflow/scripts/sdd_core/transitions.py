@@ -20,7 +20,11 @@ from .approval import (
 from .atomic_write import atomic_replace_bytes
 from .discovery import ProposalPaths
 from .model import CanonicalProposal
-from .managed_state import compare_attested_state, create_attestation
+from .managed_state import (
+    compare_attested_state,
+    create_attestation,
+    unauthorized_revision_drift,
+)
 from .snapshot import SnapshotManifest, build_snapshot
 from .task_identity import task_digest
 
@@ -686,7 +690,8 @@ def _prepare_approval_targets(
         raise _metadata_mismatch("Baseline establishment cannot replace existing metadata")
     old_manifest_bytes = manifest_path.read_bytes()
     old_metadata = parse_active_metadata(metadata_path.read_bytes())
-    _require_manifest_identity(old_metadata, old_manifest_bytes)
+    if old_manifest_bytes != new_manifest_bytes:
+        _require_manifest_identity(old_metadata, old_manifest_bytes)
     if (
         old_metadata.approval_state != "invalidated"
         or not isinstance(old_metadata.revision, dict)
@@ -694,7 +699,7 @@ def _prepare_approval_targets(
         or old_metadata.attestation is None
     ):
         raise _metadata_mismatch("Existing metadata is not an authorized open revision")
-    drift = compare_attested_state(old_metadata.attestation, model, old_metadata)
+    drift = unauthorized_revision_drift(old_metadata.attestation, model, old_metadata)
     if drift:
         raise TransitionError(
             "OUT_OF_BAND_DRIFT",
