@@ -15,6 +15,7 @@ terminal recovery, or doctor finding.
 | `inspect_project_path`, `inspect_machine_metadata`, `inspect_managed_state_drift`, `inspect_archive_state` | Stop mutation and report observable evidence |
 | `use_supported_engine`, `upgrade_or_recreate_proposal`, `fix_artifact_format` | Stop and describe the compatible remediation |
 | `rebuild_index` | Run only after terminal evidence or doctor proves only derived INDEX is stale |
+| `rerun_repair_preflight` | Rerun the readonly repair preflight and confirm its fresh evidence digests |
 | `report_internal_error` | Stop and retain failure evidence |
 
 Unavailable launcher/Python/tool permission also stops. Do not open raw artifacts
@@ -50,3 +51,25 @@ move, merge, overwrite, delete, or edit an archive directory or INDEX directly.
 Use `doctor` when evidence is ambiguous or partial. It reports observations,
 not actor or cause, and does not authorize repair unless its action proves the
 documented recovery.
+
+## Archive record recovery
+
+When `rebuild-index` or a terminal result is blocked because an archive
+directory lacks terminal records (missing terminal status, machine evidence,
+or INDEX row), the only supported repair is `repair-archive-record`; manual
+edits stay forbidden:
+
+1. Run the readonly preflight `repair-archive-record <directory-name>`. Report
+   its `missing` list and print both labeled `evidence` digests.
+2. Stop for explicit user confirmation of the terminal status and a single-line
+   summary. Never infer either from prose or history.
+3. Execute with `--terminal-status`, `--summary`, and both
+   `--expected-proposal-sha256` / `--expected-tasks-sha256` digests from the
+   same preflight. Digest drift, a status that disagrees with the directory
+   suffix, or an existing different terminal status fails closed without
+   writing; follow the returned action.
+4. When only the summary is missing, `rebuild-index --directory <name>
+   --summary <text>` completes the derived INDEX the same way.
+
+Repair fills only missing fields and never moves directories. Rerun
+`validate-index` and `doctor` afterwards and report the result.

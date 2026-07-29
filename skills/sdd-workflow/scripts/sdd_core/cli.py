@@ -39,6 +39,12 @@ from .managed_state import ManagedStateError, compare_attested_state
 from .task_identity import task_digest
 from .archive_model import load_archive_records
 from .archive_index import rebuild_archive_index, validate_archive_index
+from .archive_recovery import (
+    RepairPreflight,
+    execute_archive_repair,
+    preflight_archive_repair,
+    validate_repairable_target,
+)
 from .doctor import (
     collect_environment_evidence,
     diagnose_project,
@@ -193,9 +199,17 @@ def build_parser() -> argparse.ArgumentParser:
     completion.add_argument("task_number", type=int)
     completion.add_argument("--expected-task-digest", required=True)
     completion.add_argument("--expected-snapshot", required=True)
-    commands.add_parser("rebuild-index")
+    rebuild = commands.add_parser("rebuild-index")
+    rebuild.add_argument("--directory")
+    rebuild.add_argument("--summary")
     commands.add_parser("validate-index")
     commands.add_parser("doctor")
+    repair = commands.add_parser("repair-archive-record")
+    repair.add_argument("directory_name")
+    repair.add_argument("--terminal-status", choices=("completed", "abandoned"))
+    repair.add_argument("--summary")
+    repair.add_argument("--expected-proposal-sha256")
+    repair.add_argument("--expected-tasks-sha256")
     for terminal_command in ("archive", "abandon"):
         terminal = commands.add_parser(terminal_command)
         terminal.add_argument("short_name")
@@ -459,7 +473,23 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
         )
     if namespace.command == "rebuild-index":
         archive_root = root.path / "sdd/archive"
-        scan = load_archive_records(archive_root)
+        if (namespace.directory is None) != (namespace.summary is None):
+            raise UsageError("--directory and --summary are required together")
+        provided_summaries: dict[str, str] | None = None
+        if namespace.directory is not None:
+            validate_repairable_target(archive_root, namespace.directory)
+            provided_value = read_summary(inline=namespace.summary, file_path=None)
+            base = load_archive_records(archive_root)
+            if namespace.directory in {
+                record.directory_name for record in base.records
+            }:
+                raise TransitionError(
+                    "ERROR_RECOVERY_SUMMARY_UNEXPECTED",
+                    "inspect_archive_state",
+                    "Archive directory already has an authoritative summary",
+                )
+            provided_summaries = {namespace.directory: provided_value}
+        scan = load_archive_records(archive_root, provided_summaries)
         if scan.diagnostics:
             issues = tuple(
                 CliIssue(
@@ -481,15 +511,15 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
                 exit_code=1,
             )
         rendered, changed, digest = rebuild_archive_index(archive_root, scan.records)
-        return CommandResult(
-            command="rebuild-index",
-            data={
-                "record_count": len(scan.records),
-                "changed": changed,
-                "index_sha256": digest,
-                "index_bytes": len(rendered),
-            },
-        )
+        data = {
+            "record_count": len(scan.records),
+            "changed": changed,
+            "index_sha256": digest,
+            "index_bytes": len(rendered),
+        }
+        if provided_summaries is not None:
+            data["provided_summary_directory"] = namespace.directory
+        return CommandResult(command="rebuild-index", data=data)
     if namespace.command == "validate-index":
         archive_root = root.path / "sdd/archive"
         scan = load_archive_records(archive_root)
@@ -543,6 +573,62 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             errors=tuple(sorted(issues, key=lambda item: item.sort_key)),
             exit_code=1 if findings else 0,
         )
+    if namespace.command == "repair-archive-record":
+        archive_root = root.path / "sdd/archive"
+        execute_inputs = (
+            namespace.terminal_status,
+            namespace.summary,
+            namespace.expected_proposal_sha256,
+            namespace.expected_tasks_sha256,
+        )
+        provided = [value is not None for value in execute_inputs]
+        if not any(provided):
+            preflight = preflight_archive_repair(archive_root, namespace.directory_name)
+            return CommandResult(
+                command="repair-archive-record",
+                data={"mode": "preflight", **_repair_preflight_data(archive_root, preflight)},
+            )
+        if not all(provided):
+            raise UsageError(
+                "repair execution requires --terminal-status, --summary, "
+                "--expected-proposal-sha256, and --expected-tasks-sha256 together"
+            )
+        summary = read_summary(inline=namespace.summary, file_path=None)
+        result = execute_archive_repair(
+            archive_root,
+            namespace.directory_name,
+            terminal_status=namespace.terminal_status,
+            summary=summary,
+            expected_proposal_sha256=namespace.expected_proposal_sha256,
+            expected_tasks_sha256=namespace.expected_tasks_sha256,
+        )
+        data = {
+            "mode": "applied",
+            **_repair_preflight_data(archive_root, result.preflight),
+            "repaired": list(result.repaired),
+            "operation_id": result.operation_id,
+            "index_rebuilt": result.index_rebuilt,
+            "index_sha256": result.index_sha256,
+            "diagnostics": [item.to_dict() for item in result.diagnostics],
+        }
+        if result.diagnostics:
+            issues = tuple(
+                CliIssue(
+                    item.code,
+                    "inspect_archive_state",
+                    item.message,
+                    "error",
+                    path=item.path,
+                )
+                for item in result.diagnostics
+            )
+            return CommandResult(
+                command="repair-archive-record",
+                data=data,
+                errors=tuple(sorted(issues, key=lambda item: item.sort_key)),
+                exit_code=1,
+            )
+        return CommandResult(command="repair-archive-record", data=data)
     if namespace.command == "archive":
         summary = read_summary(inline=namespace.summary, file_path=namespace.summary_file)
         retry = find_committed_terminal_retry(
@@ -973,13 +1059,29 @@ def _terminal_commit_result(command: str, short_name: str, result: Any) -> Comma
     return CommandResult(command=command, data=data)
 
 
+def _repair_preflight_data(archive_root: Path, preflight: RepairPreflight) -> dict[str, Any]:
+    return {
+        "directory": preflight.directory_name,
+        "destination": (archive_root / preflight.directory_name).as_posix(),
+        "short_name": preflight.short_name,
+        "archive_date": preflight.archive_date,
+        "expected_terminal_status": preflight.expected_terminal_status,
+        "current_status": preflight.current_status,
+        "missing": list(preflight.missing),
+        "evidence": {
+            "proposal_sha256": preflight.proposal_sha256,
+            "tasks_sha256": preflight.tasks_sha256,
+        },
+    }
+
+
 def _command_hint(arguments: Sequence[str]) -> str:
     for argument in arguments:
         if argument in {
             "validate", "list", "status", "abandon-preflight", "approve", "begin-revision",
             "complete-task"
             , "rebuild-index", "validate-index", "doctor"
-            , "archive", "abandon"
+            , "archive", "abandon", "repair-archive-record"
         }:
             return argument
     if "--version" in arguments:

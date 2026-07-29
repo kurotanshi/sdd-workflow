@@ -22,7 +22,7 @@ More specific evidence-based codes (`ACTIVE_ARCHIVE_COLLISION`, `STATUS_LOCATION
 ## Manual remediation
 
 - For `AMBIGUOUS_STATE`, inspect every named path/row, preserve a copy, and have a person select or correct the authoritative record. Rerun `doctor`; do not select the first/last entry automatically.
-- For `UNKNOWN_STATE`, recover the missing fact from an external trusted source or explicitly author a future migration. Proposal C does not use proposal prose as a substitute for a missing legacy summary.
+- For `UNKNOWN_STATE`, recover the missing fact from an external trusted source. A legacy archive directory missing terminal records has a supported path: the read-only `repair-archive-record` preflight plus explicitly confirmed execution, or `rebuild-index --directory NAME --summary TEXT` when only the summary is missing. Proposal prose is never a substitute for a missing legacy summary.
 - For `PARTIAL_TRANSITION_DETECTED`, compare operation evidence, status/checkbox commit points, and all staged artifacts. Do not delete, complete, or roll back files solely from the generic diagnostic.
 - For `OUT_OF_BAND_DRIFT`, inspect the JSON Pointer differences and the relevant command history. A fresh `status` does not refresh attestation; repair requires an explicit later protocol or a valid revision path.
 - For `ERROR_INDEX_STALE`, run `rebuild-index` only after all archive records adapt without unknown/ambiguous/mismatch diagnostics.

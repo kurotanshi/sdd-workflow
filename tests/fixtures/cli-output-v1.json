@@ -13,13 +13,17 @@
     "rebuild-index",
     "validate-index",
     "doctor",
+    "repair-archive-record",
     "archive",
     "abandon"
   ],
   "cases": [
     {
       "id": "version-success",
-      "argv": ["--json", "--version"],
+      "argv": [
+        "--json",
+        "--version"
+      ],
       "exit_code": 0,
       "envelope": {
         "command": "version",
@@ -37,7 +41,13 @@
     {
       "id": "status-success",
       "setup_fixture": "baseline/valid-simple",
-      "argv": ["--root", "{root}", "--json", "status", "valid-simple"],
+      "argv": [
+        "--root",
+        "{root}",
+        "--json",
+        "status",
+        "valid-simple"
+      ],
       "exit_code": 0,
       "envelope": {
         "command": "status",
@@ -90,7 +100,13 @@
     },
     {
       "id": "invalid-short-name",
-      "argv": ["--root", "{root}", "--json", "status", "../escape"],
+      "argv": [
+        "--root",
+        "{root}",
+        "--json",
+        "status",
+        "../escape"
+      ],
       "exit_code": 1,
       "envelope": {
         "command": "status",
@@ -110,7 +126,10 @@
     },
     {
       "id": "usage-error",
-      "argv": ["--json", "status"],
+      "argv": [
+        "--json",
+        "status"
+      ],
       "exit_code": 2,
       "envelope": {
         "command": "usage",

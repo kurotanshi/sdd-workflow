@@ -50,7 +50,8 @@ python3 <skill-dir>/scripts/sdd.py --root <project-root> --json complete-task <s
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json archive <short-name> --expected-snapshot <digest> --summary <single-line>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json abandon <short-name> --expected-snapshot <digest> --summary <single-line>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json doctor
-python3 <skill-dir>/scripts/sdd.py --root <project-root> --json rebuild-index
+python3 <skill-dir>/scripts/sdd.py --root <project-root> --json rebuild-index [--directory <name> --summary <single-line>]
+python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-archive-record <directory-name> [--terminal-status <status> --summary <single-line> --expected-proposal-sha256 <digest> --expected-tasks-sha256 <digest>]
 ```
 
 - Execute discovery and each CLI command as one unwrapped, noninteractive call: no pipe, redirect, chaining, or exit-code helper.

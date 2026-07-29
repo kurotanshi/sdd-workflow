@@ -89,7 +89,8 @@
         "tests.test_archive_cli",
         "tests.test_terminal_validation",
         "tests.test_doctor",
-        "tests.test_concurrency"
+        "tests.test_concurrency",
+        "tests.test_archive_recovery"
       ]
     },
     {

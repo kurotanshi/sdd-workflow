@@ -121,6 +121,7 @@ def validate_package() -> None:
         "validate", "list", "status", "abandon-preflight", "approve", "begin-revision",
         "complete-task"
         , "rebuild-index", "validate-index", "doctor", "archive", "abandon"
+        , "repair-archive-record"
     }
     if commands != expected or "parse" in commands:
         raise AssertionError(f"unexpected public CLI commands: {sorted(commands)}")

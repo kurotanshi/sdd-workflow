@@ -44,10 +44,21 @@ class ReleaseBaselineTests(unittest.TestCase):
         self.assertEqual(envelope["data"]["minimum_schema_version"], 1)
         self.assertEqual(envelope["data"]["maximum_schema_version"], 2)
 
+    V06_PUBLIC_COMMANDS = (
+        "version", "validate", "list", "status", "abandon-preflight", "approve",
+        "begin-revision", "complete-task", "rebuild-index", "validate-index",
+        "doctor", "archive", "abandon",
+    )
+
     def test_baseline_indexes_commands_fixtures_and_contract_sources(self) -> None:
         document = HISTORIC_BASELINE.read_text(encoding="utf-8")
         fixture = json.loads(CLI_FIXTURE.read_text(encoding="utf-8"))
-        for command in fixture["public_commands"]:
+        # The v0.6 baseline is immutable history; later releases may add
+        # commands to the live inventory but never remove baseline ones.
+        self.assertLessEqual(
+            set(self.V06_PUBLIC_COMMANDS), set(fixture["public_commands"])
+        )
+        for command in self.V06_PUBLIC_COMMANDS:
             with self.subTest(command=command):
                 self.assertIn(f"\n{command}\n", document)
         for reference in (

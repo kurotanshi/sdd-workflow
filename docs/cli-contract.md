@@ -17,9 +17,10 @@ sdd.py [--root PATH] [--json] abandon-preflight SHORT_NAME
 sdd.py [--root PATH] [--json] approve SHORT_NAME --expected-snapshot DIGEST [--establish-manifest]
 sdd.py [--root PATH] [--json] begin-revision SHORT_NAME --expected-snapshot DIGEST
 sdd.py [--root PATH] [--json] complete-task SHORT_NAME TASK_NUMBER --expected-task-digest DIGEST --expected-snapshot DIGEST
-sdd.py [--root PATH] [--json] rebuild-index
+sdd.py [--root PATH] [--json] rebuild-index [--directory NAME --summary TEXT]
 sdd.py [--root PATH] [--json] validate-index
 sdd.py [--root PATH] [--json] doctor
+sdd.py [--root PATH] [--json] repair-archive-record NAME [--terminal-status STATUS --summary TEXT --expected-proposal-sha256 DIGEST --expected-tasks-sha256 DIGEST]
 sdd.py [--root PATH] [--json] archive SHORT_NAME --expected-snapshot DIGEST (--summary TEXT | --summary-file PATH) [--dry-run]
 sdd.py [--root PATH] [--json] abandon SHORT_NAME --expected-snapshot DIGEST (--summary TEXT | --summary-file PATH) [--dry-run]
 ```
@@ -114,11 +115,13 @@ when no transition was attempted.
 
 `complete-task` validates approved status, task ordinal and digest, raw snapshot, Approval Manifest, and managed-state attestation. It stages the intended after attestation, atomically replaces the exact incomplete checkbox as the authoritative commit point, and returns the after snapshot.
 
-`rebuild-index` adapts every direct archive directory to a canonical record and fails without writing when any record is unknown, ambiguous, or mismatched. Otherwise it deterministically renders all records and atomically replaces `INDEX.md` only when bytes differ. It never writes a legacy archive directory or derives a missing summary from prose.
+`rebuild-index` adapts every direct archive directory to a canonical record and fails without writing when any record is unknown, ambiguous, or mismatched. Otherwise it deterministically renders all records and atomically replaces `INDEX.md` only when bytes differ. It never writes a legacy archive directory or derives a missing summary from prose. `--directory` and `--summary` are accepted only together: the explicitly provided summary applies to exactly that directory and only when it has no summary source at all; a directory that already has an authoritative summary returns `ERROR_RECOVERY_SUMMARY_UNEXPECTED` without writing.
 
 `validate-index` performs the same read-only adaptation and compares the derived rendering with current `INDEX.md`. A missing, unsafe, non-UTF-8, reordered, or otherwise different INDEX returns `ERROR_INDEX_STALE`, action `rebuild_index`, and deterministic `/lines/<index>` differences without changing bytes.
 
 `doctor` is read-only and reports evidence-bound findings for active/archive collisions, lifecycle/location mismatch, stale INDEX, transaction-shaped temporary files, partial machine artifacts, Approval Manifest mismatch, and managed-state drift. A finding describes observed state and remediation action; it never identifies the editor, invents a unique cause, or repairs files.
+
+`repair-archive-record` targets one direct archive directory that lacks managed terminal evidence. Without execution flags it is a read-only preflight: data reports the directory identity, the expected terminal status derived from the directory suffix (`-abandoned` or none), the currently parsed status, a `missing` list drawn from `terminal_status`, `machine_evidence`, and `index_row`, and labeled `evidence` SHA-256 digests of the raw archived `proposal.md` and `tasks.md` bytes. Execution requires `--terminal-status`, `--summary`, `--expected-proposal-sha256`, and `--expected-tasks-sha256` together; the digests are the concurrency token and any byte drift after preflight fails closed. Repair fills only missing fields: it replaces a non-terminal proposal status through the managed status writer and records the confirmed summary as recovery evidence in `.sdd/metadata.json`; it never moves a directory, never derives a summary, and never changes an existing terminal status or correct record. After repair it rebuilds the derived INDEX when every record adapts cleanly, otherwise it reports the remaining diagnostics with `data.repaired` preserved.
 
 `archive` and `abandon` accept exactly one summary source. Inline `--summary` rejects CR/LF; `--summary-file` reads at most 65,536 bytes as strict UTF-8, allows multiple lines, and rejects stdin (`-`), empty/whitespace-only content, and NUL. Metadata preserves the decoded source exactly. INDEX display normalizes CRLF/CR to LF, replaces each LF with ` ⏎ `, then applies backslash/pipe escaping.
 
@@ -141,6 +144,11 @@ when no transition was attempted.
 | Parsed status/checkbox/metadata differs from attestation | `OUT_OF_BAND_DRIFT` | `inspect_managed_state_drift` |
 | Matching retry evidence conflicts with current artifacts | `ERROR_TASK_RETRY_CONFLICT` | `inspect_managed_state_drift` |
 | Approval metadata/Manifest missing or inconsistent | metadata-specific code | `establish_approval_manifest` / `inspect_machine_metadata` |
+| Repair target missing, unsafe, unsupported, or unreadable | `ERROR_RECOVERY_TARGET_INVALID` | `inspect_archive_state` |
+| Repair target already carries managed terminal evidence | `ERROR_RECOVERY_NOT_APPLICABLE` | `inspect_archive_state` |
+| Archived bytes differ from confirmed evidence digests | `ERROR_RECOVERY_EVIDENCE_MISMATCH` | `rerun_repair_preflight` |
+| Terminal status disagrees with directory suffix or existing status | `ERROR_RECOVERY_STATUS_MISMATCH` | `inspect_archive_state` |
+| Provided summary targets a directory whose summary is not missing | `ERROR_RECOVERY_SUMMARY_UNEXPECTED` | `inspect_archive_state` |
 | Invalid CLI syntax | `ERROR_USAGE` | `fix_command_arguments` |
 | Unexpected failure | `ERROR_INTERNAL` | `report_internal_error` |
 

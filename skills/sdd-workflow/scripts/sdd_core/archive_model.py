@@ -15,8 +15,11 @@ from .summary_input import fold_summary_for_index
 
 
 ARCHIVE_MODEL_VERSION = 1
+RECOVERY_EVIDENCE_VERSION = 1
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _DIRECTORY = re.compile(r"^(\d{4}-\d{2}-\d{2})-(.+)$")
+_SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
+_TIMESTAMP = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,9 +97,18 @@ class ArchiveScan:
     diagnostics: tuple[ArchiveDiagnostic, ...]
 
 
-def load_legacy_archive_records(archive_root: Path) -> ArchiveScan:
-    """Adapt legacy directories without writing or inferring missing summaries."""
+def load_legacy_archive_records(
+    archive_root: Path,
+    provided_summaries: dict[str, str] | None = None,
+) -> ArchiveScan:
+    """Adapt legacy directories without writing or inferring missing summaries.
 
+    ``provided_summaries`` maps a directory name to an explicitly provided
+    summary that is used only when that directory has no summary source at
+    all; it never overrides an existing INDEX row or recovery evidence.
+    """
+
+    provided = {} if provided_summaries is None else dict(provided_summaries)
     index_path = archive_root / "INDEX.md"
     index_rows, index_diagnostics = parse_legacy_index(
         index_path.read_text(encoding="utf-8") if index_path.is_file() else "",
@@ -164,24 +176,51 @@ def load_legacy_archive_records(archive_root: Path) -> ArchiveScan:
                 )
             )
             continue
-        summaries = rows_by_key.get((date, short_name, status), [])
-        if len(summaries) != 1:
-            code = "UNKNOWN_STATE" if not summaries else "AMBIGUOUS_STATE"
+        try:
+            recovery = load_recovery_evidence(directory)
+        except ValueError as error:
             diagnostics.append(
-                ArchiveDiagnostic(
-                    code,
-                    relative,
-                    "Legacy summary is missing" if not summaries else "Multiple legacy summaries match",
-                )
+                ArchiveDiagnostic("ARCHIVE_RECORD_MISMATCH", relative, str(error))
             )
             continue
+        if recovery is not None:
+            if (
+                recovery["archive_date"] != date
+                or recovery["short_name"] != short_name
+                or recovery["terminal_status"] != status
+            ):
+                diagnostics.append(
+                    ArchiveDiagnostic(
+                        "ARCHIVE_RECORD_MISMATCH",
+                        relative,
+                        "Recovery evidence disagrees with the archived artifacts",
+                    )
+                )
+                continue
+            summary = fold_summary_for_index(recovery["summary"])
+        else:
+            summaries = rows_by_key.get((date, short_name, status), [])
+            if len(summaries) == 1:
+                summary = summaries[0]
+            elif not summaries and directory.name in provided:
+                summary = fold_summary_for_index(provided[directory.name])
+            else:
+                code = "UNKNOWN_STATE" if not summaries else "AMBIGUOUS_STATE"
+                diagnostics.append(
+                    ArchiveDiagnostic(
+                        code,
+                        relative,
+                        "Legacy summary is missing" if not summaries else "Multiple legacy summaries match",
+                    )
+                )
+                continue
         records.append(
             ArchiveRecord(
                 directory_name=directory.name,
                 short_name=short_name,
                 archive_date=date,
                 terminal_status=status,
-                summary=summaries[0],
+                summary=summary,
                 source="legacy",
                 research_conclusion=_research_conclusion(outcome.model),
             )
@@ -192,10 +231,13 @@ def load_legacy_archive_records(archive_root: Path) -> ArchiveScan:
     )
 
 
-def load_archive_records(archive_root: Path) -> ArchiveScan:
+def load_archive_records(
+    archive_root: Path,
+    provided_summaries: dict[str, str] | None = None,
+) -> ArchiveScan:
     """Load managed records and legacy compatibility records together."""
 
-    legacy = load_legacy_archive_records(archive_root)
+    legacy = load_legacy_archive_records(archive_root, provided_summaries)
     legacy_by_directory = {record.directory_name: record for record in legacy.records}
     diagnostics = [
         item
@@ -232,6 +274,78 @@ def load_archive_records(archive_root: Path) -> ArchiveScan:
         tuple(sorted(records, key=lambda item: item.sort_key)),
         tuple(sorted(diagnostics, key=lambda item: item.sort_key)),
     )
+
+
+def load_recovery_evidence(directory: Path) -> dict[str, Any] | None:
+    """Load explicitly confirmed recovery evidence, or None when absent.
+
+    Raises ValueError when a recovery block exists but is malformed, so
+    callers fail closed instead of guessing at partially written evidence.
+    """
+
+    path = directory / ".sdd/metadata.json"
+    if path.is_symlink() or not path.is_file():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(value, dict) or "recovery" not in value:
+        return None
+    recovery = value["recovery"]
+    if not isinstance(recovery, dict):
+        raise ValueError("recovery evidence must be an object")
+    expected_fields = {
+        "recovery_version", "archive_date", "short_name", "terminal_status",
+        "summary", "timestamp", "confirmed_evidence", "operation",
+    }
+    if (
+        set(recovery) != expected_fields
+        or recovery["recovery_version"] != RECOVERY_EVIDENCE_VERSION
+    ):
+        raise ValueError("recovery evidence fields or version are unsupported")
+    if not isinstance(recovery["archive_date"], str) or not _DATE.fullmatch(
+        recovery["archive_date"]
+    ):
+        raise ValueError("recovery archive_date must be YYYY-MM-DD")
+    if not isinstance(recovery["short_name"], str) or not SHORT_NAME_PATTERN.fullmatch(
+        recovery["short_name"]
+    ):
+        raise ValueError("recovery short_name is invalid")
+    if recovery["terminal_status"] not in {"completed", "abandoned"}:
+        raise ValueError("recovery terminal status is invalid")
+    summary = recovery["summary"]
+    if (
+        not isinstance(summary, str)
+        or not summary.strip()
+        or "\n" in summary
+        or "\r" in summary
+    ):
+        raise ValueError("recovery summary must be a non-empty single line")
+    if not isinstance(recovery["timestamp"], str) or not _TIMESTAMP.fullmatch(
+        recovery["timestamp"]
+    ):
+        raise ValueError("recovery timestamp must be UTC RFC 3339 seconds")
+    evidence = recovery["confirmed_evidence"]
+    if (
+        not isinstance(evidence, dict)
+        or set(evidence) != {"proposal_sha256", "tasks_sha256"}
+        or not all(
+            isinstance(evidence[field], str) and _SHA256_HEX.fullmatch(evidence[field])
+            for field in ("proposal_sha256", "tasks_sha256")
+        )
+    ):
+        raise ValueError("recovery confirmed evidence is invalid")
+    operation = recovery["operation"]
+    if (
+        not isinstance(operation, dict)
+        or set(operation) != {"kind", "operation_id"}
+        or operation["kind"] != "repair-archive-record"
+        or not isinstance(operation["operation_id"], str)
+        or not _SHA256_HEX.fullmatch(operation["operation_id"])
+    ):
+        raise ValueError("recovery operation evidence is invalid")
+    return recovery
 
 
 def _directory_has_terminal_metadata(directory: Path) -> bool:
