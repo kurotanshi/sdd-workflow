@@ -13,11 +13,11 @@ Enforce `提案 → 實作 → 歸檔`, including explicit revision and abandonm
 - A phase word acts only as an explicit command targeting this workflow or a proposal. Narrative mentions do nothing; unclear intent requires a question.
 - `開始實作` explicitly approves a `draft`. Plain `實作` continues only `approved`; for draft or missing status, ask for approval and stop.
 - Requirement changes during implementation or acceptance always enter managed revision and require new `開始實作`; never hide new scope in task completion.
-- Run package-local discovery once before the first SDD CLI command in a session. Zero, ambiguous, failed, or incompatible discovery stops; never search `PATH`, another checkout, or another Agent's Skill root.
-- The bundled CLI is the only authority for discovery, parsing, validation, canonical status/tasks/acceptance, snapshots, diagnostics, managed fields, terminal moves, and INDEX. If unavailable, fail closed and do not fall back to prose parsing.
+- Run package-local discovery once before the first SDD CLI command in a session. Zero, ambiguous, failed, or incompatible discovery stops; never search `PATH`, another checkout, or another Agent's Skill root, because a runtime from elsewhere can apply a different contract to the same artifacts.
+- The bundled CLI is the only authority for discovery, parsing, validation, canonical status/tasks/acceptance, snapshots, diagnostics, managed fields, terminal moves, and INDEX. If unavailable, fail closed and do not fall back to prose parsing, because prose parsing cannot reproduce the canonical rules and drifts silently.
 - Never directly edit lifecycle status, checkbox markers, machine metadata, archive paths, or INDEX. Direct prose access is limited to new draft authoring, explicitly authorized revision prose, and an approved research conclusion.
 - Work on and verify one canonical task at a time. Do not invent requirements, combine unrelated changes, or mark completion merely because code was written.
-- Abandonment is read-only preflight followed by exact `確認放棄 <short-name>`. It never reverts implementation or Git changes.
+- Abandonment is read-only preflight followed by exact `確認放棄 <short-name>`. It never reverts implementation or Git changes, so abandoning a proposal can never destroy work.
 - Source-control rollback is outside SDD. Confirm its exact scope and never change proposal state because of it.
 - Do not create Git commits unless requested.
 
@@ -112,4 +112,4 @@ Execution requires both printed 64-character hashes from a successful preflight 
 
 ## Reporting
 
-Keep reports short: current canonical state, completed task and validation, blocker, next permitted action, and exact user action. Never infer an actor, cause, approval, or path that the runtime did not prove.
+Write all user-facing workflow output—reports, questions, and error explanations—in Traditional Chinese, matching the built-in trigger words and report tokens. Keep reports short: current canonical state, completed task and validation, blocker, next permitted action, and exact user action. Never infer an actor, cause, approval, or path that the runtime did not prove.

@@ -33,3 +33,47 @@ Do not reproduce parser rules or normalize text manually.
 - Revise/remove an unchecked task only when explicitly superseded; append new work without reusing an old task identity.
 - Keep at most 10 unchecked tasks. A materially different goal becomes a separate proposal.
 - Acceptance-time changes are ordinary scope changes: revise proposal scope, affected tasks, acceptance conditions, and impact, then validate and stop for reapproval.
+
+## Worked example
+
+A complete, minimal, valid pair. Copied verbatim into `sdd/fix-login-empty-email/`,
+both files pass `validate` and `status` unchanged. The CLI remains the format
+authority; this example illustrates the rules above, it does not replace them.
+
+`proposal.md`:
+
+```text
+---
+schema_version: 2
+---
+# fix-login-empty-email
+
+## 狀態
+draft
+
+## 類型
+修 bug
+
+## 為什麼做
+登入表單允許空白 email 送出，後端回 500。重現：在登入頁留空 email 按送出。預期應在前端擋下並顯示錯誤訊息。
+
+## 要改什麼
+在送出前驗證 email 非空且格式正確；錯誤時顯示「請輸入有效的 email」。可能檔案：`src/pages/login.tsx`（預估）。
+
+## 影響範圍
+- 僅登入頁前端驗證；不改後端 API。
+- 新增回歸測試防止再發。
+```
+
+`tasks.md`:
+
+```text
+# fix-login-empty-email 任務
+
+- [ ] 新增失敗回歸測試：空白 email 送出應被前端擋下並顯示錯誤訊息
+- [ ] 實作送出前 email 驗證，讓回歸測試通過
+
+## 驗收條件
+- 情境：登入頁留空 email 按送出，表單不送出並顯示「請輸入有效的 email」
+- 情境：輸入合法 email 可正常送出，行為與修復前相同
+```

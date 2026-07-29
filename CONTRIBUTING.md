@@ -56,7 +56,18 @@ sdd-workflow/
 ## 本機開發流程
 
 1. 改 `skills/sdd-workflow/SKILL.md`（或其 metadata）。
-2. 用 dev-link 讓改動即時生效：
+2. 只要 `SKILL.md` 有任何 byte 變更（含空白），就同步刷新
+   `skills/sdd-workflow/runtime-identity.json` 的 `skill_sha256`，否則
+   `package-validation` 會以「runtime identity does not match SKILL.md bytes」
+   失敗，且多筆 discovery／install-channel 單元測試會一起變紅：
+
+   ```bash
+   shasum -a 256 skills/sdd-workflow/SKILL.md
+   # 把輸出的 hash 填回 runtime-identity.json 的 skill_sha256，然後驗證：
+   PYTHONDONTWRITEBYTECODE=1 python3 tests/package_validation.py
+   ```
+
+3. 用 dev-link 讓改動即時生效：
 
    ```bash
    scripts/link-dev.sh                # 或 --claude-only / --codex-only
@@ -65,7 +76,7 @@ sdd-workflow/
 
    - 只在目的地不存在時建立指向本 repo 的 symlink；遇到既有檔案／目錄／其他 symlink 會停止不動。
    - 目標目錄可用 `CLAUDE_SKILLS_DIR`、`CODEX_SKILLS_DIR` 覆寫（hermetic 測試或指定已驗證的 Codex skill root）。
-3. 送 PR 前建議跑 frontmatter／命名的權威檢查（若你的環境有 Codex skill-creator）：
+4. 送 PR 前建議跑 frontmatter／命名的權威檢查（若你的環境有 Codex skill-creator）：
 
    ```bash
    python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/sdd-workflow
@@ -107,6 +118,7 @@ sdd-workflow/
 | Schema v2 | Schema v2 fixtures、common-model 與 research archive tests | 新提案含明確 version；六種類型可讀；研究結論可歸檔重建；v1/legacy 不 migration，future version fail closed |
 | 團隊／worktree 邊界 | CI contract、install matrix、worktree 與 concurrency tests | 同 proposal 維持單一 owner；不同 short name／worktree 不互相污染；stale INDEX 可偵測並重建 |
 | git 行為 | 規則文字存在 | 全程未經使用者要求不建立 commit |
+| 輸出語言 | `SKILL.md` Reporting 節含明文規則 | 全程使用者面向回報、提問與錯誤說明為繁體中文；回報詞元（第 N 條完成／全部完成／歸檔完成／已放棄）不變 |
 
 ### Codex 子代理輔助驗收（可選）
 

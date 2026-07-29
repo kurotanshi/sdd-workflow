@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -343,8 +347,69 @@ def validate_docs() -> None:
         raise AssertionError("CHANGELOG is missing the active release")
 
 
+def validate_worked_example() -> None:
+    """The authoring reference's worked example must stay a valid artifact pair."""
+    reference = (ROOT / "skills/sdd-workflow/references/proposal-authoring.md").read_text(
+        encoding="utf-8"
+    )
+    section = reference.split("\n## Worked example\n", 1)
+    if len(section) != 2:
+        raise AssertionError("authoring reference is missing the worked example")
+    body = section[1]
+    proposal_match = re.search(
+        r"^`proposal\.md`:\n\n```text\n(.*?)\n```$", body, re.DOTALL | re.MULTILINE
+    )
+    tasks_match = re.search(
+        r"^`tasks\.md`:\n\n```text\n(.*?)\n```$", body, re.DOTALL | re.MULTILINE
+    )
+    if not proposal_match or not tasks_match:
+        raise AssertionError(
+            "worked example is missing a labeled proposal.md or tasks.md block"
+        )
+    proposal_text = proposal_match.group(1) + "\n"
+    tasks_text = tasks_match.group(1) + "\n"
+    name_match = re.search(r"^# ([a-z0-9][a-z0-9-]*)$", proposal_text, re.MULTILINE)
+    if not name_match:
+        raise AssertionError("worked example proposal has no short-name heading")
+    short_name = name_match.group(1)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        proposal_dir = Path(tmp) / "sdd" / short_name
+        proposal_dir.mkdir(parents=True)
+        (proposal_dir / "proposal.md").write_text(proposal_text, encoding="utf-8")
+        (proposal_dir / "tasks.md").write_text(tasks_text, encoding="utf-8")
+        env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+        for command in ("validate", "status"):
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "skills/sdd-workflow/scripts/sdd.py"),
+                    "--root",
+                    tmp,
+                    "--json",
+                    command,
+                    short_name,
+                ],
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False,
+            )
+            try:
+                payload = json.loads(result.stdout)
+            except json.JSONDecodeError as error:
+                raise AssertionError(
+                    f"worked example {command} produced invalid JSON: {result.stdout!r}"
+                ) from error
+            if not payload.get("ok"):
+                raise AssertionError(
+                    f"worked example fails {command}: {payload.get('errors')}"
+                )
+
+
 def main() -> int:
     validate_docs()
+    validate_worked_example()
     print("docs-consistency: PASS")
     return 0
 

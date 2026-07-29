@@ -63,7 +63,19 @@ sdd-workflow/
 ## Local development flow
 
 1. Edit `skills/sdd-workflow/SKILL.md` (or its metadata).
-2. Use the dev-link so edits take effect live:
+2. After any byte change to `SKILL.md` (whitespace included), refresh
+   `skill_sha256` in `skills/sdd-workflow/runtime-identity.json` to match.
+   Otherwise `package-validation` fails with "runtime identity does not match
+   SKILL.md bytes" and several discovery/install-channel unit tests turn red
+   with it:
+
+   ```bash
+   shasum -a 256 skills/sdd-workflow/SKILL.md
+   # Put the printed hash into skill_sha256 in runtime-identity.json, then verify:
+   PYTHONDONTWRITEBYTECODE=1 python3 tests/package_validation.py
+   ```
+
+3. Use the dev-link so edits take effect live:
 
    ```bash
    scripts/link-dev.sh                # or --claude-only / --codex-only
@@ -72,7 +84,7 @@ sdd-workflow/
 
    - It only creates a symlink to this repo when the destination does not exist; it stops and touches nothing when a file / directory / other symlink is already there.
    - Target directories can be overridden with `CLAUDE_SKILLS_DIR` / `CODEX_SKILLS_DIR` (for hermetic testing or a verified Codex skill root).
-3. Before opening a PR, run the authoritative frontmatter/naming check (if Codex skill-creator is available in your environment):
+4. Before opening a PR, run the authoritative frontmatter/naming check (if Codex skill-creator is available in your environment):
 
    ```bash
    python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/sdd-workflow
@@ -114,6 +126,7 @@ Automation can only cover **static and hermetic** checks (skill structure, front
 | Schema v2 | Schema v2 fixtures, common-model, and research archive tests | New proposals declare a version; all six types parse; research conclusions reconstruct from archives; v1/legacy remain unmigrated and future versions fail closed |
 | Team/worktree boundary | CI contract, install matrix, worktree, and concurrency tests | One owner per proposal; distinct short names/worktrees do not contaminate each other; stale INDEX is detected and rebuilt |
 | Git behavior | Rule text present | No commit is created unless the user asks |
+| Output language | `SKILL.md` Reporting section states the rule | All user-facing reports, questions, and error explanations stay in Traditional Chinese; report tokens (第 N 條完成 / 全部完成 / 歸檔完成 / 已放棄) unchanged |
 
 ### Optional: Codex sub-agent assisted acceptance
 
