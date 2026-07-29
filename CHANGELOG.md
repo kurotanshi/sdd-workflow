@@ -2,6 +2,18 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.0.3 — 2026-07-29
+
+### Changed
+- `SKILL.md`：新增明文輸出語言規則（使用者面向回報、提問與錯誤說明為繁體中文），並為 package-local discovery、CLI fail-closed 與放棄不回退三條規則補上動機；規則語義、觸發詞、回報詞元與 managed 命令面不變。
+- `references/proposal-authoring.md`：新增可逐字複製的完整 worked example（proposal.md＋tasks.md，Schema v2）；docs-consistency 以現行 parser 驗證內嵌範例，防止範例與格式規則漂移。
+- `CONTRIBUTING.md`／`CONTRIBUTING.en.md`：文件化「SKILL.md 變更須同步刷新 `runtime-identity.json` 的 `skill_sha256`」維護流程，並在 fresh-session 驗收矩陣加入「輸出語言」檢查項。
+- Engine release 更新為 `1.0.3`；engine generation 維持 `1.0`，proposal schema v1/v2、JSON output v1 與 machine envelopes 均不變。
+
+### Validation
+- 變更源自已歸檔研究 `prompting-best-practices-audit`（對照官方 Claude prompting best practices：0 衝突、3 緊張，均為澄清型缺口）。
+- 260 筆 unit/integration、package-validation、docs-consistency、trigger-contract 與 install-smoke（macOS）全數通過；觸發詞與回報詞元不變由 trigger contract 證明。
+
 ## v1.0.2 — 2026-07-27
 
 ### Changed

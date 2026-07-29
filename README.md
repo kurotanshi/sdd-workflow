@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> 版本 v1.0.2 ｜ [English](./README.en.md)
+> 版本 v1.0.3 ｜ [English](./README.en.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -131,9 +131,9 @@ SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就
 
 ---
 
-## v1.0.2
+## v1.0.3
 
-這個 patch release 將公開定位調整為「協助 AI Agent 以 SDD 框架完成大多數可驗收的變更任務」，並釐清小型任務與 bundled Python runtime 的使用方式。它沒有改變 Skill 觸發、proposal lifecycle、核准邊界、schema 或 JSON output。
+這個 patch release 依 Claude prompting best practices 對照研究的結論，把「使用者面向輸出為繁體中文」明文寫進 SKILL.md、為三條最易誤讀的規則補上動機，並在 proposal 撰寫參考加入可逐字複製的完整範例（由 docs-consistency 防止範例漂移）。它沒有改變 Skill 觸發、proposal lifecycle、核准邊界、schema 或 JSON output。
 
 從舊版更新時請替換完整 package，不要混合不同版本的檔案。
 

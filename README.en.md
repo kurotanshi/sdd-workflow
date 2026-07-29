@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v1.0.2 ｜ [繁體中文](./README.md)
+> Version v1.0.3 ｜ [繁體中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -135,9 +135,9 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 
 ---
 
-## v1.0.2
+## v1.0.3
 
-This patch positions the Skill to help AI Agents use SDD for most observable change tasks and clarifies small-task and bundled-Python-runtime usage. It does not change Skill triggers, the proposal lifecycle, approval boundaries, schemas, or JSON output.
+Following an audit against Claude prompting best practices, this patch states the Traditional Chinese user-facing output rule explicitly in SKILL.md, adds motivation to the three most misread rules, and ships a copyable worked example in the proposal-authoring reference (guarded against drift by docs-consistency). It does not change Skill triggers, the proposal lifecycle, approval boundaries, schemas, or JSON output.
 
 Replace the complete package when updating. Never mix files from different releases.
 
