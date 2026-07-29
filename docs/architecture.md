@@ -52,7 +52,7 @@ The first envelope is intentionally small:
   "metadata_version": 1,
   "writer": {
     "engine": "sdd-workflow",
-    "version": "1.0.3"
+    "version": "1.1.0"
   },
   "approval": {
     "state": "active",
@@ -78,7 +78,7 @@ The first envelope is intentionally small:
 
 | Axis | v1 value | Compatibility role |
 | --- | --- | --- |
-| Engine version | `1.0.3` | Diagnostic/release identity; not an artifact compatibility decision. |
+| Engine version | `1.1.0` | Diagnostic/release identity; not an artifact compatibility decision. |
 | CLI output version | `1` | Selects the external JSON envelope contract. |
 | Proposal schema version | implicit/explicit `1` | Selects the Markdown parser adapter; unknown explicit versions fail before parsing. |
 | Canonical model version | `1` internal | Defines parser output consumed by projections; not exposed as a public parse API. |

@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v1.0.3 ｜ [繁體中文](./README.md)
+> Version v1.1.0 ｜ [繁體中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -135,9 +135,9 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 
 ---
 
-## v1.0.3
+## v1.1.0
 
-Following an audit against Claude prompting best practices, this patch states the Traditional Chinese user-facing output rule explicitly in SKILL.md, adds motivation to the three most misread rules, and ships a copyable worked example in the proposal-authoring reference (guarded against drift by docs-consistency). It does not change Skill triggers, the proposal lifecycle, approval boundaries, schemas, or JSON output.
+This minor release fixes the case where one archive directory missing terminal evidence blocked the derived INDEX rebuild of every subsequent archive: it adds the supported, explicitly confirmed `repair-archive-record` recovery command, and lets `rebuild-index` accept an explicitly provided summary when only the summary is missing. Recovery never moves directories back, never guesses summaries, and never changes an existing correct record; mismatched evidence fails closed. Existing commands, Skill triggers, the proposal lifecycle, schemas, and JSON output are unchanged.
 
 Replace the complete package when updating. Never mix files from different releases.
 

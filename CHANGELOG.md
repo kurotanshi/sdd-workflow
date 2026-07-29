@@ -2,6 +2,23 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.1.0 — 2026-07-29
+
+### Added
+- 新增公開指令 `repair-archive-record`：對缺少終端證據的封存目錄提供受支援、需明確確認的復原路徑。唯讀 preflight 回報缺漏（終端狀態、機器證據、INDEX 列）並印出封存 `proposal.md`／`tasks.md` 原始位元組的具名 SHA-256 證據摘要；執行需同時帶回兩個證據摘要、明確終端狀態與單行摘要。復原只補缺漏欄位（以 managed status writer 補終端狀態、寫入 `recovery` 機器證據承載摘要），永不搬回目錄、不猜測摘要、不改動既有正確記錄；證據不符或終端狀態與目錄名稱後綴不一致時 fail closed（新錯誤碼 `ERROR_RECOVERY_TARGET_INVALID`、`ERROR_RECOVERY_NOT_APPLICABLE`、`ERROR_RECOVERY_EVIDENCE_MISMATCH`、`ERROR_RECOVERY_STATUS_MISMATCH`；binding action 新增 `rerun_repair_preflight`）。
+- `rebuild-index` 新增 `--directory <name> --summary <text>`：僅在該目錄完全沒有摘要來源時接受明確提供的摘要，解除「摘要必須來自既有 INDEX 列」的循環依賴；目錄已有權威摘要時回 `ERROR_RECOVERY_SUMMARY_UNEXPECTED` 且不寫入。
+- Archive model 新增 recovery evidence v1：legacy 目錄的摘要來源依序為有效 recovery 證據（權威）→ 唯一匹配的 INDEX 列；malformed recovery 證據 fail closed。
+
+### Fixed
+- 修正一筆缺少終端證據的歷史封存目錄會無限期阻塞後續每次歸檔的衍生 INDEX 重建（`COMMITTED_DERIVED_ARTIFACT_STALE`），而復原規則禁止手動編輯封存目錄與 INDEX、工具卻沒有任何受支援復原路徑的問題（2026-07-26 實際阻塞事故）。
+
+### Changed
+- Engine release 更新為 `1.1.0`，engine generation 由 `1.0` 進為 `1.1`（`runtime-identity.json` 的 `compatible_engine_generation` 同步）；proposal schema v1/v2、JSON output v1、既有指令與 machine envelopes 均不變，屬向後相容新增（versioning policy §2 MINOR：adds backward-compatible optional command / diagnostic code）。
+- 同步 `SKILL.md` 指令契約清單、`references/runtime-recovery.md`（新增 Archive record recovery 程序）、`docs/cli-contract.md`、`docs/archive-model.md` 與 `docs/doctor-diagnostics.md`。
+
+### Validation
+- 新增 `tests/test_archive_recovery.py` 9 筆回歸（阻塞案例重現、復原解除阻塞、僅缺摘要重建、全部 fail-closed 不變量含 preflight 唯讀與永不搬回）；269 筆 unit/integration、package-validation、docs-consistency、trigger-contract 與 install-smoke（macOS）全數通過。
+
 ## v1.0.3 — 2026-07-29
 
 ### Changed
