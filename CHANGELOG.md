@@ -2,6 +2,17 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.1.1 — 2026-08-14
+
+### Changed
+- `references/proposal-authoring.md`：新增「Intake, before authoring」條件式需求澄清規則——寫草案前辨識可能實質改變 requested behavior、scope、impact 或 acceptance conditions 的假設與缺口；使用者指定的實作方式不自動等同期望成果；重大歧義時簡述決策相關缺口、只問一個最關鍵的問題，收到回答前不建草案；資訊足夠時直接建立草案並標示可延後的不確定性，不輸出固定分析報告。`SKILL.md` 既有「Material ambiguity requires a focused question before authoring.」維持為主流程摘要；觸發詞、核准閘門、managed 命令面與 lifecycle 均不變。
+- `CONTRIBUTING.md`／`CONTRIBUTING.en.md`：fresh-session 驗收矩陣新增「提案 intake」檢查列。
+- Engine release 更新為 `1.1.1`；engine generation 維持 `1.1`，proposal schema v1/v2、JSON output v1 與 machine envelopes 均不變。
+
+### Validation
+- 變更源自已歸檔提案 `refine-proposal-clarification`（文件，1/1 task，TDD 錨點測試先行）。
+- `tests/test_skill_reduction.py` 新增條件式 intake 雙路徑錨點測試；270 筆 unit/integration、package-validation、docs-consistency、trigger-contract 與 install-smoke（macOS）全數通過。
+
 ## v1.1.0 — 2026-07-29
 
 ### Added

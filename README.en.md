@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v1.1.0 ｜ [繁體中文](./README.md)
+> Version v1.1.1 ｜ [繁體中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -135,9 +135,9 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 
 ---
 
-## v1.1.0
+## v1.1.1
 
-This minor release fixes the case where one archive directory missing terminal evidence blocked the derived INDEX rebuild of every subsequent archive: it adds the supported, explicitly confirmed `repair-archive-record` recovery command, and lets `rebuild-index` accept an explicitly provided summary when only the summary is missing. Recovery never moves directories back, never guesses summaries, and never changes an existing correct record; mismatched evidence fails closed. Existing commands, Skill triggers, the proposal lifecycle, schemas, and JSON output are unchanged.
+This patch release adds conditional intake rules to the proposal authoring reference: on material ambiguity the agent briefly states the decision-relevant gaps and asks exactly one most-critical question; with sufficient information it drafts directly, marking deferable uncertainty, without a fixed analysis report; a requested implementation approach is not automatically the desired outcome. Existing commands, Skill triggers, the proposal lifecycle, schemas, and JSON output are unchanged.
 
 Replace the complete package when updating. Never mix files from different releases.
 

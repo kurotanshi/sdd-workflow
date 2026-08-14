@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> 版本 v1.1.0 ｜ [English](./README.en.md)
+> 版本 v1.1.1 ｜ [English](./README.en.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -131,9 +131,9 @@ SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就
 
 ---
 
-## v1.1.0
+## v1.1.1
 
-這個 minor release 修正「一筆缺少終端證據的封存目錄會阻塞後續每次歸檔的 INDEX 重建」：新增受支援、需明確確認的 `repair-archive-record` 復原指令，並讓 `rebuild-index` 在僅缺摘要時接受明確提供的摘要。復原永不搬回目錄、不猜測摘要、不改動既有正確記錄；證據不符即 fail closed。既有指令、Skill 觸發、proposal lifecycle、schema 與 JSON output 均不變。
+這個 patch release 在 proposal 撰寫參考加入條件式 intake 規則：重大歧義時先簡述決策相關缺口、只問一個最關鍵的問題；資訊足夠時直接建立草案並標示可延後的不確定性，不輸出固定分析報告；使用者指定的實作方式不自動等同期望成果。既有指令、Skill 觸發、proposal lifecycle、schema 與 JSON output 均不變。
 
 從舊版更新時請替換完整 package，不要混合不同版本的檔案。
 

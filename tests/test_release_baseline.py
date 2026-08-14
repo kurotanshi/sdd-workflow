@@ -40,7 +40,7 @@ class ReleaseBaselineTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         envelope = json.loads(result.stdout)
         self.assertEqual(envelope["output_version"], 1)
-        self.assertEqual(envelope["data"]["engine_version"], "1.1.0")
+        self.assertEqual(envelope["data"]["engine_version"], "1.1.1")
         self.assertEqual(envelope["data"]["minimum_schema_version"], 1)
         self.assertEqual(envelope["data"]["maximum_schema_version"], 2)
 
