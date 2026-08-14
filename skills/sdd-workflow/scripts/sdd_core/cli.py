@@ -406,9 +406,10 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             namespace.expected_snapshot,
             establish_manifest=namespace.establish_manifest,
         )
-        return CommandResult(
-            command="approve",
-            data={
+        return _mutation_result_with_status(
+            "approve",
+            paths,
+            {
                 "short_name": namespace.short_name,
                 "applied": transition.applied,
                 "result": transition.result,
@@ -459,9 +460,10 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             namespace.task_number,
             namespace.expected_task_digest,
         )
-        return CommandResult(
-            command="complete-task",
-            data={
+        return _mutation_result_with_status(
+            "complete-task",
+            paths,
+            {
                 "short_name": namespace.short_name,
                 "task_number": namespace.task_number,
                 "applied": transition.applied,
@@ -960,6 +962,25 @@ def _status_result(paths: ProposalPaths, parsed: ParsedProposal) -> CommandResul
         warnings=base.warnings,
         errors=(issue,),
         exit_code=1,
+    )
+
+
+def _mutation_result_with_status(
+    command: str,
+    paths: ProposalPaths,
+    data: dict[str, Any],
+) -> CommandResult:
+    status = _status_result(paths, _parse_paths(paths))
+    next_task = next(
+        (task for task in status.data.get("tasks", []) if not task["completed"]),
+        None,
+    )
+    return CommandResult(
+        command=command,
+        data={**data, "after_state": status.data, "next_task": next_task},
+        warnings=status.warnings,
+        errors=status.errors,
+        exit_code=status.exit_code,
     )
 
 

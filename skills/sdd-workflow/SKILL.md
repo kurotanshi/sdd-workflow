@@ -59,7 +59,7 @@ python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-archive-r
 - Consume the complete JSON even on nonzero exit. Branch on `ok`, then stable `errors[].code` and `errors[].action`, never message prose.
 - `status` is authoritative for ordered tasks, completion, acceptance, compatibility, and snapshot. `validate` is the strict format gate; `abandon-preflight` alone permits unreliable task-format counts.
 - Any error action is binding. Read [`references/runtime-recovery.md`](./references/runtime-recovery.md) fully before handling an error, abandonment, archive recovery, or doctor finding. Do not improvise repair or retry.
-- Before every mutation, obtain fresh successful status and pass its exact snapshot plus task identity where required. `refresh_status` never preserves mutation intent automatically.
+- Before the first mutation in an implementation sequence, obtain fresh successful `status`. A successful `approve` or `complete-task` result then supplies the canonical `after_state`, exact next snapshot, and `next_task` for the next mutation in that sequence. `refresh_status` never preserves mutation intent automatically.
 
 ## 提案
 
@@ -83,13 +83,13 @@ Never edit status or checkbox markers during revision.
 
 ## 實作
 
-1. Run fresh `status`. Errors stop according to their binding action.
-2. Approval gate: `approved` continues; draft plus `開始實作` calls `approve` and verifies fresh status; draft plus plain `實作` asks for approval and stops.
-3. Select the intended unchecked task in canonical order and its acceptance conditions. Inspect reusable project patterns, then make the smallest in-scope change.
+1. Run fresh `status`. Errors stop according to their binding action. Treat it as the current canonical state.
+2. Approval gate: `approved` continues; draft plus `開始實作` calls `approve` and requires its successful `after_state`; draft plus plain `實作` asks for approval and stops.
+3. Select the intended unchecked task from the current canonical state and its acceptance conditions. Inspect reusable project patterns, then make the smallest in-scope change.
 4. Validate proportionally. A specification gap or changed outcome stops for a decision/revision.
 5. Compare the result with exact task wording and acceptance. For research, write only observed output under `## 結論` and require a non-empty canonical conclusion before final completion.
-6. Call `complete-task` with the fresh ordinal, task digest, and snapshot. Require `APPLIED` or evidence-backed `ALREADY_APPLIED`.
-7. Rerun `status`, prove only the intended task completed, and report `第 N 條完成` plus validation. Repeat one task at a time.
+6. Call `complete-task` with the current ordinal, task digest, and snapshot. Require `APPLIED` or evidence-backed `ALREADY_APPLIED`.
+7. Require its `after_state` to prove only the intended task completed, then report `第 N 條完成` plus validation. Use that state and `next_task` for the next task without another `status`; if the response was lost, retry once with the same inputs so operation evidence can return `ALREADY_APPLIED`.
 8. At full completion report `全部完成` and request acceptance; do not archive without `歸檔`.
 
 ## 放棄

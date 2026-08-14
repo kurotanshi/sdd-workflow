@@ -107,16 +107,17 @@ cannot be converted into a completed task or an undocumented follow-up.
 
 ## 6. Implement one task
 
-For each task:
+For an implementation sequence:
 
-1. call fresh `status`;
-2. select the first intended unchecked canonical task;
+1. call fresh `status` once;
+2. select the first intended unchecked canonical task from the current state;
 3. report that exact task;
 4. modify only implementation files in its scope;
 5. run the smallest relevant validation, then regression validation;
 6. compare the result with the exact task and acceptance conditions;
-7. call `complete-task` with the fresh snapshot, ordinal, and task digest; and
-8. call `status` again to prove only the intended task changed.
+7. call `complete-task` with the current snapshot, ordinal, and task digest;
+8. use its `after_state` to prove only the intended task changed; and
+9. use its returned snapshot and `next_task` for the next task without another `status`.
 
 Stop immediately when a user turn supersedes the task or the runtime returns a
 binding action.

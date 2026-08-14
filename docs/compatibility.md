@@ -16,6 +16,12 @@ not independently released products or promises that users must compose.
 Engine version is diagnostic package metadata and does not override proposal
 schema or JSON output support.
 
+Output version `1` permits the additive `after_state` and `next_task` command-data
+fields on successful `approve` and `complete-task` results. Older consumers may
+ignore them. They do not change mutation syntax, authority, error actions, or
+snapshot/task-digest validation; newer consumers use the returned evidence as
+the exact input to the next existing mutation.
+
 ## Environment support
 
 | Axis | Supported | Conditional |

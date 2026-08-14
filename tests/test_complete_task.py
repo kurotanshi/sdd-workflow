@@ -126,6 +126,16 @@ class CompleteTaskValidationTests(unittest.TestCase):
         self.assertNotEqual(
             result["data"]["before_snapshot"], result["data"]["after_snapshot"]
         )
+        status = invoke(
+            ["--root", str(self.root), "--json", "status", "valid-simple"],
+            self.root,
+        )[1]["data"]
+        self.assertEqual(result["data"]["after_state"], status)
+        self.assertEqual(
+            result["data"]["after_state"]["snapshot"],
+            result["data"]["after_snapshot"],
+        )
+        self.assertIsNone(result["data"]["next_task"])
         self.assertIn("- [x] Preserve one pending task", paths.tasks.read_text())
         metadata = json.loads((self.target / ".sdd/metadata.json").read_text())
         self.assertEqual(metadata["last_operation"]["kind"], "complete-task")
@@ -142,6 +152,10 @@ class CompleteTaskValidationTests(unittest.TestCase):
         self.assertEqual(retried, 0, retry_result)
         self.assertFalse(retry_result["data"]["applied"])
         self.assertEqual(retry_result["data"]["result"], "ALREADY_APPLIED")
+        self.assertEqual(
+            retry_result["data"]["operation_id"], result["data"]["operation_id"]
+        )
+        self.assertEqual(retry_result["data"]["after_state"], status)
 
     def test_already_applied_is_not_claimed_after_unrelated_byte_change(self) -> None:
         _, model, snapshot = parsed(self.root)

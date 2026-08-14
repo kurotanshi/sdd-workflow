@@ -473,6 +473,12 @@ class CliContractTests(unittest.TestCase):
             self.assertEqual(approved[0], 0, approved)
             data = json.loads(approved[1])["data"]
             self.assertNotEqual(data["before_snapshot"], data["after_snapshot"])
+            status_data = json.loads(invoke(
+                ["--root", str(root), "--json", "status", "valid-simple"], cwd=root
+            )[1])["data"]
+            self.assertEqual(data["after_state"], status_data)
+            self.assertEqual(data["after_state"]["snapshot"], data["after_snapshot"])
+            self.assertEqual(data["next_task"], status_data["tasks"][1])
             self.assertIn("\napproved\n", (target / "proposal.md").read_text())
             manifest = json.loads((target / ".sdd/approval-manifest.json").read_text())
             metadata = json.loads((target / ".sdd/metadata.json").read_text())

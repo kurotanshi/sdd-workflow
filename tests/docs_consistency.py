@@ -114,6 +114,11 @@ def validate_docs() -> None:
             raise AssertionError(
                 f"managed mutation command is absent from SKILL.md: {managed_command}"
             )
+    for chained_result_term in ("after_state", "next_task"):
+        if chained_result_term not in skill or chained_result_term not in cli_contract:
+            raise AssertionError(
+                f"chained mutation result is not synchronized: {chained_result_term}"
+            )
 
     if "Minimum supported runtime: CPython `3.11`" not in runtime:
         raise AssertionError("runtime document minimum is inconsistent")
@@ -259,6 +264,7 @@ def validate_docs() -> None:
         "cannot identify the editor",
         "read-only commands never create, replace, or refresh an attestation",
         "transitional unattested state",
+        "next mutation still requires and revalidates",
     ):
         if managed_term not in managed_state:
             raise AssertionError(

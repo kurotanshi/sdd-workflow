@@ -73,7 +73,7 @@ Every JSON-mode result writes exactly one UTF-8 JSON document plus a trailing ne
 }
 ```
 
-Only `output_version`, `command`, `ok`, `warnings`, `errors`, error `code`, and error `action` are compatibility fields in v0.3. Messages, suggested commands, key order, and presentation fields may evolve. Candidate, task, and diagnostic ordering are nevertheless deterministic implementation invariants covered by tests.
+Only `output_version`, `command`, `ok`, `warnings`, `errors`, error `code`, and error `action` are compatibility fields in v0.3. Messages, suggested commands, key order, and presentation fields may evolve. Candidate, task, and diagnostic ordering are nevertheless deterministic implementation invariants covered by tests. Additive command-data projections may remain on output version `1` when they do not change mutation inputs, authority, or error behavior; unknown fields remain ignorable.
 
 Diagnostic objects may also include `message`, `path`, `line`, `column`, and `severity`. A missing value is omitted rather than encoded as an invented location.
 
@@ -109,11 +109,11 @@ has `mutation_safe: false`, `approve`, `begin-revision`, `complete-task`,
 envelope. A mutation command must never return a successful parse-only result
 when no transition was attempted.
 
-`approve` requires a mutation-safe draft plus its exact current snapshot. It stores the Approval Manifest and metadata before committing the status change, then returns before/after snapshots and operation evidence. `--establish-manifest` instead requires an already-approved unattested v1 proposal, represents explicit caller reconfirmation, and does not change the Markdown bytes.
+`approve` requires a mutation-safe draft plus its exact current snapshot. It stores the Approval Manifest and metadata before committing the status change, then returns before/after snapshots, operation evidence, `after_state`, and `next_task`. `--establish-manifest` instead requires an already-approved unattested v1 proposal, represents explicit caller reconfirmation, and does not change the Markdown bytes.
 
 `begin-revision` requires an attested approved proposal and its exact current snapshot. It records field-level semantic differences, invalidates the prior approval, commits status `draft`, and returns the after snapshot. A retry with identical inputs may finalize or recognize the same revision operation; it never adopts unrelated current bytes.
 
-`complete-task` validates approved status, task ordinal and digest, raw snapshot, Approval Manifest, and managed-state attestation. It stages the intended after attestation, atomically replaces the exact incomplete checkbox as the authoritative commit point, and returns the after snapshot.
+`complete-task` validates approved status, task ordinal and digest, raw snapshot, Approval Manifest, and managed-state attestation. It stages the intended after attestation and atomically replaces the exact incomplete checkbox as the authoritative commit point. Successful `approve` and `complete-task` results contain `after_state`, exactly the data a status command projects for the committed state, plus `next_task`, the first incomplete task object from that state or `null`. The existing `after_snapshot` remains unchanged and equals `after_state.snapshot`; callers may feed that snapshot and `next_task.task_digest` directly into the next `complete-task`. `begin-revision`, `archive`, and `abandon` results do not add these fields.
 
 `rebuild-index` adapts every direct archive directory to a canonical record and fails without writing when any record is unknown, ambiguous, or mismatched. Otherwise it deterministically renders all records and atomically replaces `INDEX.md` only when bytes differ. It never writes a legacy archive directory or derives a missing summary from prose. `--directory` and `--summary` are accepted only together: the explicitly provided summary applies to exactly that directory and only when it has no summary source at all; a directory that already has an authoritative summary returns `ERROR_RECOVERY_SUMMARY_UNEXPECTED` without writing.
 

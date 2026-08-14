@@ -93,3 +93,5 @@ Attestation records the intended after projection, while authoritative Markdown 
 | Proposal/task text, another artifact byte, status, metadata, or Manifest changed so the exact source cannot be reconstructed | `ERROR_TASK_RETRY_CONFLICT` / `inspect_managed_state_drift`. |
 
 Validation precedence is: proven same-operation retry; otherwise snapshot CAS, metadata/Manifest identity and attestation, approved source state, ordinal/task digest, then Approval Manifest semantic equality. A read-only status call never upgrades weak evidence into a proven retry.
+
+After a successful `approve` or `complete-task`, the JSON result projects the committed canonical state as `after_state` and its first incomplete task as `next_task`. This removes a separate read-only status process between task completions without changing any integrity layer: the next mutation still requires and revalidates the exact returned snapshot, ordinal, and task digest. A lost response is retried with the identical original inputs so the operation ID can prove `ALREADY_APPLIED`; a new status must not replace those inputs for retry.
