@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills/sdd-workflow/SKILL.md"
+AUTHORING = ROOT / "skills/sdd-workflow/references/proposal-authoring.md"
 REPORT = ROOT / "evals/reports/v0.9-skill-reduction-experiment.md"
 
 
@@ -39,6 +40,18 @@ class SkillReductionTests(unittest.TestCase):
             with self.subTest(relative=relative):
                 self.assertIn(relative, text)
                 self.assertTrue((SKILL.parent / relative).is_file())
+
+    def test_conditional_intake_branches_remain_in_authoring_reference(self) -> None:
+        text = AUTHORING.read_text(encoding="utf-8")
+        anchors = (
+            "is not automatically the desired",
+            "ask exactly one most-critical question",
+            "create the draft directly",
+            "Never emit a fixed analysis report",
+        )
+        for anchor in anchors:
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
 
     def test_report_records_non_regression_and_usage_diagnostic(self) -> None:
         text = REPORT.read_text(encoding="utf-8")

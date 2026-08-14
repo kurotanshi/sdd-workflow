@@ -113,6 +113,7 @@ Automation can only cover **static and hermetic** checks (skill structure, front
 | Item | Statically provable | Fresh-session interactive acceptance |
 | --- | --- | --- |
 | Proposal creation | Template contains `## 狀態` with value `draft` | Stops for approval after creation; no product code touched |
+| Proposal intake | Authoring reference states the conditional intake rules (anchored by `tests/test_skill_reduction.py`) | On material ambiguity the agent briefly states the decision-relevant assumptions or gaps, asks exactly one most-critical question, and does not draft before the answer; with sufficient information it drafts directly, marking deferable uncertainty, without a fixed analysis report; a requested implementation approach whose difference from the desired outcome would change the proposal is clarified as material ambiguity |
 | Approval semantics | CLI transition tests and Skill command rule | `實作` on a `draft` asks; `開始實作` calls `approve` with the snapshot and verifies manifest, metadata, and `approved` |
 | Missing-artifact guard | Rule text present | Missing directory or artifact demands `提案` first; no code changes |
 | Revision | Rule text present | Preserves checked tasks, keeps at most 10 unchecked tasks, resets `draft` and waits again; a goal-changing amendment is redirected to a new change |

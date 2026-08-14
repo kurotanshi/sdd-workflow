@@ -4,6 +4,21 @@ Read this file completely before creating or revising an SDD proposal.
 
 ## New proposal
 
+Intake, before authoring:
+
+- Identify implicit assumptions and missing information that could
+  materially change the requested behavior, scope, impact, or acceptance
+  conditions.
+- A requested implementation approach is not automatically the desired
+  outcome; when the difference would change the proposal, treat it as
+  material ambiguity.
+- On material ambiguity, briefly state the decision-relevant assumptions or
+  gaps and ask exactly one most-critical question; do not create the draft
+  before the answer.
+- Otherwise create the draft directly, marking safely deferable uncertainty
+  in the proposal. Never emit a fixed analysis report or force a question
+  when the answer cannot change the proposal.
+
 1. Choose a unique lowercase English hyphen-case short name. Never overwrite an existing `sdd/<short-name>/`; ask whether to revise it or choose another name.
 2. Classify as exactly one of `新功能`, `修 bug`, `重構`, `維運`, `文件`, or `研究`. `研究` asks a bounded evidence question and uses the normal lifecycle.
 3. Create `proposal.md` as Schema v2 beginning at byte zero:

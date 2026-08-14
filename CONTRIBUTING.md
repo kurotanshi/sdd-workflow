@@ -105,6 +105,7 @@ sdd-workflow/
 | 驗收項目 | 靜態檢查可證明 | fresh-session 互動驗收 |
 | --- | --- | --- |
 | 提案建立 | 範本含 `## 狀態` 且值為 `draft` | 建立後停下等核准，不修改產品程式碼 |
+| 提案 intake | authoring reference 含條件式 intake 規則（`tests/test_skill_reduction.py` 錨點防漂移） | 重大歧義時先簡述決策相關假設或缺口、只問一個最關鍵問題，收到回答前不建草案；資訊足夠時直接建立草案並標示可延後的不確定性，不輸出固定分析報告；使用者指定的實作方式與期望成果差異會改變提案時，依重大歧義規則澄清 |
 | 核准語意 | CLI transition tests 與 Skill command rule | `draft` 只說「實作」會詢問；「開始實作」以 snapshot 呼叫 `approve` 並驗證 manifest、metadata 與 `approved` |
 | 缺檔防呆 | 規則文字存在 | 缺目錄或任一 artifact 時要求先提案、不動程式碼 |
 | 修訂 | 規則文字存在 | 保留已勾任務、未勾任務最多 10 條、重設 `draft` 重新等核准；實質改變目標時建議另開新變更 |
