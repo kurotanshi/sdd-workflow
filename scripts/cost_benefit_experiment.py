@@ -204,6 +204,36 @@ def product_paths(paths: Iterable[str]) -> list[str]:
     )
 
 
+def create_workspace(agent: str, task: str, variant: str) -> Path:
+    workspace = Path(
+        tempfile.mkdtemp(prefix=f"{agent}-{task}-{variant}-")
+    ).resolve()
+    if workspace.is_relative_to(ROOT):
+        raise ExperimentError(
+            f"setup failure: workspace inside repository ancestry: {workspace}"
+        )
+    return workspace
+
+
+def product_state(workspace: Path, paths: Iterable[str]) -> dict[str, str | None]:
+    state: dict[str, str | None] = {}
+    for path in paths:
+        file = workspace / path
+        state[path] = sha256_file(file) if file.is_file() else None
+    return state
+
+
+def mutated_product_paths(
+    previous: dict[str, str | None],
+    current: dict[str, str | None],
+) -> list[str]:
+    return sorted(
+        path
+        for path in set(previous) | set(current)
+        if previous.get(path) != current.get(path)
+    )
+
+
 def git_diff(workspace: Path) -> str:
     intent = run_command(["git", "add", "-N", "--", "."], cwd=workspace)
     if intent.returncode != 0:
@@ -253,6 +283,49 @@ def tool_usage(events: list[dict[str, Any]]) -> tuple[int, dict[str, int]]:
             identities.add(identity)
             counts[name] = counts.get(name, 0) + 1
     return len(identities), dict(sorted(counts.items()))
+
+
+RUNTIME_INVOCATION_MARKERS = ("discover-runtime.py", "sdd.py")
+
+
+def runtime_invocations(events: list[dict[str, Any]]) -> tuple[int, int]:
+    invocations = 0
+    unidentified = 0
+    seen: set[tuple[str, str]] = set()
+    for event in events:
+        if event.get("type") == "item.completed" and isinstance(event.get("item"), dict):
+            item = event["item"]
+            if str(item.get("type", "")) == "command_execution":
+                identity = (str(item.get("id", id(item))), "command_execution")
+                if identity not in seen:
+                    seen.add(identity)
+                    command = item.get("command")
+                    if not isinstance(command, str):
+                        unidentified += 1
+                    elif any(
+                        marker in command
+                        for marker in RUNTIME_INVOCATION_MARKERS
+                    ):
+                        invocations += 1
+        for item in nested_dicts(event):
+            if item.get("type") != "tool_use" or item.get("name") != "Bash":
+                continue
+            identity = (str(item.get("id", id(item))), "tool_use")
+            if identity in seen:
+                continue
+            seen.add(identity)
+            command = (
+                item["input"].get("command")
+                if isinstance(item.get("input"), dict)
+                else None
+            )
+            if not isinstance(command, str):
+                unidentified += 1
+            elif any(
+                marker in command for marker in RUNTIME_INVOCATION_MARKERS
+            ):
+                invocations += 1
+    return invocations, unidentified
 
 
 def token_usage(events: list[dict[str, Any]], agent: str) -> dict[str, int]:
@@ -403,7 +476,7 @@ def default_run_id() -> str:
 
 
 def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
-    spec = read_json(SPEC_PATH)
+    spec = read_json(arguments.spec)
     if arguments.task not in spec["tasks"]:
         raise ExperimentError(f"unknown task: {arguments.task}")
     if arguments.agent not in spec["agents"]:
@@ -432,13 +505,8 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
     if run_directory.exists():
         raise ExperimentError(f"run artifact already exists: {run_directory}")
     run_directory.mkdir(parents=True)
-    workspace_root = artifact_root / ".workspaces"
-    workspace_root.mkdir(parents=True, exist_ok=True)
-    workspace = Path(
-        tempfile.mkdtemp(
-            prefix=f"{arguments.agent}-{arguments.task}-{arguments.variant}-",
-            dir=workspace_root,
-        )
+    workspace = create_workspace(
+        arguments.agent, arguments.task, arguments.variant
     )
 
     executable = arguments.agent_executable or shutil.which(arguments.agent)
@@ -453,10 +521,12 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             f"host version mismatch for {arguments.agent}: {executable_version}"
         )
     timeout = arguments.timeout_seconds or spec["run_policy"]["timeout_seconds_per_turn"]
+    isolation_environment = dict(agent_spec.get("isolation_environment", {}))
     started = dt.datetime.now(dt.timezone.utc).isoformat()
     invalid_reason: str | None = None
     turns: list[dict[str, Any]] = []
     preapproval_changes: list[dict[str, Any]] = []
+    previous_product_state: dict[str, str | None] = {}
     total_tools = 0
     tool_counts: dict[str, int] = {}
     usage_totals: dict[str, int] = {}
@@ -485,6 +555,7 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             )
             environment = os.environ.copy()
             environment["PYTHONDONTWRITEBYTECODE"] = "1"
+            environment.update(isolation_environment)
             before = time.monotonic()
             timed_out = False
             try:
@@ -513,11 +584,24 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             wall_seconds += elapsed
             (turn_directory / "events.jsonl").write_text(stdout, encoding="utf-8")
             (turn_directory / "stderr.log").write_text(stderr, encoding="utf-8")
+            if arguments.variant == "control" and (
+                "discover-runtime.py" in stdout or "sdd.py" in stdout
+            ):
+                raise ExperimentError(
+                    "setup failure: SDD runtime invocation detected in "
+                    f"control run {run_id} turn {index}"
+                )
             events = list(iter_json_lines(stdout))
             tools, names = tool_usage(events)
             usage = token_usage(events, arguments.agent)
+            invocations, unidentified = runtime_invocations(events)
             paths = changed_paths(workspace)
             products = product_paths(paths)
+            current_product_state = product_state(workspace, products)
+            mutated = mutated_product_paths(
+                previous_product_state, current_product_state
+            )
+            previous_product_state = current_product_state
             (turn_directory / "git-diff.patch").write_text(
                 git_diff(workspace),
                 encoding="utf-8",
@@ -532,6 +616,8 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
                 "tool_calls": tools,
                 "tool_calls_by_name": names,
                 "tokens": usage,
+                "runtime_invocations": invocations,
+                "unidentified_command_events": unidentified,
                 "changed_paths": paths,
                 "product_paths": products,
             }
@@ -544,7 +630,7 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
                 usage_totals[key] = usage_totals.get(key, 0) + count
             models.update(observed_models(events))
 
-            if turn_kind in {"initial", "revision"} and products:
+            if turn_kind in {"initial", "revision"} and mutated:
                 preapproval_changes.append(
                     {
                         "kind": (
@@ -553,7 +639,7 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
                             else "product-change-after-requirement-change-before-reapproval"
                         ),
                         "turn": index,
-                        "paths": products,
+                        "paths": mutated,
                     }
                 )
             invalid_reason = classify_invalid(
@@ -597,7 +683,7 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         metadata = {
             "result_schema": spec["metrics"]["result_schema"],
             "experiment_id": spec["experiment_id"],
-            "spec_sha256": sha256_file(SPEC_PATH),
+            "spec_sha256": sha256_file(arguments.spec),
             "fixture_sha256": fixture_hash,
             "source": spec["source"],
             "run_id": run_id,
@@ -611,6 +697,7 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "requested_model": agent_spec["model"],
             "observed_models": sorted(models),
             "host_version": executable_version,
+            "host_isolation": isolation_environment,
             "permission_mode": agent_spec["permission_mode"],
             "platform": {
                 "system": platform.system(),
@@ -695,7 +782,25 @@ def load_run_results(artifact_root: Path) -> list[dict[str, Any]]:
 def aggregate_results(
     results: list[dict[str, Any]],
     spec: dict[str, Any],
+    *,
+    expected_spec_sha256: str,
 ) -> dict[str, Any]:
+    mismatched = [
+        {
+            "run_id": result.get("run_id"),
+            "experiment_id": result.get("experiment_id"),
+            "spec_sha256": result.get("spec_sha256"),
+            "artifact_path": result.get("_artifact_path"),
+        }
+        for result in results
+        if result.get("experiment_id") != spec["experiment_id"]
+        or result.get("spec_sha256") != expected_spec_sha256
+    ]
+    if mismatched:
+        raise ExperimentError(
+            "results do not belong to this experiment: "
+            + json.dumps(mismatched, ensure_ascii=False, sort_keys=True)
+        )
     valid = [result for result in results if result.get("valid") is True]
     invalid = [result for result in results if result.get("valid") is not True]
     by_pair: dict[tuple[str, str, str], dict[str, dict[str, Any]]] = {}
@@ -722,6 +827,12 @@ def aggregate_results(
             continue
         control = variants["control"]
         skill = variants["skill"]
+        if control.get("host_isolation") != skill.get("host_isolation") or (
+            control.get("host_version") != skill.get("host_version")
+        ):
+            raise ExperimentError(
+                f"setup failure: host baseline mismatch in pair {pair_id}"
+            )
         control_metrics = control["metrics"]
         skill_metrics = skill["metrics"]
         pair = {
@@ -794,6 +905,42 @@ def aggregate_results(
             )
             cells.append(cell)
 
+    phase_groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
+    for result in valid:
+        for turn in result.get("turns", []):
+            key = (
+                result["agent"],
+                result["task"],
+                result["variant"],
+                f"turn-{turn['turn']}-{turn['kind']}",
+            )
+            phase_groups.setdefault(key, []).append(turn)
+    phases = [
+        {
+            "agent": agent,
+            "task": task,
+            "variant": variant,
+            "phase": phase,
+            "run_count": len(group),
+            "median_runtime_invocations": statistics.median(
+                turn.get("runtime_invocations", 0) for turn in group
+            ),
+            "median_tool_calls": statistics.median(
+                turn["tool_calls"] for turn in group
+            ),
+            "median_total_tokens": statistics.median(
+                turn["tokens"].get("total_tokens", 0) for turn in group
+            ),
+            "median_wall_seconds": statistics.median(
+                turn["wall_seconds"] for turn in group
+            ),
+            "unidentified_command_events": sum(
+                turn.get("unidentified_command_events", 0) for turn in group
+            ),
+        }
+        for (agent, task, variant, phase), group in sorted(phase_groups.items())
+    ]
+
     thresholds = spec["thresholds"]
     complete = (
         len(pairs)
@@ -863,6 +1010,7 @@ def aggregate_results(
         "incomplete_pairs": incomplete_pairs,
         "pairs": pairs,
         "cells": cells,
+        "phases": phases,
         "decision": {
             "skill_critical_violations": skill_critical,
             "control_successes": control_success,
@@ -892,7 +1040,7 @@ def aggregate_results(
 
 
 def execute_matrix(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
-    spec = read_json(SPEC_PATH)
+    spec = read_json(arguments.spec)
     agents = arguments.agents or list(spec["agents"])
     tasks = arguments.tasks or spec["task_order"]
     replicates = arguments.replicates or spec["run_policy"]["replicates_per_cell"]
@@ -925,6 +1073,7 @@ def execute_matrix(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
                             invalid.append(run_id)
                             break
                         run_arguments = argparse.Namespace(
+                            spec=arguments.spec,
                             agent=agent,
                             task=task,
                             variant=variant,
@@ -955,8 +1104,12 @@ def execute_matrix(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
 
 
 def execute_summarize(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
-    spec = read_json(SPEC_PATH)
-    summary = aggregate_results(load_run_results(arguments.artifact_root), spec)
+    spec = read_json(arguments.spec)
+    summary = aggregate_results(
+        load_run_results(arguments.artifact_root),
+        spec,
+        expected_spec_sha256=sha256_file(arguments.spec),
+    )
     if arguments.json_output:
         arguments.json_output.parent.mkdir(parents=True, exist_ok=True)
         write_json(arguments.json_output, summary)
@@ -969,6 +1122,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("--spec", type=Path, default=SPEC_PATH)
     run_parser.add_argument("--agent", choices=("codex", "claude"), required=True)
     run_parser.add_argument(
         "--task",
@@ -987,6 +1141,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--keep-workspace", action="store_true")
 
     matrix_parser = subparsers.add_parser("matrix")
+    matrix_parser.add_argument("--spec", type=Path, default=SPEC_PATH)
     matrix_parser.add_argument("--agents", nargs="+", choices=("codex", "claude"))
     matrix_parser.add_argument(
         "--tasks",
@@ -1003,6 +1158,7 @@ def build_parser() -> argparse.ArgumentParser:
     matrix_parser.add_argument("--keep-workspace", action="store_true")
 
     summary_parser = subparsers.add_parser("summarize")
+    summary_parser.add_argument("--spec", type=Path, default=SPEC_PATH)
     summary_parser.add_argument(
         "--artifact-root",
         type=Path,
