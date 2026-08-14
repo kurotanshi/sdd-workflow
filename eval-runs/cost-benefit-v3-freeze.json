@@ -1,0 +1,24 @@
+{
+  "experiment_id": "paired-cost-v3",
+  "frozen_at_commit": "e55102d47ce270335329115f2b7a1e7cf4dcf7b5",
+  "frozen_hashes": {
+    "fixture_sha256": {
+      "acceptance-change": "4a56dc9f28853fe62855bc94b189a160a1c94bda1204ac1e03f0576696841a0f",
+      "medium-feature": "97fc93d1a5abc37c28bca3206be7bf865ad00942afbc12a49462a6f29156317f",
+      "small-bug": "3ac1755430a8224c60771a6c50374acac5a232da7b459d33c3098e7ff7983414"
+    },
+    "runner_module_sha256": "c2c22c0e3dc33ac8a4b6743458204ba1d4cfa2e5d4ebb39f8014d6cb061e66fb",
+    "runtime_entrypoint_tree_sha256": "2770db9c3b501e5ea1af641358f9f76c61fca294dec4f624cdac9bd451177adc",
+    "skill_sha256": "d39e3e0675c4670baefe7eae1630f7b4ce4e2bbbe0ad0e9ccbce952998115ee6"
+  },
+  "host_isolation_status": {
+    "agents_user_skill": "~/.agents/skills/sdd-workflow physical directory retained untouched",
+    "auth_provisioning": "codex: user auth.json copied into isolated CODEX_HOME; claude: Keychain credential exported to isolated CLAUDE_CONFIG_DIR/.credentials.json; user-level originals untouched",
+    "claude_user_skill": "~/.claude/skills/sdd-workflow symlink to this repository retained untouched",
+    "mechanism": "dedicated clean HOME per agent host; see spec host_isolation",
+    "preflight_verification": "2026-08-14 pre-collection probes: both isolated hosts authenticated and replied that no sdd-workflow skill is visible in model context"
+  },
+  "notes": "Working tree carried uncommitted harness fixes relative to frozen_at_commit when this experiment was frozen; the hashes in frozen_hashes and spec_sha256 are the freeze authority.",
+  "spec_path": "evals/cost-benefit/experiment-v3.json",
+  "spec_sha256": "a403b5c1833395c62bfdab70fb880c6b2824f5156184c22915bb9b614a3ab8cf"
+}

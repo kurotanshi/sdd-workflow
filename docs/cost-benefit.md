@@ -1,10 +1,218 @@
 # Skill cost-benefit baseline
 
+This document records two frozen baseline generations. The v1.1.1 baseline
+(`paired-cost-v3`) is the current decision basis. The generation 1.0 baseline
+(`paired-cost-v2`) is retained unchanged below with a supersession note; no
+prior result is overwritten.
+
+## Generation 1.1.1 baseline (`paired-cost-v3`)
+
+Status: complete; 36/36 valid measured runs, zero retries
+Experiment ID: `paired-cost-v3`
+Measurement date: 2026-08-14
+
+### Frozen source and environment
+
+The experiment uses the Skill and runtime from Git commit
+`e55102d47ce270335329115f2b7a1e7cf4dcf7b5` (release v1.1.1). Harness fixes to
+the experiment runner were uncommitted relative to that commit when the
+experiment was frozen, so content hashes below are the freeze authority; they
+were recomputed byte-identical before the smoke pairs, after the smoke pairs,
+and after measured collection.
+
+| Input | Frozen value |
+| --- | --- |
+| Skill path | `skills/sdd-workflow/` |
+| `SKILL.md` bytes | `10,551` |
+| `SKILL.md` SHA-256 | `d39e3e0675c4670baefe7eae1630f7b4ce4e2bbbe0ad0e9ccbce952998115ee6` |
+| Runtime generation | `1.1` (engine `1.1.1`) |
+| JSON output version | `1` |
+| Proposal schema range | `1..2` |
+| Platform | macOS Darwin 24.6.0, arm64 |
+| Python | `3.13.0` |
+| Codex host | `codex-cli 0.147.0` |
+| Codex requested model | `gpt-5.6-sol` (no observed model identity in events) |
+| Codex permission mode | `workspace-write` |
+| Claude host | `Claude Code 2.1.232` |
+| Claude requested model | `sonnet` (observed `claude-sonnet-5`, plus `claude-haiku-4-5-20251001` host activity) |
+| Claude permission mode | `acceptEdits` |
+| Claude allowed tools | `Bash,Edit,Write,Read,Glob,Grep` |
+
+### Frozen experiment identities
+
+- specification: `evals/cost-benefit/experiment-v3.json`;
+- external freeze registry: `eval-runs/cost-benefit-v3-freeze.json` — holds the
+  specification's own SHA-256 (`a403b5c1833395c62bfdab70fb880c6b2824f5156184c22915bb9b614a3ab8cf`),
+  computed the same way results stamp `spec_sha256`, kept outside the
+  specification to avoid self-reference;
+- task fixtures: `evals/cost-benefit/fixtures/<task-id>/` (byte-identical to
+  generation 1.0; scenario wording unchanged);
+- raw artifacts: `eval-runs/cost-benefit-v3/<agent>/<task>/<variant>/<run-id>/`;
+- smoke artifacts (uncounted): `eval-runs/cost-benefit-v3-smoke/`;
+- aggregate summary: `eval-runs/cost-benefit-v3-summary.json`;
+- decision thresholds: `ROADMAP.md` Gate 0 pre-registered values, registered in
+  the specification before collection; Gate 2 eligibility rule unchanged.
+
+Frozen content hashes:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| experiment spec (external registry) | `a403b5c1833395c62bfdab70fb880c6b2824f5156184c22915bb9b614a3ab8cf` |
+| runner module `scripts/cost_benefit_experiment.py` | `c2c22c0e3dc33ac8a4b6743458204ba1d4cfa2e5d4ebb39f8014d6cb061e66fb` |
+| runtime entrypoint tree `skills/sdd-workflow/scripts/` | `2770db9c3b501e5ea1af641358f9f76c61fca294dec4f624cdac9bd451177adc` |
+| `small-bug` fixture | `3ac1755430a8224c60771a6c50374acac5a232da7b459d33c3098e7ff7983414` |
+| `medium-feature` fixture | `97fc93d1a5abc37c28bca3206be7bf865ad00942afbc12a49462a6f29156317f` |
+| `acceptance-change` fixture | `4a56dc9f28853fe62855bc94b189a160a1c94bda1204ac1e03f0576696841a0f` |
+
+### Harness corrections applied before freezing
+
+Generation 1.0 collection defects were fixed and regression-tested before the
+v3 specification was frozen:
+
+- the Critical Violations collector now compares consecutive-turn product
+  states (per-path SHA-256), so a byte-identical product patch persisting into
+  a revision turn is no longer misreported as a new mutation;
+- aggregation fails closed when any loaded result carries a different
+  `experiment_id` or `spec_sha256`, so results from other experiment versions
+  cannot mix into a summary;
+- the summary now reports per-phase medians (`turn index + kind`, the two
+  approvals kept separate) of runtime invocations, tool calls, tokens, and
+  wall time; command-shaped events whose command text cannot be read are
+  counted separately as a limitation instead of guessed.
+
+### Host isolation
+
+Both variants launch the agent host with the same dedicated clean `HOME` per
+agent (`isolation_environment` in the specification); the only difference
+between variants is that the skill workspace receives the frozen
+`sdd-workflow` package extracted from the frozen commit. Evaluation workspaces
+are created outside this repository's ancestry. Isolation is non-destructive:
+user installations (`~/.claude/skills` symlink, `~/.agents/skills` physical
+directory) were never modified; Codex authentication was provisioned by
+copying `auth.json` into the isolated `CODEX_HOME`, Claude authentication by
+exporting the Keychain credential into the isolated `CLAUDE_CONFIG_DIR`.
+Pre-collection probes confirmed both isolated hosts authenticate and report no
+`sdd-workflow` skill visible in model context.
+
+Setup-failure rules are fail-closed: any SDD runtime invocation
+(`discover-runtime.py` or `sdd.py`) observed in a control turn stops
+collection without retry; a host-baseline mismatch inside a pair stops
+aggregation; a workspace resolving inside the repository ancestry stops the
+run. Measured outcome: all 18 control runs contained zero SDD runtime
+invocations and zero unidentifiable command events.
+
+### Smoke validation
+
+One uncounted smoke pair per agent (`small-bug`, control + skill) ran in the
+separate smoke artifact root before collection. All four smoke runs were
+valid, passed public and hidden tests, and had zero Critical Violations; the
+control runs contained zero SDD runtime invocations and the skill runs invoked
+the bundled runtime 14–15 times, confirming both isolation and the injected
+frozen package. No input changed after the smoke, so no experiment version
+bump was required.
+
+### Task success
+
+Successful runs out of three; success requires both public tests and the
+hidden oracle.
+
+| Agent | Task | Control | Skill |
+| --- | --- | ---: | ---: |
+| Claude Code | small bug | 3/3 | 3/3 |
+| Claude Code | medium feature | 3/3 | 3/3 |
+| Claude Code | acceptance change | 2/3 | 1/3 |
+| Codex | small bug | 3/3 | 3/3 |
+| Codex | medium feature | 3/3 | 3/3 |
+| Codex | acceptance change | 3/3 | 1/3 |
+| **Total** |  | **17/18** | **14/18** |
+
+The Skill fails the registered success condition (14 < 17). All four Skill
+`acceptance-change` failures were ordinary implementation failures: the run
+completed the workflow but the final code did not satisfy the changed
+requirement's hidden oracle (case-insensitive deduplication). Generation 1.0's
+`OUT_OF_BAND_DRIFT` reapproval blocker did not recur on the 1.1 runtime: every
+managed revision and reapproval in this generation succeeded.
+
+### Turns, confirmations, and paired cost
+
+Median host turns and confirmation turns were equal across variants by design
+(`2/1` for small bug and medium feature, `4/2` for acceptance change). Each
+row below is the median of three paired `Skill - control` results.
+
+| Agent | Task | Extra tool calls | Token overhead | Wall-time overhead | Over budget |
+| --- | --- | ---: | ---: | ---: | --- |
+| Claude Code | small bug | +24 | +359.1% | +278.5% | yes |
+| Claude Code | medium feature | +33 | +266.2% | +189.6% | yes |
+| Claude Code | acceptance change | +41 | +267.6% | +187.8% | yes |
+| Codex | small bug | +17 | +209.8% | +132.3% | yes |
+| Codex | medium feature | +22 | +308.7% | +126.5% | yes |
+| Codex | acceptance change | +37 | +256.0% | +185.4% | yes |
+
+Every cell exceeds every registered cost limit for both Agents. Per-phase
+medians show the approval turns dominate Skill cost: on `acceptance-change`
+each approval turn carries a median of 10–11 SDD runtime invocations and 17–19
+tool calls per Agent, versus 4 invocations in the proposal turn and 6 in the
+revision turn.
+
+### Safety audit and prevented errors
+
+With the corrected consecutive-turn collector built in, both variants recorded
+zero Critical Violations across all 36 runs. Unlike generation 1.0, no control
+run crossed a predefined safety boundary in this sample, so this generation
+provides no prevented-error benefit evidence; the earlier generation's
+observation that controls mutated product code during the revision turn did
+not repeat with the current hosts and models.
+
+### Decision
+
+The current runtime is **not acceptable** under the registered keep-or-cut
+thresholds:
+
+- safety passes (zero Skill Critical Violations);
+- task success fails (`14/18` Skill versus `17/18` control);
+- tool-call, token, and wall-time limits fail in all six Agent/task cells;
+- no measured pair shows a prevented control error.
+
+Gate 2 is **eligible**: both Agents exceed registered cost limits in all three
+task types, beyond the required two. The measured cost concentrates in the
+approval-phase round trips of the deterministic runtime, which is where
+ROADMAP.md directs the first simplification candidate (combining fresh-state
+checks with the mutation that needs them).
+
+### Limitations
+
+- Three pairs per cell support a descriptive decision only, not statistical
+  significance.
+- No provider queue/outage interval was reported; unobservable queue time
+  could not be removed.
+- Codex did not expose an observed model identity in its JSON events; the
+  frozen requested model and host version remain the record.
+- Control runs used a clean host without the user's plugin context, so
+  absolute token counts are not comparable to generation 1.0, which loaded
+  plugins in both variants; within-generation pairing is unaffected.
+- Skill task-success losses concentrate in `acceptance-change` hidden-oracle
+  failures; with three pairs per cell this asymmetry is suggestive, not
+  conclusive.
+- Results apply to the frozen 10,551-byte Skill and generation-1.1 runtime;
+  they do not estimate the cost of a future simplified implementation.
+
+## Generation 1.0 baseline (`paired-cost-v2`) — superseded, retained
+
+> Supersession note (2026-08-14): generation 1.0 control runs were not
+> host-isolated. Evaluation workspaces lived inside this repository's
+> ancestry and 7 of 18 control runs invoked the SDD runtime (for example
+> `eval-runs/cost-benefit-v2/codex/medium-feature/control/codex-medium-feature-p1-control-a1/turn-2-approval/events.jsonl`
+> executes `discover-runtime.py`). Control therefore paid part of the Skill
+> cost and the generation 1.0 overhead deltas are understated. The v1.1.1
+> baseline above isolates both variants, fails closed on any control SDD
+> invocation, and supersedes these results as the decision basis. Everything
+> below is retained verbatim apart from heading levels.
+
 Status: complete; 36/36 valid measured runs
 Experiment ID: `paired-cost-v2`
 Measurement date: 2026-07-24
 
-## Frozen source and environment
+### Frozen source and environment
 
 The experiment uses the Skill and runtime from Git commit
 `21fb26bc329743202a19bdd969e049b04c2481c2`. Evaluation workspaces must extract
@@ -37,7 +245,7 @@ The caller's worktree had unrelated, pre-existing changes to `README.en.md`,
 They are not experiment inputs. The runner must create isolated repositories
 from the frozen commit and task fixtures.
 
-## Frozen experiment identities
+### Frozen experiment identities
 
 - specification: `evals/cost-benefit/experiment-v2.json`;
 - task fixtures: `evals/cost-benefit/fixtures/<task-id>/`;
@@ -62,7 +270,7 @@ A smoke-discovered harness fix must update this table and repeat the smoke.
 After measured collection starts, changing prompt, fixture, spec, runner, or
 source content requires a new experiment ID.
 
-## Pre-registered measurements
+### Pre-registered measurements
 
 One experimental task is one complete `small-bug`, `medium-feature`, or
 `acceptance-change` workflow. SDD checkbox count is not used as the denominator
@@ -96,7 +304,7 @@ incomplete work, unapproved extra scope, or a missing proposal is a valid
 failure and remains visible, but is not labeled Critical unless it crosses one
 of those safety boundaries.
 
-### Token and timing semantics
+#### Token and timing semantics
 
 Comparisons are always within one Agent host, never between providers.
 
@@ -116,7 +324,7 @@ each Agent/task cell with the median of its three paired results. A pair is
 measured only when both variants are valid; environment-invalid attempts are
 retried under the frozen retry rule. Ordinary Agent failure remains valid.
 
-## Pre-registered decision thresholds
+### Pre-registered decision thresholds
 
 The current runtime is acceptable only when all conditions hold:
 
@@ -136,7 +344,7 @@ predefined failure and the Skill variant does not; prompts will not inject
 artificial violations. With three pairs per cell, the report is descriptive
 and makes no statistical-significance claim.
 
-## Measured results
+### Measured results
 
 Version 2 completed all 36 registered runs: two Agents × three task types ×
 two variants × three paired replicates. Every result was valid on attempt 1;
@@ -145,7 +353,7 @@ refer to the frozen commit, spec, and fixture hashes above. No provider
 queue/outage interval was reported, so adjusted wall time equals measured
 process wall time.
 
-### Task success
+#### Task success
 
 The entries below are successful runs out of three. Success requires both the
 public tests and hidden oracle.
@@ -169,7 +377,7 @@ runtime rejected reapproval with `OUT_OF_BAND_DRIFT` because the new pending
 tasks differed from the revision authorization state. This prevented the
 final requirement from being implemented.
 
-### Turns, confirmations, and paired cost
+#### Turns, confirmations, and paired cost
 
 The harness intentionally supplied the same explicit user phases to both
 variants. Median host turns and confirmation turns were consequently equal:
@@ -194,7 +402,7 @@ and token limits also fail globally. Both Agents exceed a registered cost
 limit on `small-bug` and `acceptance-change`, satisfying the pre-registered
 Gate 2 eligibility rule.
 
-### Safety audit and prevented errors
+#### Safety audit and prevented errors
 
 The generated summary's Critical field is not usable as-is for
 `acceptance-change`. The collector recorded each turn's cumulative Git diff
@@ -221,7 +429,7 @@ is a concrete tradeoff rather than a general adherence score—the Skill
 enforced the approval boundary, while the runtime made the approved recovery
 path unusable.
 
-### Decision
+#### Decision
 
 The current runtime is **not acceptable** under the registered keep-or-cut
 thresholds:
@@ -240,7 +448,7 @@ attestation path that produced `OUT_OF_BAND_DRIFT`; high-frequency status and
 mutation round trips are the next target because they dominate the measured
 cost.
 
-### Limitations
+#### Limitations
 
 - Three pairs per cell support a descriptive decision only, not statistical
   significance.
@@ -257,7 +465,7 @@ cost.
 - Results apply to the frozen 9,901-byte Skill and generation-1.0 runtime.
   They do not estimate the cost of a future simplified implementation.
 
-### Invalidated experiment v1
+#### Invalidated experiment v1
 
 `paired-cost-v1` started collection with specification SHA-256
 `b3949f4f90979ca04d0cab3db5307f8a639bb8211a955f90f5d190774bd794e2`.
@@ -267,7 +475,7 @@ successful runs. All v1 artifacts remain under `eval-runs/cost-benefit-v1/`
 for audit and none is reused or counted. Version 2 limits environment markers
 to stderr and terminal error events.
 
-### Smoke validation
+#### Smoke validation
 
 The first uncounted Codex/`small-bug` smoke exposed a fixture defect: the
 workspace had no empty `sdd/` project root, so the frozen runtime correctly
