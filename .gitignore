@@ -1,4 +1,8 @@
 # 本 repo dogfood 自己的 SDD workflow，但 repo 根目錄的 sdd/ 產出物只留在本機，不進版控
 # （已於 2026-07-22 自 git 歷史中移除）；錨定根目錄，避免吞掉 tests/fixtures 內的 sdd/ 目錄
 /sdd/
-/eval-runs/
+/eval-runs/*
+!/eval-runs/cost-benefit-v3-freeze.json
+!/eval-runs/cost-benefit-v4-freeze.json
+!/eval-runs/cost-benefit-v5-freeze.json
+!/eval-runs/cost-benefit-v6-freeze.json

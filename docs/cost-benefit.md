@@ -1,9 +1,86 @@
 # Skill cost-benefit baseline
 
-This document records three frozen generations. `paired-cost-v4` measures the
-Gate 2 Candidate A change against the v1.1.1 baseline (`paired-cost-v3`). The
-generation 1.0 baseline (`paired-cost-v2`) remains below with its supersession
-note; no prior result is overwritten.
+This document records the frozen experiment generations. `paired-cost-v6`
+measures folded package verification against the retained Gate 2 Candidate A
+package. `paired-cost-v5` is retained as an invalid pilot. Earlier generations
+remain below; no prior result is overwritten.
+
+## Folded package verification measurement (`paired-cost-v6`)
+
+Status: complete; **CUT**; 36/36 valid measured runs, zero retries.
+
+Experiment ID: `paired-cost-v6`.
+
+Measurement date: 2026-08-17
+
+The candidate folded package verification into the first ordinary CLI call,
+issued CLI output v2 with verified runtime evidence, and removed the separate
+per-turn discovery call from the Skill. It was measured as a complete frozen
+Skill package against the frozen `paired-cost-v4` Skill package on the same
+current hosts. This is a within-experiment Skill-vs-Skill non-inferiority
+design. The Skill-control overhead is not remeasured; the v4 control result
+remains the Gate 0 authority.
+
+### Frozen inputs and evidence
+
+| Input | Frozen value |
+| --- | --- |
+| specification | `evals/cost-benefit/experiment-v6.json` |
+| specification SHA-256 | `9a0178c42ce3fea3e62c830c72f89b926e9abb0501fa801303f2fb1960f970da` |
+| raw artifacts | `eval-runs/cost-benefit-v6/` |
+| smoke artifacts | `eval-runs/cost-benefit-v6-smoke/` |
+| aggregate summary | `eval-runs/cost-benefit-v6-summary.json` |
+| baseline package tree | `4645d55f869e90da4e0eb1e12240cd08bec47d2a168e3b77dad9a661c9703c6c` |
+| candidate package tree | `2b228c4c6dec1d266c9eeae3d0e6d23b339b1f6ee01a9dcaaea620693159479c` |
+| candidate `SKILL.md` SHA-256 | `57d36c777fe374f0ee780ccb847ba4be68b4455db3c2d1639af01370f9410606` |
+| runner module SHA-256 | `0f2a24d9716f1f4b891f50bb1136c25bc9ccf28b7bfb174349aa7957a1fd13af` |
+| Codex host/model | `codex-cli 0.147.0` / `gpt-5.6-sol` |
+| Claude host/model | `Claude Code 2.1.233` / `sonnet` |
+
+One uncounted `small-bug` smoke pair per Agent completed successfully before
+formal collection. The measured matrix then completed all 18 randomized pairs
+on attempt 1. All 36 slots were valid, all command events were attributable,
+and all candidate runs recorded zero Critical Violations.
+
+### Paired cell results
+
+Each row is the median of three frozen baseline/candidate runs.
+
+| Agent | Task | Success | Calls | Tokens | Wall seconds |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Claude | small bug | 3/3 → 3/3 | 26 → 28 | 1,097,314 → 1,252,280 | 88.3 → 84.8 |
+| Claude | medium feature | 2/3 → 2/3 | 30 → 40 | 1,315,239 → 1,730,524 | 157.8 → 183.2 |
+| Claude | acceptance change | 2/3 → 2/3 | 55 → 55 | 2,367,913 → 2,530,879 | 262.6 → 250.7 |
+| Codex | small bug | 3/3 → 3/3 | 23 → 22 | 486,109 → 473,434 | 158.5 → 147.7 |
+| Codex | medium feature | 3/3 → 3/3 | 29 → 24 | 697,270 → 570,603 | 238.1 → 207.6 |
+| Codex | acceptance change | 1/3 → 1/3 | 47 → 42 | 1,027,270 → 912,181 | 428.2 → 315.0 |
+| **Total** |  | **14/18 → 14/18** |  |  |  |
+
+Safety and task-success non-inferiority passed. The measurement conditions did
+not: tool-call medians decreased in only `3/6` cells rather than the required
+majority of four; the Claude small-bug and medium-feature token medians exceeded
+baseline by more than 10%, and Claude medium-feature wall time did too. Runtime
+invocations were not exactly one lower in every phase: three Claude phases had
+delta `0`, and Codex medium-feature approval had delta `-2`. Therefore the
+candidate failed the deterministic reduction shape as well as the aggregate
+cost cap.
+
+The registered result is **CUT**. The candidate runtime and `SKILL.md` changes
+were reverted together; the experiment specifications, raw evidence, summary,
+classifier regression, and decision record remain. See
+[`docs/decisions/2026-08-17-cut-gate2-folded-package-verification.md`](decisions/2026-08-17-cut-gate2-folded-package-verification.md).
+
+### Invalid `paired-cost-v5` pilot
+
+The first formal collection produced 36 files, but all 18 Claude slots ended
+with a revoked-token HTTP 401. The environment classifier matched
+`authentication` but not the observed word `authenticate`, so those host
+failures were initially and incorrectly marked valid. Its aggregate summary is
+not decision evidence. The classifier now recognizes the observed terminal
+shape, with an exact regression test; the corrected experiment was assigned
+the new `paired-cost-v6` identity and collected from scratch. The invalid v5
+specification (`c96df6b1d144dc0d455f1e4bf14193455ff98955d739384345f3c95b2b81f044`)
+and local raw artifacts are retained for audit rather than overwritten.
 
 ## Gate 2 Candidate A measurement (`paired-cost-v4`)
 

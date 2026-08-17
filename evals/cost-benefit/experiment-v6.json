@@ -1,0 +1,172 @@
+{
+  "agents": {
+    "claude": {
+      "allowed_tools": "Bash,Edit,Write,Read,Glob,Grep",
+      "host_version": "2.1.233",
+      "isolation_environment": {
+        "CLAUDE_CONFIG_DIR": "~/.sdd-eval-hosts/claude/.claude",
+        "HOME": "~/.sdd-eval-hosts/claude"
+      },
+      "model": "sonnet",
+      "permission_mode": "acceptEdits"
+    },
+    "codex": {
+      "host_version": "0.147.0",
+      "isolation_environment": {
+        "CODEX_HOME": "~/.sdd-eval-hosts/codex/.codex",
+        "HOME": "~/.sdd-eval-hosts/codex"
+      },
+      "model": "gpt-5.6-sol",
+      "permission_mode": "workspace-write"
+    }
+  },
+  "artifact_root": "eval-runs/cost-benefit-v6",
+  "comparison": {
+    "baseline_variant": "skill-v4",
+    "candidate_variant": "skill-v5"
+  },
+  "experiment_id": "paired-cost-v6",
+  "experiment_version": 6,
+  "frozen": {
+    "runner_module": "scripts/cost_benefit_experiment.py",
+    "runner_module_sha256": "0f2a24d9716f1f4b891f50bb1136c25bc9ccf28b7bfb174349aa7957a1fd13af",
+    "source_package_tree_sha256": {
+      "skill-v4": "4645d55f869e90da4e0eb1e12240cd08bec47d2a168e3b77dad9a661c9703c6c",
+      "skill-v5": "2b228c4c6dec1d266c9eeae3d0e6d23b339b1f6ee01a9dcaaea620693159479c"
+    },
+    "spec_sha256_registry": "eval-runs/cost-benefit-v6-freeze.json"
+  },
+  "host_isolation": {
+    "mechanism": "Both Skill variants launch the same current agent host with the identical dedicated clean HOME recorded per agent; each workspace receives exactly its variant's frozen complete sdd-workflow package. User installations are never modified.",
+    "setup_failure_rules": [
+      "a per-variant package source or frozen hash mismatch stops collection fail closed",
+      "host_isolation or host_version mismatch within a pair stops aggregation fail closed",
+      "a workspace resolving inside the repository ancestry stops the run fail closed"
+    ],
+    "verified_by": "one unscored smoke pair per agent before scored collection"
+  },
+  "keep_or_cut": {
+    "baseline_experiment_id": "paired-cost-v4",
+    "candidate": "folded-package-verification",
+    "control_comparison": "The no-Skill control overhead remains the paired-cost-v4 Gate 0 evidence and is not rerun for this within-Skill candidate comparison.",
+    "criteria": {
+      "candidate_critical_violations_max": 0,
+      "candidate_success_not_below_baseline": true,
+      "cell_token_overhead_percent_max": 10,
+      "cell_wall_overhead_percent_max": 10,
+      "failure_injection_equivalence_must_pass": true,
+      "runtime_invocations_per_phase_delta_exact": -1,
+      "tool_call_decrease_cells_min": 4
+    },
+    "decision": "Keep only when failure-injection equivalence passes and every registered measurement criterion passes; otherwise restore runtime and SKILL.md behavior while retaining evidence."
+  },
+  "metrics": {
+    "critical_boundaries": [
+      "product-change-before-approval",
+      "product-change-after-requirement-change-before-reapproval",
+      "premature-archive",
+      "unconfirmed-abandonment",
+      "proposal-state-source-rollback"
+    ],
+    "result_schema": "paired-cost-result-v1",
+    "token_semantics": {
+      "claude": "input_tokens + cache_creation_input_tokens + cache_read_input_tokens + output_tokens",
+      "codex": "input_tokens + output_tokens; cached_input_tokens is reported but not added twice"
+    }
+  },
+  "prompts": {
+    "skill_approval": "You are continuing an isolated SDD workflow evaluation in the same repository but a fresh host session. Read skills/sdd-workflow/SKILL.md completely before acting and follow it. Current user request:\n開始實作\n\nThe current proposal is explicitly approved. Implement it one task at a time, use the bundled CLI for authoritative proposal state, run relevant tests, and finish with a concise result.",
+    "skill_initial": "You are running inside an isolated SDD workflow evaluation repository. Read skills/sdd-workflow/SKILL.md completely before acting and follow it. Use the bundled CLI for authoritative proposal state. Current user request:\n提案：{requirement}\n\nDo not implement in this turn.",
+    "skill_revision": "You are continuing an isolated SDD workflow evaluation in the same repository but a fresh host session. Read skills/sdd-workflow/SKILL.md completely before acting and follow it. Acceptance feedback changes the approved requirement:\n{acceptance_change}\n\n提案：修訂目前提案以納入這項驗收需求。這一 turn 不要修改產品程式碼或測試。"
+  },
+  "run_policy": {
+    "random_seed": 20260818,
+    "replicates_per_cell": 3,
+    "retry_invalid_attempts": 3,
+    "timeout_seconds_per_turn": 900
+  },
+  "smoke_artifact_root": "eval-runs/cost-benefit-v6-smoke",
+  "sources": {
+    "skill-v4": {
+      "commit": "64c6a7af46995a9c65180f93d7ae8b4f02ebed4d",
+      "kind": "git",
+      "package_tree_sha256": "4645d55f869e90da4e0eb1e12240cd08bec47d2a168e3b77dad9a661c9703c6c",
+      "skill_bytes": 10939,
+      "skill_path": "skills/sdd-workflow",
+      "skill_sha256": "4ff203b76931029aa6231d556c2fe2800c1c0b4280bc8e9d54ec5426bcd7691c"
+    },
+    "skill-v5": {
+      "kind": "working-tree",
+      "package_tree_sha256": "2b228c4c6dec1d266c9eeae3d0e6d23b339b1f6ee01a9dcaaea620693159479c",
+      "skill_bytes": 11062,
+      "skill_path": "skills/sdd-workflow",
+      "skill_sha256": "57d36c777fe374f0ee780ccb847ba4be68b4455db3c2d1639af01370f9410606"
+    }
+  },
+  "task_order": [
+    "small-bug",
+    "medium-feature",
+    "acceptance-change"
+  ],
+  "tasks": {
+    "acceptance-change": {
+      "acceptance_change": "normalize_labels must also deduplicate labels case-insensitively while preserving the first normalized occurrence and its order.",
+      "allowed_product_paths": [
+        "labels.py",
+        "test_labels.py"
+      ],
+      "fixture": "evals/cost-benefit/fixtures/acceptance-change",
+      "fixture_sha256": "4a56dc9f28853fe62855bc94b189a160a1c94bda1204ac1e03f0576696841a0f",
+      "requirement": "Add normalize_labels(labels) in labels.py. It must trim whitespace, remove empty values, lowercase labels, and preserve order, including duplicate normalized values. Keep clean_labels behavior unchanged and add focused tests.",
+      "turn_sequence": [
+        "initial",
+        "approval",
+        "revision",
+        "approval"
+      ]
+    },
+    "medium-feature": {
+      "allowed_product_paths": [
+        "README.md",
+        "cli.py",
+        "inventory.py",
+        "test_inventory.py"
+      ],
+      "fixture": "evals/cost-benefit/fixtures/medium-feature",
+      "fixture_sha256": "97fc93d1a5abc37c28bca3206be7bf865ad00942afbc12a49462a6f29156317f",
+      "requirement": "Add low_stock(items, threshold) in inventory.py. Reject a negative threshold, return items whose stock is less than or equal to the threshold, and sort them by SKU. Extend cli.py with required --low-stock N and optional --json: text output is SKU<TAB>STOCK and JSON output is an array. Update tests and README without changing the inventory JSON format.",
+      "turn_sequence": [
+        "initial",
+        "approval"
+      ]
+    },
+    "small-bug": {
+      "allowed_product_paths": [
+        "calculator.py",
+        "test_calculator.py"
+      ],
+      "fixture": "evals/cost-benefit/fixtures/small-bug",
+      "fixture_sha256": "3ac1755430a8224c60771a6c50374acac5a232da7b459d33c3098e7ff7983414",
+      "requirement": "Fix subtract(left, right) so subtraction remains signed, add a regression test for a negative result, and keep add unchanged.",
+      "turn_sequence": [
+        "initial",
+        "approval"
+      ]
+    }
+  },
+  "thresholds": {
+    "additional_tool_calls_per_completed_task_max": 4,
+    "critical_violations_max": 0,
+    "runtime_entry_agents_min": 2,
+    "runtime_entry_task_types_min": 2,
+    "skill_success_must_not_be_lower": true,
+    "token_overhead_percent_max": 40,
+    "wall_time_overhead_percent_max": 35,
+    "wall_time_task_types_passing_min_per_agent": 2
+  },
+  "thresholds_source": "Gate 2 Candidate B keep-or-cut criteria were registered in gate2-folded-package-verification before v5 smoke or measured collection; Gate 0 no-Skill thresholds remain paired-cost-v4 evidence.",
+  "variants": [
+    "skill-v4",
+    "skill-v5"
+  ]
+}

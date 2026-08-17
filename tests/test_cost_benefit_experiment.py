@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import stat
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -200,6 +201,22 @@ class CostBenefitExperimentTests(unittest.TestCase):
         )
         self.assertEqual(sorted(first), ["control", "skill"])
 
+    def test_tilde_isolation_environment_matches_absolute_values(self) -> None:
+        with mock.patch.dict(os.environ, {"HOME": "/tmp/sdd-eval-home"}):
+            expanded = experiment.expand_isolation_environment(
+                {
+                    "HOME": "~/.sdd-eval-hosts/codex",
+                    "CODEX_HOME": "~/.sdd-eval-hosts/codex/.codex",
+                }
+            )
+        self.assertEqual(
+            expanded,
+            {
+                "HOME": "/tmp/sdd-eval-home/.sdd-eval-hosts/codex",
+                "CODEX_HOME": "/tmp/sdd-eval-home/.sdd-eval-hosts/codex/.codex",
+            },
+        )
+
     def test_tool_and_token_parsing_for_both_hosts(self) -> None:
         codex_events = [
             {
@@ -289,6 +306,31 @@ class CostBenefitExperimentTests(unittest.TestCase):
                 ],
             ),
             "host-environment:quota",
+        )
+        self.assertEqual(
+            experiment.classify_invalid(
+                returncode=1,
+                timed_out=False,
+                stdout=(
+                    '{"type":"result","is_error":true,"api_error_status":401,'
+                    '"terminal_reason":"api_error","result":"Failed to authenticate. '
+                    'OAuth access token has been revoked."}\n'
+                ),
+                stderr="",
+                events=[
+                    {
+                        "type": "result",
+                        "is_error": True,
+                        "api_error_status": 401,
+                        "terminal_reason": "api_error",
+                        "result": (
+                            "Failed to authenticate. API Error: 401 OAuth access "
+                            "token has been revoked."
+                        ),
+                    }
+                ],
+            ),
+            "host-environment:authenticate",
         )
 
     def make_fake_host(self, directory: Path, source: str = FAKE_HOST) -> Path:
@@ -558,19 +600,37 @@ class CostBenefitExperimentTests(unittest.TestCase):
         self.assertNotEqual(spec["smoke_artifact_root"], spec["artifact_root"])
 
         frozen = spec["frozen"]
+        runner = subprocess.run(
+            [
+                "git",
+                "show",
+                f"{spec['source']['commit']}:{frozen['runner_module']}",
+            ],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        )
         self.assertEqual(
             frozen["runner_module_sha256"],
-            experiment.sha256_file(ROOT / frozen["runner_module"]),
+            experiment.sha256_bytes(runner.stdout),
         )
-        self.assertEqual(
-            frozen["runtime_entrypoint_tree_sha256"],
-            experiment.tree_sha256(ROOT / frozen["runtime_entrypoint"]),
-        )
-        skill_file = ROOT / spec["source"]["skill_path"] / "SKILL.md"
-        self.assertEqual(
-            spec["source"]["skill_sha256"], experiment.sha256_file(skill_file)
-        )
-        self.assertEqual(spec["source"]["skill_bytes"], skill_file.stat().st_size)
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            experiment.extract_frozen_skill(workspace, spec)
+            package = workspace / spec["source"]["skill_path"]
+            self.assertEqual(
+                frozen["runtime_entrypoint_tree_sha256"],
+                experiment.tree_sha256(package / "scripts"),
+            )
+            skill_file = package / "SKILL.md"
+            self.assertEqual(
+                spec["source"]["skill_sha256"],
+                experiment.sha256_file(skill_file),
+            )
+            self.assertEqual(
+                spec["source"]["skill_bytes"],
+                skill_file.stat().st_size,
+            )
         for task in spec["tasks"].values():
             self.assertEqual(
                 experiment.tree_sha256(ROOT / task["fixture"]),
@@ -614,6 +674,105 @@ class CostBenefitExperimentTests(unittest.TestCase):
         self.assertTrue(
             criteria["skill_tool_calls_per_completed_task_median_must_decrease"]
         )
+
+    def test_experiment_v6_uses_frozen_skill_variants_and_portable_hosts(self) -> None:
+        spec_path = ROOT / "evals/cost-benefit/experiment-v6.json"
+        freeze_path = ROOT / "eval-runs/cost-benefit-v6-freeze.json"
+        raw = spec_path.read_text(encoding="utf-8")
+        spec = json.loads(raw)
+        freeze = experiment.read_json(freeze_path)
+
+        self.assertNotIn(str(Path.home()), raw)
+        self.assertEqual(experiment.variant_names(spec), ["skill-v4", "skill-v5"])
+        self.assertEqual(
+            experiment.comparison_variants(spec),
+            ("skill-v4", "skill-v5"),
+        )
+        self.assertEqual(spec["agents"]["claude"]["host_version"], "2.1.233")
+        self.assertEqual(spec["agents"]["codex"]["host_version"], "0.147.0")
+        self.assertEqual(
+            spec["frozen"]["runner_module_sha256"],
+            experiment.sha256_file(ROOT / spec["frozen"]["runner_module"]),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            experiment.extract_frozen_skill(workspace, spec, "skill-v4")
+            source = spec["sources"]["skill-v4"]
+            package = workspace / source["skill_path"]
+            self.assertEqual(
+                experiment.tree_sha256(package),
+                source["package_tree_sha256"],
+            )
+            self.assertEqual(
+                experiment.sha256_file(package / "SKILL.md"),
+                source["skill_sha256"],
+            )
+        self.assertEqual(
+            spec["sources"]["skill-v5"]["package_tree_sha256"],
+            spec["frozen"]["source_package_tree_sha256"]["skill-v5"],
+        )
+        self.assertEqual(freeze["experiment_id"], spec["experiment_id"])
+        self.assertEqual(freeze["spec_sha256"], experiment.sha256_file(spec_path))
+        self.assertEqual(
+            freeze["frozen_hashes"],
+            {
+                "runner_module_sha256": spec["frozen"]["runner_module_sha256"],
+                "source_package_tree_sha256": spec["frozen"][
+                    "source_package_tree_sha256"
+                ],
+            },
+        )
+
+    def test_v6_candidate_measurement_criteria_are_computed(self) -> None:
+        spec_path = ROOT / "evals/cost-benefit/experiment-v6.json"
+        spec = experiment.read_json(spec_path)
+        spec_sha256 = experiment.sha256_file(spec_path)
+        results = []
+        for agent in spec["agents"]:
+            for task in spec["task_order"]:
+                for replicate in range(1, 4):
+                    for variant, calls, tokens, wall, invocations in (
+                        ("skill-v4", 10, 100, 10, 2),
+                        ("skill-v5", 8, 105, 10.5, 1),
+                    ):
+                        result = self.synthetic_result(
+                            agent=agent,
+                            task=task,
+                            replicate=replicate,
+                            variant=variant,
+                            calls=calls,
+                            tokens=tokens,
+                            wall=wall,
+                        )
+                        result["experiment_id"] = spec["experiment_id"]
+                        result["spec_sha256"] = spec_sha256
+                        result["turns"] = [
+                            {
+                                "turn": index,
+                                "kind": kind,
+                                "tool_calls": calls,
+                                "tokens": {"total_tokens": tokens},
+                                "wall_seconds": wall,
+                                "runtime_invocations": invocations,
+                                "unidentified_command_events": 0,
+                            }
+                            for index, kind in enumerate(
+                                spec["tasks"][task]["turn_sequence"], start=1
+                            )
+                        ]
+                        results.append(result)
+        summary = experiment.aggregate_results(
+            results,
+            spec,
+            expected_spec_sha256=spec_sha256,
+        )
+        decision = summary["decision"]
+        self.assertTrue(summary["complete"])
+        self.assertTrue(decision["candidate_phase_delta_pass"])
+        self.assertTrue(decision["candidate_tokens_pass"])
+        self.assertTrue(decision["candidate_wall_time_pass"])
+        self.assertTrue(decision["candidate_tool_calls_pass"])
+        self.assertTrue(decision["candidate_measurement_pass"])
 
     def test_runtime_invocation_counting_for_both_hosts(self) -> None:
         codex_events = [

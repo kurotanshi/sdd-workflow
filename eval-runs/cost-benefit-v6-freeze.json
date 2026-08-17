@@ -1,0 +1,11 @@
+{
+  "experiment_id": "paired-cost-v6",
+  "frozen_hashes": {
+    "runner_module_sha256": "0f2a24d9716f1f4b891f50bb1136c25bc9ccf28b7bfb174349aa7957a1fd13af",
+    "source_package_tree_sha256": {
+      "skill-v4": "4645d55f869e90da4e0eb1e12240cd08bec47d2a168e3b77dad9a661c9703c6c",
+      "skill-v5": "2b228c4c6dec1d266c9eeae3d0e6d23b339b1f6ee01a9dcaaea620693159479c"
+    }
+  },
+  "spec_sha256": "9a0178c42ce3fea3e62c830c72f89b926e9abb0501fa801303f2fb1960f970da"
+}
