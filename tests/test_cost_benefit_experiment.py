@@ -501,22 +501,6 @@ class CostBenefitExperimentTests(unittest.TestCase):
         )
 
         frozen = spec["frozen"]
-        self.assertEqual(
-            frozen["runner_module_sha256"],
-            experiment.sha256_file(ROOT / frozen["runner_module"]),
-        )
-        self.assertEqual(
-            frozen["runtime_entrypoint_tree_sha256"],
-            experiment.tree_sha256(ROOT / frozen["runtime_entrypoint"]),
-        )
-        skill_file = ROOT / spec["source"]["skill_path"] / "SKILL.md"
-        self.assertEqual(
-            spec["source"]["skill_sha256"],
-            experiment.sha256_file(skill_file),
-        )
-        self.assertEqual(
-            spec["source"]["skill_bytes"], skill_file.stat().st_size
-        )
         for task in spec["tasks"].values():
             self.assertEqual(
                 experiment.tree_sha256(ROOT / task["fixture"]),
@@ -559,6 +543,77 @@ class CostBenefitExperimentTests(unittest.TestCase):
             self.assertIn("HOME", agent["isolation_environment"])
         self.assertEqual(spec["agents"]["codex"]["host_version"], "0.147.0")
         self.assertEqual(spec["agents"]["claude"]["host_version"], "2.1.232")
+
+    def test_experiment_v4_spec_is_frozen_and_isolated(self) -> None:
+        spec_path = ROOT / "evals/cost-benefit/experiment-v4.json"
+        freeze_path = ROOT / "eval-runs/cost-benefit-v4-freeze.json"
+        spec = experiment.read_json(spec_path)
+        freeze = experiment.read_json(freeze_path)
+        v3 = experiment.read_json(ROOT / "evals/cost-benefit/experiment-v3.json")
+
+        self.assertEqual(spec["experiment_id"], "paired-cost-v4")
+        self.assertEqual(spec["artifact_root"], "eval-runs/cost-benefit-v4")
+        self.assertEqual(spec["smoke_artifact_root"], "eval-runs/cost-benefit-v4-smoke")
+        self.assertNotEqual(spec["artifact_root"], v3["artifact_root"])
+        self.assertNotEqual(spec["smoke_artifact_root"], spec["artifact_root"])
+
+        frozen = spec["frozen"]
+        self.assertEqual(
+            frozen["runner_module_sha256"],
+            experiment.sha256_file(ROOT / frozen["runner_module"]),
+        )
+        self.assertEqual(
+            frozen["runtime_entrypoint_tree_sha256"],
+            experiment.tree_sha256(ROOT / frozen["runtime_entrypoint"]),
+        )
+        skill_file = ROOT / spec["source"]["skill_path"] / "SKILL.md"
+        self.assertEqual(
+            spec["source"]["skill_sha256"], experiment.sha256_file(skill_file)
+        )
+        self.assertEqual(spec["source"]["skill_bytes"], skill_file.stat().st_size)
+        for task in spec["tasks"].values():
+            self.assertEqual(
+                experiment.tree_sha256(ROOT / task["fixture"]),
+                task["fixture_sha256"],
+            )
+
+        self.assertEqual(freeze["spec_sha256"], experiment.sha256_file(spec_path))
+        self.assertEqual(freeze["experiment_id"], spec["experiment_id"])
+        self.assertEqual(
+            freeze["frozen_hashes"]["runner_module_sha256"],
+            frozen["runner_module_sha256"],
+        )
+        self.assertEqual(
+            freeze["frozen_hashes"]["runtime_entrypoint_tree_sha256"],
+            frozen["runtime_entrypoint_tree_sha256"],
+        )
+        self.assertEqual(
+            freeze["frozen_hashes"]["skill_sha256"],
+            spec["source"]["skill_sha256"],
+        )
+
+        self.assertEqual(spec["prompts"], v3["prompts"])
+        self.assertEqual(spec["thresholds"], v3["thresholds"])
+        self.assertEqual(spec["host_isolation"], v3["host_isolation"])
+        for task_id, task in spec["tasks"].items():
+            self.assertEqual(task["requirement"], v3["tasks"][task_id]["requirement"])
+            self.assertEqual(
+                task.get("acceptance_change"),
+                v3["tasks"][task_id].get("acceptance_change"),
+            )
+            self.assertEqual(task["turn_sequence"], v3["tasks"][task_id]["turn_sequence"])
+
+        criteria = spec["keep_or_cut"]["criteria"]
+        self.assertEqual(criteria["skill_critical_violations_max"], 0)
+        self.assertEqual(criteria["skill_successes_min"], 14)
+        self.assertEqual(criteria["majority_cell_count_min"], 4)
+        self.assertTrue(criteria["locking_and_retry_regressions_must_pass"])
+        self.assertTrue(
+            criteria["skill_runtime_invocations_per_completed_task_median_must_decrease"]
+        )
+        self.assertTrue(
+            criteria["skill_tool_calls_per_completed_task_median_must_decrease"]
+        )
 
     def test_runtime_invocation_counting_for_both_hosts(self) -> None:
         codex_events = [

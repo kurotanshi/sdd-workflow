@@ -1,9 +1,121 @@
 # Skill cost-benefit baseline
 
-This document records two frozen baseline generations. The v1.1.1 baseline
-(`paired-cost-v3`) is the current decision basis. The generation 1.0 baseline
-(`paired-cost-v2`) is retained unchanged below with a supersession note; no
-prior result is overwritten.
+This document records three frozen generations. `paired-cost-v4` measures the
+Gate 2 Candidate A change against the v1.1.1 baseline (`paired-cost-v3`). The
+generation 1.0 baseline (`paired-cost-v2`) remains below with its supersession
+note; no prior result is overwritten.
+
+## Gate 2 Candidate A measurement (`paired-cost-v4`)
+
+Status: complete; 36/36 valid measured runs, zero retries
+Experiment ID: `paired-cost-v4`
+Measurement date: 2026-08-14
+
+Candidate A makes successful `approve` and `complete-task` results
+self-describing, then chains each returned snapshot into the next mutation.
+The required snapshot and task-digest inputs, transition logic, operation
+identity, and stale-write rejection remain unchanged.
+
+### Frozen source, isolation, and artifacts
+
+The candidate Skill and runtime were frozen at Git commit
+`64c6a7af46995a9c65180f93d7ae8b4f02ebed4d`. The v3 fixtures, prompts,
+thresholds, host versions, and clean-host isolation were reused byte-for-byte;
+only the candidate Skill/runtime changed. Frozen hashes were recomputed after
+measured collection and remained identical.
+
+| Input | Frozen value |
+| --- | --- |
+| specification | `evals/cost-benefit/experiment-v4.json` |
+| specification SHA-256 | `07bd92da0da08b899720cca0304f10feb958af14fe018327b3119fbd9f20dd2e` |
+| raw artifacts | `eval-runs/cost-benefit-v4/` |
+| smoke artifacts | `eval-runs/cost-benefit-v4-smoke/` |
+| aggregate summary | `eval-runs/cost-benefit-v4-summary.json` |
+| `SKILL.md` bytes | `10,939` |
+| `SKILL.md` SHA-256 | `4ff203b76931029aa6231d556c2fe2800c1c0b4280bc8e9d54ec5426bcd7691c` |
+| runner module SHA-256 | `c2c22c0e3dc33ac8a4b6743458204ba1d4cfa2e5d4ebb39f8014d6cb061e66fb` |
+| runtime entrypoint tree SHA-256 | `6f01485cc7388dcbb629e1cd5035fe9d25275c18612b7aba70d9f34c430677d7` |
+| Codex host/model | `codex-cli 0.147.0` / `gpt-5.6-sol` |
+| Claude host/model | `Claude Code 2.1.232` / `sonnet` |
+
+One uncounted `small-bug` smoke pair per Agent ran in the independent smoke
+root. All four smoke runs were valid and successful with zero Critical
+Violations; both controls had zero SDD runtime invocations and both Skill runs
+had ten. The measured matrix then completed all 18 randomized pairs on attempt
+1. Environment-valid task failures remained in the denominator as registered.
+
+### Task success and safety
+
+| Agent | Task | Control | Skill |
+| --- | --- | ---: | ---: |
+| Claude Code | small bug | 3/3 | 3/3 |
+| Claude Code | medium feature | 3/3 | 3/3 |
+| Claude Code | acceptance change | 0/3 | 3/3 |
+| Codex | small bug | 3/3 | 3/3 |
+| Codex | medium feature | 3/3 | 3/3 |
+| Codex | acceptance change | 3/3 | 1/3 |
+| **Total** |  | **15/18** | **16/18** |
+
+All 36 runs recorded zero Critical Violations. Candidate Skill success improved
+from the registered v3 Skill baseline of `14/18` to `16/18`. The v4
+Skill-control difference is recorded for Gate 0, but is not a Candidate A cut
+condition because that gap predates the candidate.
+
+### Skill per-phase comparison with v3
+
+Each entry is the median of three runs, shown as `v3 → v4`. Runtime is the
+number of SDD runtime invocations, calls are total tool calls, tokens are total
+tokens, and wall is adjusted seconds.
+
+| Agent | Task | Phase | Runtime | Calls | Tokens | Wall |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Claude | acceptance change | initial | 4 → 4 | 15 → 14 | 562,751 → 522,245 | 47.7 → 46.0 |
+| Claude | acceptance change | approval 1 | 10 → 6 | 18 → 16 | 779,229 → 724,601 | 64.7 → 69.9 |
+| Claude | acceptance change | revision | 6 → 6 | 13 → 14 | 552,801 → 644,974 | 69.6 → 83.2 |
+| Claude | acceptance change | approval 2 | 10 → 6 | 17 → 14 | 806,597 → 661,587 | 90.6 → 61.2 |
+| Claude | medium feature | initial | 4 → 4 | 17 → 19 | 592,834 → 554,404 | 93.5 → 94.5 |
+| Claude | medium feature | approval | 13 → 9 | 37 → 33 | 1,594,528 → 2,008,977 | 153.7 → 144.0 |
+| Claude | small bug | initial | 4 → 4 | 14 → 13 | 648,408 → 474,569 | 51.3 → 46.6 |
+| Claude | small bug | approval | 10 → 6 | 20 → 15 | 901,495 → 665,259 | 76.5 → 61.1 |
+| Codex | acceptance change | initial | 4 → 4 | 9 → 9 | 185,836 → 182,917 | 66.4 → 81.4 |
+| Codex | acceptance change | approval 1 | 11 → 6 | 18 → 13 | 412,158 → 295,568 | 102.7 → 93.7 |
+| Codex | acceptance change | revision | 6 → 6 | 10 → 10 | 220,204 → 217,940 | 94.8 → 74.6 |
+| Codex | acceptance change | approval 2 | 11 → 6 | 19 → 12 | 451,784 → 283,744 | 95.3 → 112.6 |
+| Codex | medium feature | initial | 4 → 4 | 9 → 10 | 192,656 → 210,099 | 91.2 → 84.2 |
+| Codex | medium feature | approval | 14 → 7 | 23 → 18 | 578,540 → 450,927 | 159.2 → 133.6 |
+| Codex | small bug | initial | 4 → 4 | 10 → 9 | 200,538 → 188,097 | 61.0 → 58.7 |
+| Codex | small bug | approval | 11 → 6 | 18 → 14 | 398,685 → 301,256 | 100.3 → 75.4 |
+
+The candidate affects the approval hot path as intended: approval-phase
+runtime medians fell in every phase (`10–14` to `6–9`) and approval-phase tool
+call medians also fell in every phase. Initial and revision runtime counts were
+unchanged because those paths were outside Candidate A.
+
+Across all Skill runs, the median approval-path cost per completed canonical
+task fell from `5` to `3` runtime invocations and from `9.25` to `7` tool
+calls. This ratio uses the successful `complete-task` operations observed in
+approval turns; all six Agent/task cells decreased on both measures.
+
+### Registered cell-level cost comparison with v3
+
+Each entry is the median paired Skill-minus-control result, `v3 → v4`.
+
+| Agent | Task | Extra calls | Token overhead | Wall overhead |
+| --- | --- | ---: | ---: | ---: |
+| Claude | small bug | 24 → 18 | 359.1% → 244.9% | 278.5% → 186.6% |
+| Claude | medium feature | 33 → 32 | 266.2% → 332.6% | 189.6% → 240.7% |
+| Claude | acceptance change | 41 → 35 | 267.6% → 262.2% | 187.8% → 167.4% |
+| Codex | small bug | 17 → 13 | 209.8% → 180.0% | 132.3% → 145.2% |
+| Codex | medium feature | 22 → 18 | 308.7% → 246.0% | 126.5% → 92.4% |
+| Codex | acceptance change | 37 → 25 | 256.0% → 156.2% | 185.4% → 128.2% |
+
+Extra tool calls decreased in `6/6` cells, token overhead in `5/6`, and wall
+overhead in `4/6`, meeting the registered majority threshold of four cells.
+Absolute v4 Skill-control overhead still exceeds the Gate 0 limits in every
+cell, so the aggregate summary remains `runtime_acceptable: false`; Candidate
+A non-regression and savings are evaluated separately by its pre-registered
+keep-or-cut rule. The resulting **KEEP** decision is recorded in
+[`docs/decisions/2026-08-14-keep-gate2-candidate-a.md`](decisions/2026-08-14-keep-gate2-candidate-a.md).
 
 ## Generation 1.1.1 baseline (`paired-cost-v3`)
 
