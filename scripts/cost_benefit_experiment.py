@@ -31,6 +31,7 @@ DEFAULT_ARTIFACT_ROOT = ROOT / "eval-runs/cost-benefit-v2"
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 ENVIRONMENT_FAILURE_MARKERS = (
     "authentication",
+    "authenticate",
     "unauthorized",
     "api key",
     "quota",
@@ -106,31 +107,82 @@ def run_command(
     )
 
 
-def extract_frozen_skill(workspace: Path, spec: dict[str, Any]) -> None:
-    source = spec["source"]
-    completed = subprocess.run(
-        [
-            "git",
-            "archive",
-            "--format=tar",
-            source["commit"],
-            source["skill_path"],
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        check=False,
-    )
-    if completed.returncode != 0:
-        raise ExperimentError(
-            f"cannot extract frozen Skill: {completed.stderr.decode(errors='replace')}"
+def variant_names(spec: dict[str, Any]) -> list[str]:
+    variants = spec.get("variants", ["control", "skill"])
+    if (
+        not isinstance(variants, list)
+        or len(variants) != 2
+        or len(set(variants)) != 2
+        or not all(isinstance(variant, str) and variant for variant in variants)
+    ):
+        raise ExperimentError("experiment must declare two distinct variants")
+    return variants
+
+
+def comparison_variants(spec: dict[str, Any]) -> tuple[str, str]:
+    comparison = spec.get("comparison", {})
+    baseline = comparison.get("baseline_variant", "control")
+    candidate = comparison.get("candidate_variant", "skill")
+    if {baseline, candidate} != set(variant_names(spec)):
+        raise ExperimentError("comparison variants do not match experiment variants")
+    return baseline, candidate
+
+
+def source_for_variant(spec: dict[str, Any], variant: str) -> dict[str, Any]:
+    sources = spec.get("sources")
+    if sources is None:
+        return spec["source"]
+    if not isinstance(sources, dict) or set(sources) != set(variant_names(spec)):
+        raise ExperimentError("per-variant sources do not match experiment variants")
+    source = sources[variant]
+    if not isinstance(source, dict):
+        raise ExperimentError(f"invalid source for variant: {variant}")
+    return source
+
+
+def expand_isolation_environment(values: dict[str, str]) -> dict[str, str]:
+    return {name: os.path.expanduser(value) for name, value in values.items()}
+
+
+def extract_frozen_skill(
+    workspace: Path,
+    spec: dict[str, Any],
+    variant: str = "skill",
+) -> None:
+    source = source_for_variant(spec, variant)
+    if source.get("kind", "git") == "working-tree":
+        package = ROOT / source["skill_path"]
+        if tree_sha256(package) != source.get("package_tree_sha256"):
+            raise ExperimentError("working-tree Skill package hash does not match")
+        shutil.copytree(package, workspace / source["skill_path"])
+    else:
+        completed = subprocess.run(
+            [
+                "git",
+                "archive",
+                "--format=tar",
+                source["commit"],
+                source["skill_path"],
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            check=False,
         )
-    with tarfile.open(fileobj=io.BytesIO(completed.stdout), mode="r:") as archive:
-        archive.extractall(workspace, filter="data")
+        if completed.returncode != 0:
+            raise ExperimentError(
+                f"cannot extract frozen Skill: {completed.stderr.decode(errors='replace')}"
+            )
+        with tarfile.open(fileobj=io.BytesIO(completed.stdout), mode="r:") as archive:
+            archive.extractall(workspace, filter="data")
     skill_file = workspace / source["skill_path"] / "SKILL.md"
     if sha256_file(skill_file) != source["skill_sha256"]:
         raise ExperimentError("frozen Skill SHA-256 does not match specification")
     if skill_file.stat().st_size != source["skill_bytes"]:
         raise ExperimentError("frozen Skill byte count does not match specification")
+    if source.get("package_tree_sha256") and tree_sha256(
+        workspace / source["skill_path"]
+    ) != source["package_tree_sha256"]:
+        raise ExperimentError("frozen Skill package hash does not match specification")
 
 
 def initialize_workspace(
@@ -147,8 +199,8 @@ def initialize_workspace(
         encoding="utf-8",
     )
     (workspace / "sdd").mkdir()
-    if variant == "skill":
-        extract_frozen_skill(workspace, spec)
+    if variant != "control":
+        extract_frozen_skill(workspace, spec, variant)
     commands = (
         ["git", "init", "-q"],
         ["git", "config", "user.name", "Cost Benefit Harness"],
@@ -392,6 +444,8 @@ def prompt_for(
     turn_kind: str,
 ) -> str:
     key = f"{variant}_{turn_kind}"
+    if key not in spec["prompts"] and variant != "control":
+        key = f"skill_{turn_kind}"
     template = spec["prompts"][key]
     return template.format(
         requirement=task["requirement"],
@@ -481,7 +535,7 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         raise ExperimentError(f"unknown task: {arguments.task}")
     if arguments.agent not in spec["agents"]:
         raise ExperimentError(f"unknown agent: {arguments.agent}")
-    if arguments.variant not in {"control", "skill"}:
+    if arguments.variant not in variant_names(spec):
         raise ExperimentError(f"unknown variant: {arguments.variant}")
     run_id = arguments.run_id or default_run_id()
     if not RUN_ID_PATTERN.fullmatch(run_id):
@@ -521,7 +575,9 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             f"host version mismatch for {arguments.agent}: {executable_version}"
         )
     timeout = arguments.timeout_seconds or spec["run_policy"]["timeout_seconds_per_turn"]
-    isolation_environment = dict(agent_spec.get("isolation_environment", {}))
+    isolation_environment = expand_isolation_environment(
+        agent_spec.get("isolation_environment", {})
+    )
     started = dt.datetime.now(dt.timezone.utc).isoformat()
     invalid_reason: str | None = None
     turns: list[dict[str, Any]] = []
@@ -685,7 +741,7 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "experiment_id": spec["experiment_id"],
             "spec_sha256": sha256_file(arguments.spec),
             "fixture_sha256": fixture_hash,
-            "source": spec["source"],
+            "source": source_for_variant(spec, arguments.variant),
             "run_id": run_id,
             "pair_id": arguments.pair_id,
             "replicate": arguments.replicate,
@@ -759,7 +815,7 @@ def order_for(spec: dict[str, Any], agent: str, task: str, replicate: int) -> li
         f"{spec['run_policy']['random_seed']}:{agent}:{task}:{replicate}".encode()
     )
     seed = int.from_bytes(hashlib.sha256(material).digest()[:8], "big")
-    variants = ["control", "skill"]
+    variants = variant_names(spec).copy()
     random.Random(seed).shuffle(variants)
     return variants
 
@@ -785,6 +841,7 @@ def aggregate_results(
     *,
     expected_spec_sha256: str,
 ) -> dict[str, Any]:
+    baseline_variant, candidate_variant = comparison_variants(spec)
     mismatched = [
         {
             "run_id": result.get("run_id"),
@@ -815,7 +872,7 @@ def aggregate_results(
     pairs: list[dict[str, Any]] = []
     incomplete_pairs: list[dict[str, Any]] = []
     for (agent, task, pair_id), variants in sorted(by_pair.items()):
-        if set(variants) != {"control", "skill"}:
+        if set(variants) != {baseline_variant, candidate_variant}:
             incomplete_pairs.append(
                 {
                     "agent": agent,
@@ -825,41 +882,55 @@ def aggregate_results(
                 }
             )
             continue
-        control = variants["control"]
-        skill = variants["skill"]
-        if control.get("host_isolation") != skill.get("host_isolation") or (
-            control.get("host_version") != skill.get("host_version")
+        baseline = variants[baseline_variant]
+        candidate = variants[candidate_variant]
+        if baseline.get("host_isolation") != candidate.get("host_isolation") or (
+            baseline.get("host_version") != candidate.get("host_version")
         ):
             raise ExperimentError(
                 f"setup failure: host baseline mismatch in pair {pair_id}"
             )
-        control_metrics = control["metrics"]
-        skill_metrics = skill["metrics"]
+        baseline_metrics = baseline["metrics"]
+        candidate_metrics = candidate["metrics"]
         pair = {
             "agent": agent,
             "task": task,
             "pair_id": pair_id,
-            "replicate": skill["replicate"],
-            "control_success": bool(control["task_success"]),
-            "skill_success": bool(skill["task_success"]),
-            "control_critical": len(
-                control["safety"].get("critical_violations", [])
+            "replicate": candidate["replicate"],
+            "baseline_variant": baseline_variant,
+            "candidate_variant": candidate_variant,
+            "baseline_success": bool(baseline["task_success"]),
+            "candidate_success": bool(candidate["task_success"]),
+            "baseline_critical": len(
+                baseline["safety"].get("critical_violations", [])
             ),
-            "skill_critical": len(skill["safety"].get("critical_violations", [])),
+            "candidate_critical": len(
+                candidate["safety"].get("critical_violations", [])
+            ),
+            "baseline_tool_calls": baseline_metrics["tool_calls"],
+            "candidate_tool_calls": candidate_metrics["tool_calls"],
+            "baseline_tokens": baseline_metrics["tokens"]["total_tokens"],
+            "candidate_tokens": candidate_metrics["tokens"]["total_tokens"],
+            "baseline_wall_seconds": baseline_metrics["adjusted_wall_seconds"],
+            "candidate_wall_seconds": candidate_metrics["adjusted_wall_seconds"],
             "additional_tool_calls": (
-                skill_metrics["tool_calls"] - control_metrics["tool_calls"]
+                candidate_metrics["tool_calls"] - baseline_metrics["tool_calls"]
             ),
             "token_overhead_percent": percentage_overhead(
-                skill_metrics["tokens"]["total_tokens"],
-                control_metrics["tokens"]["total_tokens"],
+                candidate_metrics["tokens"]["total_tokens"],
+                baseline_metrics["tokens"]["total_tokens"],
             ),
             "wall_overhead_percent": percentage_overhead(
-                skill_metrics["adjusted_wall_seconds"],
-                control_metrics["adjusted_wall_seconds"],
+                candidate_metrics["adjusted_wall_seconds"],
+                baseline_metrics["adjusted_wall_seconds"],
             ),
         }
+        pair["control_success"] = pair["baseline_success"]
+        pair["skill_success"] = pair["candidate_success"]
+        pair["control_critical"] = pair["baseline_critical"]
+        pair["skill_critical"] = pair["candidate_critical"]
         pair["prevented_critical"] = (
-            pair["control_critical"] > 0 and pair["skill_critical"] == 0
+            pair["baseline_critical"] > 0 and pair["candidate_critical"] == 0
         )
         pairs.append(pair)
 
@@ -894,6 +965,40 @@ def aggregate_results(
                     pair["skill_critical"] for pair in cell_pairs
                 ),
             }
+            cell["baseline_successes"] = cell["control_successes"]
+            cell["candidate_successes"] = cell["skill_successes"]
+            cell["candidate_critical_violations"] = cell[
+                "skill_critical_violations"
+            ]
+            cell["median_baseline_tool_calls"] = statistics.median(
+                pair["baseline_tool_calls"] for pair in cell_pairs
+            )
+            cell["median_candidate_tool_calls"] = statistics.median(
+                pair["candidate_tool_calls"] for pair in cell_pairs
+            )
+            cell["median_baseline_tokens"] = statistics.median(
+                pair["baseline_tokens"] for pair in cell_pairs
+            )
+            cell["median_candidate_tokens"] = statistics.median(
+                pair["candidate_tokens"] for pair in cell_pairs
+            )
+            cell["median_baseline_wall_seconds"] = statistics.median(
+                pair["baseline_wall_seconds"] for pair in cell_pairs
+            )
+            cell["median_candidate_wall_seconds"] = statistics.median(
+                pair["candidate_wall_seconds"] for pair in cell_pairs
+            )
+            cell["median_candidate_token_overhead_percent"] = percentage_overhead(
+                cell["median_candidate_tokens"], cell["median_baseline_tokens"]
+            )
+            cell["median_candidate_wall_overhead_percent"] = percentage_overhead(
+                cell["median_candidate_wall_seconds"],
+                cell["median_baseline_wall_seconds"],
+            )
+            cell["median_tool_calls_decreased"] = (
+                cell["median_candidate_tool_calls"]
+                < cell["median_baseline_tool_calls"]
+            )
             thresholds = spec["thresholds"]
             cell["cost_threshold_exceeded"] = (
                 cell["median_additional_tool_calls"]
@@ -940,6 +1045,36 @@ def aggregate_results(
         }
         for (agent, task, variant, phase), group in sorted(phase_groups.items())
     ]
+    phase_rows = {
+        (row["agent"], row["task"], row["phase"], row["variant"]): row
+        for row in phases
+    }
+    phase_deltas: list[dict[str, Any]] = []
+    for agent in spec["agents"]:
+        for task in spec["task_order"]:
+            for index, kind in enumerate(spec["tasks"][task]["turn_sequence"], start=1):
+                phase = f"turn-{index}-{kind}"
+                baseline = phase_rows.get((agent, task, phase, baseline_variant))
+                candidate = phase_rows.get((agent, task, phase, candidate_variant))
+                if baseline is None or candidate is None:
+                    continue
+                phase_deltas.append(
+                    {
+                        "agent": agent,
+                        "task": task,
+                        "phase": phase,
+                        "baseline_variant": baseline_variant,
+                        "candidate_variant": candidate_variant,
+                        "baseline_median_runtime_invocations": baseline[
+                            "median_runtime_invocations"
+                        ],
+                        "candidate_median_runtime_invocations": candidate[
+                            "median_runtime_invocations"
+                        ],
+                        "delta": candidate["median_runtime_invocations"]
+                        - baseline["median_runtime_invocations"],
+                    }
+                )
 
     thresholds = spec["thresholds"]
     complete = (
@@ -949,9 +1084,9 @@ def aggregate_results(
         * spec["run_policy"]["replicates_per_cell"]
         and not incomplete_pairs
     )
-    skill_critical = sum(pair["skill_critical"] for pair in pairs)
-    control_success = sum(pair["control_success"] for pair in pairs)
-    skill_success = sum(pair["skill_success"] for pair in pairs)
+    skill_critical = sum(pair["candidate_critical"] for pair in pairs)
+    control_success = sum(pair["baseline_success"] for pair in pairs)
+    skill_success = sum(pair["candidate_success"] for pair in pairs)
     calls_pass = all(
         cell["median_additional_tool_calls"]
         <= thresholds["additional_tool_calls_per_completed_task_max"]
@@ -993,6 +1128,46 @@ def aggregate_results(
         and len(jointly_exceeded_tasks)
         >= thresholds["runtime_entry_task_types_min"]
     )
+    candidate_criteria = spec.get("keep_or_cut", {}).get("criteria", {})
+    expected_phase_count = sum(
+        len(spec["tasks"][task]["turn_sequence"])
+        for task in spec["task_order"]
+    ) * len(spec["agents"])
+    registered_delta = candidate_criteria.get(
+        "runtime_invocations_per_phase_delta_exact"
+    )
+    phase_delta_pass = (
+        len(phase_deltas) == expected_phase_count
+        and registered_delta is not None
+        and all(row["delta"] == registered_delta for row in phase_deltas)
+    )
+    token_limit = candidate_criteria.get("cell_token_overhead_percent_max")
+    wall_limit = candidate_criteria.get("cell_wall_overhead_percent_max")
+    tool_cells_min = candidate_criteria.get("tool_call_decrease_cells_min")
+    candidate_tokens_pass = token_limit is not None and all(
+        cell["median_candidate_token_overhead_percent"] <= token_limit
+        for cell in cells
+    )
+    candidate_wall_pass = wall_limit is not None and all(
+        cell["median_candidate_wall_overhead_percent"] <= wall_limit
+        for cell in cells
+    )
+    tool_decrease_cells = sum(
+        cell["median_tool_calls_decreased"] for cell in cells
+    )
+    candidate_tools_pass = (
+        tool_cells_min is not None and tool_decrease_cells >= tool_cells_min
+    )
+    candidate_measurement_pass = (
+        complete
+        and skill_critical
+        <= candidate_criteria.get("candidate_critical_violations_max", -1)
+        and skill_success >= control_success
+        and phase_delta_pass
+        and candidate_tokens_pass
+        and candidate_wall_pass
+        and candidate_tools_pass
+    )
     return {
         "experiment_id": spec["experiment_id"],
         "complete": complete,
@@ -1011,7 +1186,19 @@ def aggregate_results(
         "pairs": pairs,
         "cells": cells,
         "phases": phases,
+        "phase_runtime_invocation_deltas": phase_deltas,
         "decision": {
+            "baseline_variant": baseline_variant,
+            "candidate_variant": candidate_variant,
+            "candidate_critical_violations": skill_critical,
+            "baseline_successes": control_success,
+            "candidate_successes": skill_success,
+            "candidate_phase_delta_pass": phase_delta_pass,
+            "candidate_tokens_pass": candidate_tokens_pass,
+            "candidate_wall_time_pass": candidate_wall_pass,
+            "candidate_tool_calls_pass": candidate_tools_pass,
+            "candidate_tool_call_decrease_cells": tool_decrease_cells,
+            "candidate_measurement_pass": candidate_measurement_pass,
             "skill_critical_violations": skill_critical,
             "control_successes": control_success,
             "skill_successes": skill_success,
@@ -1129,7 +1316,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("small-bug", "medium-feature", "acceptance-change"),
         required=True,
     )
-    run_parser.add_argument("--variant", choices=("control", "skill"), required=True)
+    run_parser.add_argument("--variant", required=True)
     run_parser.add_argument("--run-id")
     run_parser.add_argument("--pair-id", default="manual")
     run_parser.add_argument("--replicate", type=int, default=0)
