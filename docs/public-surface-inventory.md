@@ -79,7 +79,7 @@ repository validation scripts under `tests/`.
 The public and maintainer surface currently names all of the following as
 independent concepts:
 
-- repository/Skill release (`v1.1.1`);
+- repository/Skill release (`v1.1.2`);
 - engine/runtime version and engine generation;
 - frozen protocol identifier (`sdd-protocol-1.0`);
 - proposal schema version/range;

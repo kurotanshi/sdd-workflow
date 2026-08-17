@@ -27,7 +27,7 @@ def invoke(arguments: list[str], *, cwd: Path = ROOT) -> tuple[int, str, str]:
 class CliContractTests(unittest.TestCase):
     def test_version_human_and_json_contract(self) -> None:
         human = invoke(["--version"])
-        self.assertEqual(human, (0, "sdd-workflow 1.1.1 (schema 1..2)\n", ""))
+        self.assertEqual(human, (0, "sdd-workflow 1.1.2 (schema 1..2)\n", ""))
 
         exit_code, stdout, stderr = invoke(["--json", "--version"])
         self.assertEqual(exit_code, 0)

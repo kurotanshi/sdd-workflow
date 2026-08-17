@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v1.1.1 ｜ [繁體中文](./README.md)
+> Version v1.1.2 ｜ [繁體中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -135,9 +135,9 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 
 ---
 
-## v1.1.1
+## v1.1.2
 
-This patch release adds conditional intake rules to the proposal authoring reference: on material ambiguity the agent briefly states the decision-relevant gaps and asks exactly one most-critical question; with sufficient information it drafts directly, marking deferable uncertainty, without a fixed analysis report; a requested implementation approach is not automatically the desired outcome. Existing commands, Skill triggers, the proposal lifecycle, schemas, and JSON output are unchanged.
+This patch release makes successful `approve` and `complete-task` results return the canonical after-state, next snapshot, and next pending task. Agents can chain later mutations without a redundant `status` call. Existing mutation inputs, snapshot/task-digest validation, retry semantics, commands, schemas, and the JSON output version remain unchanged.
 
 Replace the complete package when updating. Never mix files from different releases.
 

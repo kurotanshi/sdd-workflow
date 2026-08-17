@@ -2,6 +2,19 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.1.2 — 2026-08-17
+
+### Added
+- 成功的 `approve` 與 `complete-task` JSON 結果新增可忽略的 `after_state` 與 `next_task` command-data projection；Agent 可直接把回傳 snapshot 鏈入下一個既有 mutation，不再為每次成功結果另跑 `status`。mutation inputs、task identity、operation identity、stale-write rejection 與 retry 行為不變。
+
+### Changed
+- `SKILL.md` 實作迴圈改用 chained snapshot；Gate 2 Candidate A 的 36-run 配對量測為 0 Critical、task success `16/18`，依預登記條件 KEEP。
+- cost-benefit harness 支援 per-variant frozen Skill packages、portable isolation path 與 Skill-vs-Skill 非劣性聚合；修正 revoked-token 回應使用 `authenticate` 時未被判為 host-environment invalid 的分類缺口。折疊 package verification 候選於重新收集的 36-run v6 矩陣未通過預登記成本條件，已 CUT 且未進 runtime。
+- Engine release 更新為 `1.1.2`；engine generation 維持 `1.1`，proposal schema v1/v2、JSON output v1 與 machine envelopes 均不變。
+
+### Validation
+- Candidate A 與 folded-verification 的凍結規格、聚合結果、keep-or-cut 決策和敏感資料檢查均保留於 cost-benefit／decision 紀錄；合併後 GitHub CI 25/25 checks 通過。
+
 ## v1.1.1 — 2026-08-14
 
 ### Changed

@@ -61,7 +61,7 @@ def validate_docs() -> None:
     en_version = re.search(r"^> Version (v\d+\.\d+\.\d+)", readme_en, re.MULTILINE)
     if not zh_version or not en_version or zh_version.group(1) != en_version.group(1):
         raise AssertionError("README versions are inconsistent")
-    if zh_version.group(1) != "v1.1.1":
+    if zh_version.group(1) != "v1.1.2":
         raise AssertionError("README version does not match the active engine")
     for readme in (readme_zh, readme_en):
         if "`取消提案`" not in readme:
@@ -307,7 +307,7 @@ def validate_docs() -> None:
         if terminal_term not in transaction_protocol:
             raise AssertionError(f"transaction protocol is missing: {terminal_term}")
     for axis in (
-        "| Skill release | `v1.1.1` |",
+        "| Skill release | `v1.1.2` |",
         "| Proposal artifact schema | implicit/explicit `1`, explicit `2` |",
         "| JSON output | `1` |",
         "not independently released products",
@@ -347,9 +347,9 @@ def validate_docs() -> None:
     ):
         if decision_term not in team_decision:
             raise AssertionError(f"team-readiness decision is missing: {decision_term}")
-    if "| Skill release | `v1.1.1` |" not in compatibility:
+    if "| Skill release | `v1.1.2` |" not in compatibility:
         raise AssertionError("compatibility Skill release is not current")
-    if "## v1.1.1" not in changelog:
+    if "## v1.1.2" not in changelog:
         raise AssertionError("CHANGELOG is missing the active release")
 
 
