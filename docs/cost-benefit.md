@@ -1,9 +1,86 @@
 # Skill cost-benefit baseline
 
-This document records the frozen experiment generations. `paired-cost-v6`
-measures folded package verification against the retained Gate 2 Candidate A
-package. `paired-cost-v5` is retained as an invalid pilot. Earlier generations
-remain below; no prior result is overwritten.
+This document records the frozen experiment generations. `paired-cost-v7`
+measures single-status authoring against the retained v1.1.3 package.
+`paired-cost-v6` measures folded package verification, and `paired-cost-v5` is
+retained as an invalid pilot. Earlier generations remain below; no prior result
+is overwritten.
+
+## Single-status authoring measurement (`paired-cost-v7`)
+
+Status: complete; **CUT**; 36/36 valid measured runs, zero retries.
+
+Experiment ID: `paired-cost-v7`.
+
+Measurement date: 2026-08-18
+
+The candidate replaced the Agent proposal/revision authoring sequence
+`validate → status` with one strict `status`. The public `validate` command,
+runtime, schemas, parser, approval model, and mutation boundaries were
+unchanged. The comparison used the complete v1.1.3 Skill package as baseline
+and the complete single-status Skill package as candidate on the same current
+hosts.
+
+### Frozen inputs and evidence
+
+| Input | Frozen value |
+| --- | --- |
+| specification | `evals/cost-benefit/experiment-v7.json` |
+| specification SHA-256 | `dce516ad09e8e4055e8a209b125e538fa849498247a776b9d1f1c3aaea766011` |
+| raw artifacts | `eval-runs/cost-benefit-v7/` |
+| smoke artifacts | `eval-runs/cost-benefit-v7-smoke/` |
+| aggregate summary | `eval-runs/cost-benefit-v7-summary.json` |
+| baseline package tree | `f92d4d54e01dba0c66500d9ff383f936ee282430788eb961efd37701308d9d99` |
+| candidate package tree | `01cbc92d8b1b36c84c9d52f66650ff50093b5e849b70eb40fa1255c87064e288` |
+| baseline `SKILL.md` SHA-256 | `4ff203b76931029aa6231d556c2fe2800c1c0b4280bc8e9d54ec5426bcd7691c` |
+| candidate `SKILL.md` SHA-256 | `4b0056634d25c37e605ad6b3e078e91a855fdaa72ff70f58753d3478bceabed7` |
+| runner module SHA-256 | `eb2f3ae9021e2f50e75692aa02aa530d9cc1b92b56f6a3c04987d0cc0e937849` |
+| Codex host/model | `codex-cli 0.147.0` / `gpt-5.6-sol` |
+| Claude host/model | `Claude Code 2.1.234` / `sonnet` |
+
+One uncounted `small-bug` smoke pair per Agent completed before formal
+collection. All four smoke slots were valid and successful with zero Critical
+Violations. Formal collection then completed all 18 randomized pairs on
+attempt 1: all 36 slots were valid, all command events were attributable, and
+all candidate runs recorded zero Critical Violations.
+
+Claude's CLI authentication was unavailable in isolated temporary homes, so
+both Claude arms used the same authenticated current-user context and an
+explicit prompt requiring the workspace Skill. No credentials were copied or
+modified. This host-context limitation was frozen before formal collection and
+applied equally to both arms.
+
+### Paired cell results
+
+Each row is the median of three frozen baseline/candidate runs.
+
+| Agent | Task | Success | Calls | Tokens | Wall seconds |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Claude | small bug | 3/3 → 3/3 | 28 → 27 | 1,925,255 → 1,661,135 | 140.3 → 126.8 |
+| Claude | medium feature | 3/3 → 3/3 | 40 → 40 | 3,019,652 → 2,716,076 | 285.8 → 265.0 |
+| Claude | acceptance change | 2/3 → 2/3 | 56 → 55 | 3,882,357 → 3,803,299 | 400.1 → 355.6 |
+| Codex | small bug | 3/3 → 2/3 | 22 → 21 | 514,071 → 489,425 | 139.2 → 131.8 |
+| Codex | medium feature | 3/3 → 3/3 | 27 → 25 | 671,828 → 649,234 | 224.7 → 186.9 |
+| Codex | acceptance change | 0/3 → 2/3 | 47 → 48 | 1,098,872 → 1,130,615 | 341.1 → 322.3 |
+| **Total** |  | **14/18 → 15/18** |  |  |  |
+
+Safety, aggregate task-success non-inferiority, validate-call, token, wall,
+and tool-call conditions passed. Candidate proposal/revision phases had zero
+median `validate` calls, all six cell token and wall medians stayed within
+baseline +10%, and tool-call medians decreased in the required `4/6` cells.
+
+The registered deterministic reduction shape failed. Codex produced the
+required runtime delta `-1` in every proposal/revision phase, and Claude did so
+for `small-bug` proposal authoring. Claude's `medium-feature` proposal,
+`acceptance-change` proposal, and `acceptance-change` revision medians were all
+delta `0`, not the required `-1`; the Claude baseline omitted `validate` in two
+of those phases and offset it with other runtime calls in the revision phase.
+
+The registered result is **CUT**. The single-status Skill and documentation
+behavior was restored to the v1.1.3 baseline; CLI equivalence tests, experiment
+harness improvements, frozen specification, raw evidence, summary, and
+decision record remain. See
+[`docs/decisions/2026-08-18-cut-single-status-authoring.md`](decisions/2026-08-18-cut-single-status-authoring.md).
 
 ## Folded package verification measurement (`paired-cost-v6`)
 

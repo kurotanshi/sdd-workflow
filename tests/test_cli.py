@@ -240,6 +240,77 @@ class CliContractTests(unittest.TestCase):
             self.assertEqual(encoding_error["code"], "ERROR_ARTIFACT_ENCODING")
             self.assertEqual(encoding_error["action"], "fix_artifact_format")
 
+    def test_status_subsumes_single_proposal_validate_for_authoring(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            proposals = root / "sdd"
+            proposals.mkdir()
+            fixtures = {
+                "valid-simple": ROOT / "tests/fixtures/baseline/valid-simple",
+                "invalid-checkbox": ROOT / "tests/fixtures/baseline/invalid-checkbox",
+                "future-version": ROOT / "tests/fixtures/schema-v2/future-version",
+                "legacy-statusless": ROOT
+                / "tests/fixtures/baseline/legacy-statusless",
+            }
+            for short_name, fixture in fixtures.items():
+                shutil.copytree(fixture, proposals / short_name)
+
+            incomplete = proposals / "incomplete"
+            incomplete.mkdir()
+            (incomplete / "proposal.md").write_text("proposal", encoding="utf-8")
+            invalid_utf8 = proposals / "invalid-utf8"
+            invalid_utf8.mkdir()
+            (invalid_utf8 / "proposal.md").write_bytes(b"\xff")
+            (invalid_utf8 / "tasks.md").write_text("# tasks\n", encoding="utf-8")
+
+            before = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in root.rglob("*")
+                if path.is_file()
+            }
+
+            def diagnostics(envelope: dict[str, object], field: str) -> list[tuple[object, ...]]:
+                return [
+                    tuple(item.get(key) for key in (
+                        "severity", "code", "action", "path", "line", "column"
+                    ))
+                    for item in envelope[field]  # type: ignore[index, union-attr]
+                ]
+
+            for short_name in (*fixtures, "incomplete", "invalid-utf8"):
+                with self.subTest(short_name=short_name):
+                    validate = invoke(
+                        ["--root", str(root), "--json", "validate", short_name],
+                        cwd=root,
+                    )
+                    status = invoke(
+                        ["--root", str(root), "--json", "status", short_name],
+                        cwd=root,
+                    )
+                    self.assertEqual(status[0], validate[0])
+                    self.assertEqual(validate[2], "")
+                    self.assertEqual(status[2], "")
+                    validate_envelope = json.loads(validate[1])
+                    status_envelope = json.loads(status[1])
+                    self.assertEqual(status_envelope["ok"], validate_envelope["ok"])
+                    for field in ("warnings", "errors"):
+                        self.assertEqual(
+                            diagnostics(status_envelope, field),
+                            diagnostics(validate_envelope, field),
+                        )
+                    if status_envelope["ok"]:
+                        self.assertGreaterEqual(
+                            status_envelope["data"].keys(),
+                            {"status", "tasks", "acceptance_conditions", "snapshot"},
+                        )
+
+            after = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in root.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(after, before)
+
     def test_internal_failure_is_caught_without_traceback(self) -> None:
         with mock.patch("sdd_core.cli.execute", side_effect=RuntimeError("secret details")):
             exit_code, stdout, stderr = invoke(["--json", "--version"])
