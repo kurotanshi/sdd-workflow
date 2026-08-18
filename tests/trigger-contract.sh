@@ -96,13 +96,13 @@ if grep -Eq 'Task checklist format and scanner|Checkbox-like line|shasum|sha256s
   exit 1
 fi
 
-grep -Fq '> 版本 v1.1.2' "$readme_zh" || {
-  echo "trigger-contract: README.md must report v1.1.2" >&2
+grep -Fq '> 版本 v1.1.3' "$readme_zh" || {
+  echo "trigger-contract: README.md must report v1.1.3" >&2
   exit 1
 }
 
-grep -Fq '> Version v1.1.2' "$readme_en" || {
-  echo "trigger-contract: README.en.md must report v1.1.2" >&2
+grep -Fq '> Version v1.1.3' "$readme_en" || {
+  echo "trigger-contract: README.en.md must report v1.1.3" >&2
   exit 1
 }
 

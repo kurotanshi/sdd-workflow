@@ -2,6 +2,16 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.1.3 — 2026-08-18
+
+### Changed
+- `references/proposal-authoring.md`：僅對跨模組、高風險、狀態型、migration、部署或外部／不可逆副作用變更執行條件式 implementation-readiness 檢查；要求在既有 proposal、tasks 與 acceptance 中說明 source of truth、commit point、retry／recovery 與不可重複副作用。小型低風險提案維持直接 authoring，不新增固定 `READY` verdict taxonomy、artifact、schema field 或 runtime authority。
+- `CONTRIBUTING.md`／`CONTRIBUTING.en.md`：同步 fresh-session proposal intake 驗收列；`tests/test_skill_reduction.py` 新增高／低風險分支與四類精簡例子的防漂移 anchors。
+- Engine release 更新為 `1.1.3`；engine generation 維持 `1.1`，proposal schema v1/v2、JSON output v1、指令、觸發詞與 machine envelopes 均不變。
+
+### Validation
+- 變更源自已歸檔提案 `add-conditional-authoring-readiness` 與 `sync-readiness-acceptance-docs`；完整 release gates、重用的 Agent matrix identity 與 focused cross-Agent evidence 記錄於 v1.1.3 release gate。
+
 ## v1.1.2 — 2026-08-17
 
 ### Added

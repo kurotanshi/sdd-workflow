@@ -57,7 +57,7 @@ class CompatibilityTests(unittest.TestCase):
     def test_portable_compatibility_matrix_is_fail_closed(self) -> None:
         document = (ROOT / "docs/compatibility.md").read_text(encoding="utf-8")
         for fact in (
-            "| Skill release | `v1.1.2`",
+            "| Skill release | `v1.1.3`",
             "| Proposal artifact schema | implicit/explicit `1`, explicit `2`",
             "| JSON output | `1`",
             "| OS | macOS and Linux/Ubuntu",
@@ -131,7 +131,7 @@ class CompatibilityTests(unittest.TestCase):
                 self.assertIn(term, documents["rollback"])
 
     def test_engine_version_and_generation_are_strict(self) -> None:
-        self.assertEqual(ENGINE_VERSION, "1.1.2")
+        self.assertEqual(ENGINE_VERSION, "1.1.3")
         self.assertEqual(parse_engine_version("0.5.12"), (0, 5, 12))
         self.assertEqual(engine_generation("0.5.12"), (0, 5))
         for invalid in ("v0.5.0", "0.5", "0.5.0-dev", "00.5.0"):

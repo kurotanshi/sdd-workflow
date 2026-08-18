@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> 版本 v1.1.2 ｜ [English](./README.en.md)
+> 版本 v1.1.3 ｜ [English](./README.en.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -131,9 +131,9 @@ SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就
 
 ---
 
-## v1.1.2
+## v1.1.3
 
-這個 patch release 讓成功的 `approve` 與 `complete-task` 結果直接帶回 canonical after-state、下一個 snapshot 與下一條待辦，Agent 可串接後續 mutation、減少重複的 `status` 呼叫。既有 mutation inputs、snapshot／task-digest 驗證、重試語義、指令、schema 與 JSON output version 均不變。
+這個 patch release 在 proposal authoring 加入條件式 implementation-readiness 檢查：只對跨模組、高風險、狀態型、migration、部署或外部副作用變更檢查完整性、可行性、失敗／重試／復原與不可重複副作用；小型低風險提案維持直接建立草案，不新增固定 verdict、artifact、schema 或 runtime state。既有指令、觸發詞、proposal lifecycle 與 JSON output 均不變。
 
 從舊版更新時請替換完整 package，不要混合不同版本的檔案。
 

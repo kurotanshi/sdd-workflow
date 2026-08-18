@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v1.1.2 ｜ [繁體中文](./README.md)
+> Version v1.1.3 ｜ [繁體中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -135,9 +135,9 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 
 ---
 
-## v1.1.2
+## v1.1.3
 
-This patch release makes successful `approve` and `complete-task` results return the canonical after-state, next snapshot, and next pending task. Agents can chain later mutations without a redundant `status` call. Existing mutation inputs, snapshot/task-digest validation, retry semantics, commands, schemas, and the JSON output version remain unchanged.
+This patch release adds a conditional implementation-readiness review to proposal authoring: only cross-module, high-risk, stateful, migration, deployment, or external-side-effect changes trigger completeness, feasibility, failure/retry/recovery, and non-repeatable-side-effect checks. Small low-risk proposals still draft directly, without a fixed verdict, artifact, schema, or runtime state. Existing commands, triggers, the proposal lifecycle, and JSON output remain unchanged.
 
 Replace the complete package when updating. Never mix files from different releases.
 

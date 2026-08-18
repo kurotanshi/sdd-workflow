@@ -76,7 +76,7 @@ class RuntimeContractTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn("sdd-workflow 1.1.2", result.stdout)
+        self.assertIn("sdd-workflow 1.1.3", result.stdout)
         self.assertEqual(result.stderr, "")
 
     def test_launcher_fails_closed_when_python_is_missing(self) -> None:
