@@ -19,6 +19,37 @@ Intake, before authoring:
   in the proposal. Never emit a fixed analysis report or force a question
   when the answer cannot change the proposal.
 
+Conditional implementation-readiness review:
+
+- Run this review only for cross-module, high-risk, stateful, migration,
+  deployment, or external/irreversible side-effect changes. For a small,
+  low-risk proposal with sufficient information, skip the review and author
+  the draft directly.
+- When the review applies, check requirement completeness; consistency among
+  the proposal, tasks, and acceptance conditions; repository feasibility;
+  state, failure, retry, and recovery boundaries; and whether acceptance can
+  be verified.
+- A blocking gap that would change the proposal follows the existing material
+  ambiguity rule before artifacts are created. Record safely deferable
+  uncertainty in the draft. Do not emit fixed `READY`, `READY WITH
+  NON-BLOCKING FINDINGS`, or `BLOCKED` verdicts.
+- For stateful or external-side-effect changes, use the existing `## 要改什麼`
+  and `## 影響範圍` sections plus tasks and acceptance conditions to identify
+  the source of truth, commit point, retry/recovery behavior, and effects that
+  must not repeat. Do not add schema fields, metadata, or another artifact.
+
+Compact examples for triggered reviews:
+
+- Migration: name the authoritative old/new data, the cutover commit point,
+  how an interrupted run resumes, and any transformation that must not repeat.
+- External API: name the local authoritative record, when a remote result is
+  committed locally, how ambiguous responses are recovered, and calls such as
+  charging that must not repeat.
+- Message publication: name the event/outbox authority, the publication commit
+  point, stable identity used for retry, and event creation that must not repeat.
+- Deployment: name the desired-release authority, the traffic-switch commit
+  point, retry/rollback boundary, and irreversible migration that must not repeat.
+
 1. Choose a unique lowercase English hyphen-case short name. Never overwrite an existing `sdd/<short-name>/`; ask whether to revise it or choose another name.
 2. Classify as exactly one of `新功能`, `修 bug`, `重構`, `維運`, `文件`, or `研究`. `研究` asks a bounded evidence question and uses the normal lifecycle.
 3. Create `proposal.md` as Schema v2 beginning at byte zero:

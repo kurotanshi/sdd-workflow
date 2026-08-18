@@ -53,6 +53,24 @@ class SkillReductionTests(unittest.TestCase):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
 
+    def test_conditional_readiness_remains_bounded(self) -> None:
+        text = AUTHORING.read_text(encoding="utf-8")
+        anchors = (
+            "Run this review only for cross-module",
+            "low-risk proposal with sufficient information, skip the review",
+            "repository feasibility",
+            "Do not emit fixed `READY`",
+            "source of truth, commit point, retry/recovery behavior",
+            "must not repeat",
+            "Migration:",
+            "External API:",
+            "Message publication:",
+            "Deployment:",
+        )
+        for anchor in anchors:
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
     def test_report_records_non_regression_and_usage_diagnostic(self) -> None:
         text = REPORT.read_text(encoding="utf-8")
         for fact in (
