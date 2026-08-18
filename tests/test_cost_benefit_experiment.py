@@ -332,6 +332,22 @@ class CostBenefitExperimentTests(unittest.TestCase):
             ),
             "host-environment:authenticate",
         )
+        self.assertEqual(
+            experiment.classify_invalid(
+                returncode=1,
+                timed_out=False,
+                stdout='{"type":"result","is_error":true,"result":"Not logged in"}\n',
+                stderr="",
+                events=[
+                    {
+                        "type": "result",
+                        "is_error": True,
+                        "result": "Not logged in · Please run /login",
+                    }
+                ],
+            ),
+            "host-environment:not logged in",
+        )
 
     def make_fake_host(self, directory: Path, source: str = FAKE_HOST) -> Path:
         executable = directory / "fake-host"
@@ -692,7 +708,7 @@ class CostBenefitExperimentTests(unittest.TestCase):
         self.assertEqual(spec["agents"]["codex"]["host_version"], "0.147.0")
         self.assertEqual(
             spec["frozen"]["runner_module_sha256"],
-            experiment.sha256_file(ROOT / spec["frozen"]["runner_module"]),
+            freeze["frozen_hashes"]["runner_module_sha256"],
         )
         with tempfile.TemporaryDirectory() as directory:
             workspace = Path(directory)
@@ -774,6 +790,112 @@ class CostBenefitExperimentTests(unittest.TestCase):
         self.assertTrue(decision["candidate_tool_calls_pass"])
         self.assertTrue(decision["candidate_measurement_pass"])
 
+    def test_experiment_v7_freezes_single_status_comparison(self) -> None:
+        spec_path = ROOT / "evals/cost-benefit/experiment-v7.json"
+        freeze_path = ROOT / "eval-runs/cost-benefit-v7-freeze.json"
+        raw = spec_path.read_text(encoding="utf-8")
+        spec = experiment.read_json(spec_path)
+        freeze = experiment.read_json(freeze_path)
+
+        self.assertNotIn(str(Path.home()), raw)
+        self.assertEqual(
+            experiment.comparison_variants(spec),
+            ("skill-v113", "single-status"),
+        )
+        self.assertEqual(spec["agents"]["claude"]["host_version"], "2.1.234")
+        self.assertEqual(spec["agents"]["codex"]["host_version"], "0.147.0")
+        self.assertEqual(
+            spec["keep_or_cut"]["criteria"]["runtime_invocations_phase_deltas"],
+            {"initial": -1, "revision": -1},
+        )
+        self.assertEqual(
+            spec["frozen"]["runner_module_sha256"],
+            experiment.sha256_file(ROOT / spec["frozen"]["runner_module"]),
+        )
+        for variant in spec["variants"]:
+            source = spec["sources"][variant]
+            self.assertEqual(
+                spec["frozen"]["source_package_tree_sha256"][variant],
+                source["package_tree_sha256"],
+            )
+            if source["kind"] == "git":
+                with tempfile.TemporaryDirectory() as directory:
+                    workspace = Path(directory)
+                    experiment.extract_frozen_skill(workspace, spec, variant)
+                    package = workspace / source["skill_path"]
+                    self.assertEqual(
+                        experiment.tree_sha256(package),
+                        source["package_tree_sha256"],
+                    )
+        self.assertEqual(freeze["experiment_id"], spec["experiment_id"])
+        self.assertEqual(freeze["spec_sha256"], experiment.sha256_file(spec_path))
+        self.assertEqual(
+            freeze["frozen_hashes"],
+            {
+                "runner_module_sha256": spec["frozen"]["runner_module_sha256"],
+                "source_package_tree_sha256": spec["frozen"][
+                    "source_package_tree_sha256"
+                ],
+            },
+        )
+
+    def test_v7_candidate_criteria_cover_authoring_phase_and_validate_calls(self) -> None:
+        spec_path = ROOT / "evals/cost-benefit/experiment-v7.json"
+        spec = experiment.read_json(spec_path)
+        spec_sha256 = experiment.sha256_file(spec_path)
+        results = []
+        for agent in spec["agents"]:
+            for task in spec["task_order"]:
+                for replicate in range(1, 4):
+                    for variant, calls, tokens, wall in (
+                        ("skill-v113", 10, 100, 10),
+                        ("single-status", 8, 105, 10.5),
+                    ):
+                        result = self.synthetic_result(
+                            agent=agent,
+                            task=task,
+                            replicate=replicate,
+                            variant=variant,
+                            calls=calls,
+                            tokens=tokens,
+                            wall=wall,
+                        )
+                        result["experiment_id"] = spec["experiment_id"]
+                        result["spec_sha256"] = spec_sha256
+                        result["turns"] = []
+                        for index, kind in enumerate(
+                            spec["tasks"][task]["turn_sequence"], start=1
+                        ):
+                            authoring = kind in {"initial", "revision"}
+                            baseline = variant == "skill-v113"
+                            result["turns"].append(
+                                {
+                                    "turn": index,
+                                    "kind": kind,
+                                    "tool_calls": calls,
+                                    "tokens": {"total_tokens": tokens},
+                                    "wall_seconds": wall,
+                                    "runtime_invocations": (
+                                        3 if authoring and baseline else 2
+                                    ),
+                                    "runtime_commands": {
+                                        "validate": int(authoring and baseline)
+                                    },
+                                    "unidentified_command_events": 0,
+                                }
+                            )
+                        results.append(result)
+        summary = experiment.aggregate_results(
+            results,
+            spec,
+            expected_spec_sha256=spec_sha256,
+        )
+        decision = summary["decision"]
+        self.assertTrue(summary["complete"])
+        self.assertTrue(decision["candidate_phase_delta_pass"])
+        self.assertTrue(decision["candidate_validate_calls_pass"])
+        self.assertTrue(decision["candidate_measurement_pass"])
+
     def test_runtime_invocation_counting_for_both_hosts(self) -> None:
         codex_events = [
             {
@@ -798,6 +920,17 @@ class CostBenefitExperimentTests(unittest.TestCase):
             {
                 "type": "item.completed",
                 "item": {"id": "c", "type": "command_execution"},
+            },
+            {
+                "type": "item.completed",
+                "item": {
+                    "id": "g",
+                    "type": "command_execution",
+                    "command": (
+                        "python3 skills/sdd-workflow/scripts/sdd.py"
+                        " --root . --json validate demo"
+                    ),
+                },
             },
         ]
         claude_events = [
@@ -841,10 +974,18 @@ class CostBenefitExperimentTests(unittest.TestCase):
             },
         ]
         self.assertEqual(
-            experiment.runtime_invocations(codex_events), (1, 1)
+            experiment.runtime_invocations(codex_events), (2, 1)
+        )
+        self.assertEqual(
+            experiment.runtime_command_counts(codex_events),
+            ({"status": 1, "validate": 1}, 1),
         )
         self.assertEqual(
             experiment.runtime_invocations(claude_events), (1, 1)
+        )
+        self.assertEqual(
+            experiment.runtime_command_counts(claude_events),
+            ({"discover-runtime": 1}, 1),
         )
 
     def test_summary_reports_per_phase_metrics(self) -> None:
@@ -910,6 +1051,7 @@ class CostBenefitExperimentTests(unittest.TestCase):
         self.assertEqual(
             phases["turn-2-approval"]["median_runtime_invocations"], 2
         )
+        self.assertEqual(phases["turn-2-approval"]["median_validate_calls"], 0)
         self.assertEqual(
             phases["turn-4-approval"]["median_runtime_invocations"], 3
         )

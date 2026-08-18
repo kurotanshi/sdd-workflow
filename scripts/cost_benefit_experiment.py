@@ -32,6 +32,7 @@ RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 ENVIRONMENT_FAILURE_MARKERS = (
     "authentication",
     "authenticate",
+    "not logged in",
     "unauthorized",
     "api key",
     "quota",
@@ -338,12 +339,34 @@ def tool_usage(events: list[dict[str, Any]]) -> tuple[int, dict[str, int]]:
 
 
 RUNTIME_INVOCATION_MARKERS = ("discover-runtime.py", "sdd.py")
+SDD_COMMAND_PATTERN = re.compile(
+    r"(?:^|\s)(validate|list|status|abandon-preflight|approve|begin-revision|"
+    r"complete-task|rebuild-index|validate-index|doctor|archive|abandon)"
+    r"(?:\s|$)"
+)
 
 
-def runtime_invocations(events: list[dict[str, Any]]) -> tuple[int, int]:
-    invocations = 0
+def runtime_command_counts(
+    events: list[dict[str, Any]],
+) -> tuple[dict[str, int], int]:
+    commands: dict[str, int] = {}
     unidentified = 0
     seen: set[tuple[str, str]] = set()
+
+    def record(command: object) -> None:
+        nonlocal unidentified
+        if not isinstance(command, str):
+            unidentified += 1
+            return
+        if "discover-runtime.py" in command:
+            name = "discover-runtime"
+        elif "sdd.py" in command:
+            match = SDD_COMMAND_PATTERN.search(command.split("sdd.py", 1)[1])
+            name = match.group(1) if match else "sdd"
+        else:
+            return
+        commands[name] = commands.get(name, 0) + 1
+
     for event in events:
         if event.get("type") == "item.completed" and isinstance(event.get("item"), dict):
             item = event["item"]
@@ -351,14 +374,7 @@ def runtime_invocations(events: list[dict[str, Any]]) -> tuple[int, int]:
                 identity = (str(item.get("id", id(item))), "command_execution")
                 if identity not in seen:
                     seen.add(identity)
-                    command = item.get("command")
-                    if not isinstance(command, str):
-                        unidentified += 1
-                    elif any(
-                        marker in command
-                        for marker in RUNTIME_INVOCATION_MARKERS
-                    ):
-                        invocations += 1
+                    record(item.get("command"))
         for item in nested_dicts(event):
             if item.get("type") != "tool_use" or item.get("name") != "Bash":
                 continue
@@ -371,13 +387,13 @@ def runtime_invocations(events: list[dict[str, Any]]) -> tuple[int, int]:
                 if isinstance(item.get("input"), dict)
                 else None
             )
-            if not isinstance(command, str):
-                unidentified += 1
-            elif any(
-                marker in command for marker in RUNTIME_INVOCATION_MARKERS
-            ):
-                invocations += 1
-    return invocations, unidentified
+            record(command)
+    return dict(sorted(commands.items())), unidentified
+
+
+def runtime_invocations(events: list[dict[str, Any]]) -> tuple[int, int]:
+    commands, unidentified = runtime_command_counts(events)
+    return sum(commands.values()), unidentified
 
 
 def token_usage(events: list[dict[str, Any]], agent: str) -> dict[str, int]:
@@ -650,7 +666,8 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             events = list(iter_json_lines(stdout))
             tools, names = tool_usage(events)
             usage = token_usage(events, arguments.agent)
-            invocations, unidentified = runtime_invocations(events)
+            runtime_commands, unidentified = runtime_command_counts(events)
+            invocations = sum(runtime_commands.values())
             paths = changed_paths(workspace)
             products = product_paths(paths)
             current_product_state = product_state(workspace, products)
@@ -673,6 +690,7 @@ def execute_one(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
                 "tool_calls_by_name": names,
                 "tokens": usage,
                 "runtime_invocations": invocations,
+                "runtime_commands": runtime_commands,
                 "unidentified_command_events": unidentified,
                 "changed_paths": paths,
                 "product_paths": products,
@@ -1030,6 +1048,10 @@ def aggregate_results(
             "median_runtime_invocations": statistics.median(
                 turn.get("runtime_invocations", 0) for turn in group
             ),
+            "median_validate_calls": statistics.median(
+                turn.get("runtime_commands", {}).get("validate", 0)
+                for turn in group
+            ),
             "median_tool_calls": statistics.median(
                 turn["tool_calls"] for turn in group
             ),
@@ -1073,6 +1095,12 @@ def aggregate_results(
                         ],
                         "delta": candidate["median_runtime_invocations"]
                         - baseline["median_runtime_invocations"],
+                        "baseline_median_validate_calls": baseline[
+                            "median_validate_calls"
+                        ],
+                        "candidate_median_validate_calls": candidate[
+                            "median_validate_calls"
+                        ],
                     }
                 )
 
@@ -1136,10 +1164,57 @@ def aggregate_results(
     registered_delta = candidate_criteria.get(
         "runtime_invocations_per_phase_delta_exact"
     )
-    phase_delta_pass = (
-        len(phase_deltas) == expected_phase_count
-        and registered_delta is not None
-        and all(row["delta"] == registered_delta for row in phase_deltas)
+    registered_deltas = candidate_criteria.get(
+        "runtime_invocations_phase_deltas"
+    )
+    if isinstance(registered_deltas, dict):
+        required_phase_deltas = [
+            row
+            for row in phase_deltas
+            if row["phase"].rsplit("-", 1)[-1] in registered_deltas
+        ]
+        expected_registered_phase_count = len(spec["agents"]) * sum(
+            kind in registered_deltas
+            for task in spec["task_order"]
+            for kind in spec["tasks"][task]["turn_sequence"]
+        )
+        phase_delta_pass = (
+            len(required_phase_deltas) == expected_registered_phase_count
+            and all(
+                row["delta"]
+                == registered_deltas.get(row["phase"].rsplit("-", 1)[-1])
+                for row in required_phase_deltas
+            )
+        )
+    else:
+        phase_delta_pass = (
+            len(phase_deltas) == expected_phase_count
+            and registered_delta is not None
+            and all(row["delta"] == registered_delta for row in phase_deltas)
+        )
+    validate_limit = candidate_criteria.get(
+        "candidate_authoring_validate_calls_max"
+    )
+    candidate_authoring_phases = [
+        row
+        for row in phases
+        if row["variant"] == candidate_variant
+        and row["phase"].rsplit("-", 1)[-1] in {"initial", "revision"}
+    ]
+    validate_calls_pass = validate_limit is None or (
+        len(candidate_authoring_phases)
+        == len(spec["agents"])
+        * (
+            len(spec["task_order"])
+            + sum(
+                "revision" in spec["tasks"][task]["turn_sequence"]
+                for task in spec["task_order"]
+            )
+        )
+        and all(
+            row["median_validate_calls"] <= validate_limit
+            for row in candidate_authoring_phases
+        )
     )
     token_limit = candidate_criteria.get("cell_token_overhead_percent_max")
     wall_limit = candidate_criteria.get("cell_wall_overhead_percent_max")
@@ -1164,6 +1239,7 @@ def aggregate_results(
         <= candidate_criteria.get("candidate_critical_violations_max", -1)
         and skill_success >= control_success
         and phase_delta_pass
+        and validate_calls_pass
         and candidate_tokens_pass
         and candidate_wall_pass
         and candidate_tools_pass
@@ -1194,6 +1270,7 @@ def aggregate_results(
             "baseline_successes": control_success,
             "candidate_successes": skill_success,
             "candidate_phase_delta_pass": phase_delta_pass,
+            "candidate_validate_calls_pass": validate_calls_pass,
             "candidate_tokens_pass": candidate_tokens_pass,
             "candidate_wall_time_pass": candidate_wall_pass,
             "candidate_tool_calls_pass": candidate_tools_pass,
