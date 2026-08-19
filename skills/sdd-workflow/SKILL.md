@@ -1,6 +1,6 @@
 ---
 name: sdd-workflow
-description: "Manage software changes through a proposal-first SDD workflow: create or revise a scoped proposal and checklist, wait for explicit approval before implementation, execute one task at a time with progress reports, and archive completed or abandoned work. Use only when the user explicitly invokes sdd-workflow or refers to an SDD proposal with 提案, 開始實作, 實作, 歸檔, 放棄, 取消提案, or 確認放棄. Generic cancellation without an explicit SDD proposal target is outside this skill. Source-control or code rollback is outside SDD: confirm its exact scope before changing files and never alter proposal state because of it."
+description: "Manage software changes through a proposal-first SDD workflow: create or revise a scoped proposal and checklist, wait for explicit approval before implementation, execute one task at a time with progress reports, and archive completed or abandoned work. Use only when the user explicitly invokes sdd-workflow or refers to an SDD proposal with 提案, 自審提案, 開始實作, 實作, 歸檔, 放棄, 取消提案, or 確認放棄. Generic cancellation without an explicit SDD proposal target is outside this skill. Source-control or code rollback is outside SDD: confirm its exact scope before changing files and never alter proposal state because of it."
 ---
 
 # SDD Workflow
@@ -24,6 +24,7 @@ Enforce `提案 → 實作 → 歸檔`, including explicit revision and abandonm
 ## Phase selection
 
 - `提案`: create a new draft or explicitly revise the named proposal; no implementation.
+- `自審提案`, `自審提案 <short-name>`: adversarial review of an existing proposal; never approves and never implements. Selecting this phase requires the user to be issuing it as a phase command, not merely mentioning the term inside a descriptive, quoted, or documentation request such as `在 README 說明「自審提案」`. Once that holds, `自審提案` takes precedence over its substring `提案`, which must never match inside it. Never author or create a proposal on `自審提案`.
 - `開始實作`: approve a draft with the CLI, verify `approved`, then implement one task at a time.
 - `實作`: continue an approved proposal only.
 - `歸檔`: archive only after user acceptance and reliable full task completion.
@@ -31,7 +32,7 @@ Enforce `提案 → 實作 → 歸檔`, including explicit revision and abandonm
 - `確認放棄 <short-name>`: abandon only when this conversation contains a matching successful preflight.
 - A bare `取消`, or a cancellation request whose target is unclear—including `取消剛才的變更`, `算了`, `先不要`, or `不用了`—requires one question naming both choices: restore code/Git, or abandon the SDD proposal. Run no command first. Explicit code rollback such as `取消剛才的程式碼修改` is outside SDD and still requires exact-scope confirmation.
 
-If invoked without a phase, ask for `提案`, `開始實作`, `實作`, `歸檔`, `放棄`, or `取消提案`. Never offer a bare `取消` as a menu option. If no short name is given, use `list --state active`; continue automatically only for exactly one active candidate, never an archive directory.
+If invoked without a phase, ask for `提案`, `自審提案`, `開始實作`, `實作`, `歸檔`, `放棄`, or `取消提案`. Never offer a bare `取消` as a menu option. If no short name is given, use `list --state active`; continue automatically only for exactly one active candidate, never an archive directory.
 
 ## Deterministic command contract
 
@@ -71,6 +72,19 @@ Before authoring or revising, read [`references/proposal-authoring.md`](./refere
 4. Stop for explicit approval. Never implement in the proposal turn.
 
 Material ambiguity requires a focused question before authoring.
+
+## 自審提案
+
+Optional on-demand review. Never automatic; run only on explicit `自審提案`.
+
+Before reviewing, read [`references/self-review.md`](./references/self-review.md) fully.
+
+1. Run `status`. Report canonical state before reviewing.
+2. Run the review layers defined in the reference. Every finding needs a concrete location; drop findings that cannot name one.
+3. `draft`: correct prose gaps and a genuinely defective task list in place, then rerun `validate` and `status`; itemise every task-level edit and give the task count before and after. Never resolve a conflict between proposals; report that for the user to decide. `approved`: never edit prose, report only and state that applying anything requires `提案`.
+4. Report the verdict in chat as the reference requires, then stop. Never call `approve` and never implement.
+
+A design-direction finding is a question for the user, never a decision this skill makes.
 
 ## 修訂
 
