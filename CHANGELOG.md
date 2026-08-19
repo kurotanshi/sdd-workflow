@@ -2,6 +2,20 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.2.0 — 2026-08-19
+
+### Added
+- 新增明確、可選的 `自審提案` 階段與 `references/self-review.md`：對既有 proposal 執行有證據的 adversarial review，涵蓋前提、正確性、SDD 流程、條件式設計取向，以及 security／reversibility／performance／dependency 風險。草案可就地修正具體缺口，已核准提案只回報；自審永不核准或實作。
+- 中英文 README 新增 Contributors 區塊，自動連結 GitHub contributors 頁面並顯示貢獻者頭像。
+
+### Changed
+- 中英文 README 同步 `自審提案` 的使用方式、流程節點、安全邊界與最新 release 摘要。
+- cost-benefit harness 加入 frozen-package、CLI-equivalence 與 authoring handoff 量測；single-status authoring 候選未通過預登記條件，已 CUT 且未進入 Skill runtime。
+- Engine release 更新為 `1.2.0`，engine generation 更新為 `1.2`；proposal schema v1/v2、CLI command surface、JSON output v1 與 machine envelopes 均不變。
+
+### Validation
+- `自審提案` 變更源自 PR #11；完整 deterministic gates、Agent matrix 與 release package 證據記錄於 v1.2.0 release gate。
+
 ## v1.1.3 — 2026-08-18
 
 ### Changed

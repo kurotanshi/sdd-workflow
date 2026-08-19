@@ -32,6 +32,19 @@ case "$description" in
     ;;
 esac
 
+case "$description" in
+  *"自審提案"*) ;;
+  *)
+    echo "trigger-contract: frontmatter must include explicit 自審提案" >&2
+    exit 1
+    ;;
+esac
+
+grep -Fq '自審提案` takes precedence over its substring `提案`' "$skill_file" || {
+  echo "trigger-contract: 自審提案 must take precedence over 提案" >&2
+  exit 1
+}
+
 description_without_cancel_proposal=$(printf '%s\n' "$description" | sed 's/取消提案//g')
 case "$description_without_cancel_proposal" in
   *"取消"*)
@@ -96,17 +109,21 @@ if grep -Eq 'Task checklist format and scanner|Checkbox-like line|shasum|sha256s
   exit 1
 fi
 
-grep -Fq '> 版本 v1.1.3' "$readme_zh" || {
-  echo "trigger-contract: README.md must report v1.1.3" >&2
+grep -Fq '> 版本 v1.2.0' "$readme_zh" || {
+  echo "trigger-contract: README.md must report v1.2.0" >&2
   exit 1
 }
 
-grep -Fq '> Version v1.1.3' "$readme_en" || {
-  echo "trigger-contract: README.en.md must report v1.1.3" >&2
+grep -Fq '> Version v1.2.0' "$readme_en" || {
+  echo "trigger-contract: README.en.md must report v1.2.0" >&2
   exit 1
 }
 
 for readme_file in "$readme_zh" "$readme_en"; do
+  grep -Fq '`自審提案`' "$readme_file" || {
+    echo "trigger-contract: $readme_file must document 自審提案" >&2
+    exit 1
+  }
   grep -Fq '`取消提案`' "$readme_file" || {
     echo "trigger-contract: $readme_file must document explicit 取消提案" >&2
     exit 1

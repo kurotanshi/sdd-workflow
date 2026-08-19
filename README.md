@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> 版本 v1.1.3 ｜ [English](./README.en.md)
+> 版本 v1.2.0 ｜ [English](./README.en.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -59,11 +59,13 @@ Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into
      ```
    Agent 會建立 `sdd/<短名稱>/proposal.md` 與 `tasks.md`，寫出預期成果與驗收條件，驗證後停下，不修改產品程式碼。
 
-2. 審閱提案後回覆 `開始實作`。Agent 會核准目前版本，逐條實作、驗證並更新 task 進度。只說 `實作` 不會自動核准 draft。
+2. （可選）在核准前執行 `$sdd-workflow 自審提案`（Codex）或 `/sdd-workflow 自審提案`（Claude Code）。Agent 會檢查前提、正確性、SDD 流程、設計取向與適用的風險條件；草案可修正明確缺口，已核准提案只回報。自審永遠不會核准或實作。
 
-3. 需求改變時直接說明新需求。Agent 會停止改碼、修訂 proposal，等待新的 `開始實作`。
+3. 審閱提案後回覆 `開始實作`。Agent 會核准目前版本，逐條實作、驗證並更新 task 進度。只說 `實作` 不會自動核准 draft。
 
-4. 所有 task 完成且你驗收後，回覆 `歸檔 <短名稱>`。提案會移至 `sdd/archive/`。
+4. 需求改變時直接說明新需求。Agent 會停止改碼、修訂 proposal，等待新的 `開始實作`。
+
+5. 所有 task 完成且你驗收後，回覆 `歸檔 <短名稱>`。提案會移至 `sdd/archive/`。
 
 > [!TIP]
 > 可重跑完整案例：`python3 examples/sample-web-api/run-walkthrough.py`
@@ -75,6 +77,7 @@ Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into
 | 階段 | 你的動作 | Agent 的邊界 |
 | :--- | :--- | :--- |
 | **提案** | `提案` | 寫 proposal 與 tasks，驗證後停下，不改產品碼 |
+| **自審** | `自審提案` | 以具體證據檢查既有 proposal；不核准、不實作，已核准內容不改寫 |
 | **核准／實作** | `開始實作` / `實作` | 只對已核准 proposal 逐條實作與驗證 |
 | **修訂** | 說明需求變更 | 停止改碼，更新 proposal，等待重新核准 |
 | **歸檔** | `歸檔 <短名稱>` | 只在可靠 task 全數完成且使用者驗收後歸檔 |
@@ -90,11 +93,14 @@ Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into
 
 ```mermaid
 flowchart LR
-    A["提案"] --> B["明確核准"]
+    A["提案"] --> Q{"需要自審？"}
+    Q -- "是" --> SR["自審提案"]
+    SR --> B["明確核准"]
+    Q -- "否" --> B
     B --> C["逐條實作與驗證"]
     C --> D{"需求改變？"}
-    D -- "是" --> R["修訂並重新核准"]
-    R --> C
+    D -- "是" --> REV["修訂並重新核准"]
+    REV --> C
     D -- "否" --> E["使用者驗收"]
     E --> F["歸檔"]
 ```
@@ -131,9 +137,9 @@ SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就
 
 ---
 
-## v1.1.3
+## v1.2.0
 
-這個 patch release 在 proposal authoring 加入條件式 implementation-readiness 檢查：只對跨模組、高風險、狀態型、migration、部署或外部副作用變更檢查完整性、可行性、失敗／重試／復原與不可重複副作用；小型低風險提案維持直接建立草案，不新增固定 verdict、artifact、schema 或 runtime state。既有指令、觸發詞、proposal lifecycle 與 JSON output 均不變。
+這個 minor release 新增可選的 `自審提案` 階段：Agent 會以具體位置與實際檢查結果驗證 proposal 的前提、正確性、SDD 流程、設計取向及適用的安全／可逆性／效能／依賴風險。草案可就地修正明確缺口，已核准提案維持唯讀；自審不會核准或實作。proposal schema、CLI 指令與 JSON output version 均不變。
 
 從舊版更新時請替換完整 package，不要混合不同版本的檔案。
 
@@ -154,6 +160,12 @@ Skill 的正本只有一份：repo 裡的 [`skills/sdd-workflow/`](./skills/sdd-
 ## 致謝
 
 本專案受到 @kaochenlong 在 2026 AI 年會分享的 [SimpleSDD](https://gist.github.com/kaochenlong/27ade9a6218244c2584777fa276d1214) 啟發。
+
+---
+
+## Contributors
+
+<a href="https://github.com/kurotanshi/sdd-workflow/graphs/contributors"><img src="https://contrib.rocks/image?repo=kurotanshi/sdd-workflow" alt="Contributors" /></a>
 
 ---
 

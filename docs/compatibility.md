@@ -6,7 +6,7 @@ The project communicates three version concepts outside the implementation:
 
 | Public concept | Current support | Meaning |
 | --- | --- | --- |
-| Skill release | `v1.1.3` | Version of the installable Skill package |
+| Skill release | `v1.2.0` | Version of the installable Skill package |
 | Proposal artifact schema | implicit/explicit `1`, explicit `2` | Format accepted for `proposal.md` and `tasks.md` |
 | JSON output | `1` | Machine envelope emitted by the bundled CLI |
 

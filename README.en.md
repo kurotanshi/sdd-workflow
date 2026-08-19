@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v1.1.3 ｜ [繁體中文](./README.md)
+> Version v1.2.0 ｜ [繁體中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -60,13 +60,16 @@ The install location is `~/.claude/skills/sdd-workflow/`. Start a fresh session 
      ```
    The Agent creates `sdd/<short-name>/proposal.md` and `tasks.md`, records the expected outcome and acceptance conditions, validates them, and stops without changing product code.
 
-2. **Review & Start (`開始實作`)**  
+2. **Self-review (optional)**
+   Before approval, run `$sdd-workflow 自審提案` in Codex or `/sdd-workflow 自審提案` in Claude Code. The Agent checks the premise, correctness, SDD process, design direction, and applicable risks. It may correct concrete gaps in a draft, but only reports on an approved proposal; self-review never approves or implements.
+
+3. **Review & Start (`開始實作`)**
    Review the proposal, then reply `開始實作`. The Agent approves that version, then implements and verifies one task at a time. Plain `實作` never approves a draft.
 
-3. **Requirement Changes**  
+4. **Requirement Changes**
    State changed requirements. The Agent revises the proposal and waits for a new `開始實作`.
 
-4. **Accept & Archive (`歸檔 <short-name>`)**  
+5. **Accept & Archive (`歸檔 <short-name>`)
    Accept the completed result, then reply `歸檔 <short-name>` to move it under `sdd/archive/`.
 
 > [!TIP]
@@ -79,6 +82,7 @@ The install location is `~/.claude/skills/sdd-workflow/`. Start a fresh session 
 | Phase | Your Action | Agent Boundary |
 | :--- | :--- | :--- |
 | **Propose** | `提案` | Write and validate the proposal and tasks, then stop without product-code changes |
+| **Self-review** | `自審提案` | Review an existing proposal with concrete evidence; never approve or implement, and never rewrite approved content |
 | **Approve / Implement** | `開始實作` / `實作` | Implement and validate tasks only for an approved proposal |
 | **Revise** | State the requirement change | Stop code changes, update the proposal, and wait for reapproval |
 | **Archive** | `歸檔 <short-name>` | Archive only after reliable task completion and user acceptance |
@@ -94,11 +98,14 @@ The install location is `~/.claude/skills/sdd-workflow/`. Start a fresh session 
 
 ```mermaid
 flowchart LR
-    A["Proposal"] --> B["Explicit approval"]
+    A["Proposal"] --> Q{"Self-review?"}
+    Q -- "Yes" --> SR["自審提案"]
+    SR --> B["Explicit approval"]
+    Q -- "Skip" --> B
     B --> C["Implement and verify each task"]
     C --> D{"Requirements changed?"}
-    D -- "Yes" --> R["Revise and reapprove"]
-    R --> C
+    D -- "Yes" --> REV["Revise and reapprove"]
+    REV --> C
     D -- "No" --> E["User acceptance"]
     E --> F["Archive"]
 ```
@@ -135,9 +142,9 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 
 ---
 
-## v1.1.3
+## v1.2.0
 
-This patch release adds a conditional implementation-readiness review to proposal authoring: only cross-module, high-risk, stateful, migration, deployment, or external-side-effect changes trigger completeness, feasibility, failure/retry/recovery, and non-repeatable-side-effect checks. Small low-risk proposals still draft directly, without a fixed verdict, artifact, schema, or runtime state. Existing commands, triggers, the proposal lifecycle, and JSON output remain unchanged.
+This minor release adds the optional `自審提案` phase. The Agent checks a proposal's premise, correctness, SDD process, design direction, and applicable security, reversibility, performance, and dependency risks using concrete evidence. It may correct clear gaps in a draft, while approved proposals remain read-only; self-review never approves or implements. Proposal schemas, CLI commands, and the JSON output version remain unchanged.
 
 Replace the complete package when updating. Never mix files from different releases.
 
@@ -158,6 +165,12 @@ The canonical Skill lives in one place: [`skills/sdd-workflow/`](./skills/sdd-wo
 ## Acknowledgements
 
 This repository and Skill are inspired by [SimpleSDD](https://gist.github.com/kaochenlong/27ade9a6218244c2584777fa276d1214), shared by @kaochenlong at the 2026 AI conference.
+
+---
+
+## Contributors
+
+<a href="https://github.com/kurotanshi/sdd-workflow/graphs/contributors"><img src="https://contrib.rocks/image?repo=kurotanshi/sdd-workflow" alt="Contributors" /></a>
 
 ---
 

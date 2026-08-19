@@ -25,6 +25,7 @@ def validate_package() -> None:
         "runtime-identity.json",
         "references/proposal-authoring.md",
         "references/runtime-recovery.md",
+        "references/self-review.md",
         "scripts/discover-runtime.py",
         "scripts/sdd",
         "scripts/sdd.py",
@@ -85,7 +86,7 @@ def validate_package() -> None:
         raise AssertionError("runtime identity has wrong distribution")
     if identity["handshake_version"] != 1 or identity["cli_output_version"] != 1:
         raise AssertionError("runtime identity has unsupported handshake/output")
-    if identity["compatible_engine_generation"] != "1.1":
+    if identity["compatible_engine_generation"] != "1.2":
         raise AssertionError("runtime identity has wrong engine generation")
     if (
         identity["minimum_schema_version"],

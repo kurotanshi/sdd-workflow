@@ -3,7 +3,7 @@
   "distribution_id": "sdd-workflow",
   "handshake_version": 1,
   "cli_output_version": 1,
-  "compatible_engine_generation": "1.1",
+  "compatible_engine_generation": "1.2",
   "minimum_schema_version": 1,
   "maximum_schema_version": 2,
   "skill_sha256": "b92dfba5a56d66693069971971c75e9084c6a2192153c9869b1e16530fdc999e",

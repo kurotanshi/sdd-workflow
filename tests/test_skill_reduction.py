@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills/sdd-workflow/SKILL.md"
 AUTHORING = ROOT / "skills/sdd-workflow/references/proposal-authoring.md"
+SELF_REVIEW = ROOT / "skills/sdd-workflow/references/self-review.md"
 REPORT = ROOT / "evals/reports/v0.9-skill-reduction-experiment.md"
 
 
@@ -36,6 +37,7 @@ class SkillReductionTests(unittest.TestCase):
         for relative in (
             "references/proposal-authoring.md",
             "references/runtime-recovery.md",
+            "references/self-review.md",
         ):
             with self.subTest(relative=relative):
                 self.assertIn(relative, text)
@@ -52,6 +54,19 @@ class SkillReductionTests(unittest.TestCase):
         for anchor in anchors:
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
+
+    def test_self_review_keeps_its_evidence_and_stop_boundaries(self) -> None:
+        skill = SKILL.read_text(encoding="utf-8")
+        reference = SELF_REVIEW.read_text(encoding="utf-8")
+        for anchor in (
+            "Optional on-demand review. Never automatic",
+            "Never call `approve` and never implement",
+            "`approved`: prose is frozen",
+            "grep every caller",
+            "Every finding names a concrete location",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, skill + reference)
 
     def test_conditional_readiness_remains_bounded(self) -> None:
         text = AUTHORING.read_text(encoding="utf-8")
