@@ -24,7 +24,7 @@ Enforce `提案 → 實作 → 歸檔`, including explicit revision and abandonm
 ## Phase selection
 
 - `提案`: create a new draft or explicitly revise the named proposal; no implementation.
-- `自審提案`, `自審提案 <short-name>`: adversarial review of an existing proposal; never approves and never implements. `自審提案` contains `提案` as a substring: a message containing `自審提案` always selects this phase, and `提案` must never match inside it. Never author or create a proposal on `自審提案`.
+- `自審提案`, `自審提案 <short-name>`: adversarial review of an existing proposal; never approves and never implements. Selecting this phase requires the user to be issuing it as a phase command, not merely mentioning the term inside a descriptive, quoted, or documentation request such as `在 README 說明「自審提案」`. Once that holds, `自審提案` takes precedence over its substring `提案`, which must never match inside it. Never author or create a proposal on `自審提案`.
 - `開始實作`: approve a draft with the CLI, verify `approved`, then implement one task at a time.
 - `實作`: continue an approved proposal only.
 - `歸檔`: archive only after user acceptance and reliable full task completion.

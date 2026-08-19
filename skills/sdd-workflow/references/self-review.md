@@ -6,15 +6,18 @@ implements, and never changes lifecycle status.
 
 ## Scope by canonical status
 
-- `draft`: nothing is approved yet, so the draft may be corrected in place -
-  prose gaps such as an omission in 影響範圍, an unstated exception case, a weak
-  acceptance condition or a wrong description of current behavior, and the task
-  list itself when the review finds it genuinely defective: adding, removing,
-  splitting, reordering, or rewording tasks. Stay within the ten-task limit, then
-  rerun `validate` and `status`. Every task-level edit is itemised in the report;
-  silent restructuring is the thing being prevented, not the editing itself.
-  Choosing between conflicting proposals is still the user's call - report it,
-  never act on it.
+- `draft`: pending scope is not approved yet, so the draft may be corrected in
+  place - prose gaps such as an omission in 影響範圍, an unstated exception case,
+  a weak acceptance condition or a wrong description of current behavior, and
+  the unchecked part of the task list when the review finds it genuinely
+  defective: adding, removing, splitting, reordering, or rewording unchecked
+  tasks. A `draft` reached through `begin-revision` can already carry checked
+  tasks; their text and order are implementation history and stay exactly in
+  place, exactly as `SKILL.md` 修訂 requires. Stay within the limit of ten
+  unchecked tasks, then rerun `validate` and `status`. Every task-level edit is
+  itemised in the report; silent restructuring is the thing being prevented, not
+  the editing itself. Choosing between conflicting proposals is still the user's
+  call - report it, never act on it.
 - `approved`: prose is frozen. Report only, and state that applying any change
   requires `提案` to enter managed revision.
 - Any other status: the proposal cannot be reviewed. Report the canonical status
@@ -170,11 +173,17 @@ anything.
 
 Report in this order:
 
-1. Verdict, one line: `通過` (nothing found anywhere), `需修正` (one or more
-   findings from layers 0-2 or from the conditional checks), or `待你決定` (a
-   layer 3 finding, with everything else clean). A conditional finding is never
-   downgraded to a footnote under `通過`: those risks are low-frequency and
-   high-loss, which is the entire reason the checks exist.
+1. Verdict, one line, decided by what is still unresolved after the in-place
+   corrections this review already made: `通過` (nothing unresolved anywhere),
+   `需修正` (an unresolved finding from layers 0-2 or from the conditional
+   checks), or `待你決定` (only a layer 3 option question is left, everything
+   else resolved or clean). A finding corrected in place is resolved and never
+   forces `需修正` on its own; it is still itemised under point 2, so the user
+   sees what changed. An unresolved conditional finding is never downgraded to a
+   footnote under `通過`: those risks are low-frequency and high-loss, which is
+   the entire reason the checks exist. The Layer 0 early stop is the one
+   exception to resolution: a wrong premise is always `需修正`, never corrected
+   into `通過` here.
 2. Each finding: location, what is wrong, and what it causes. For a `draft`,
    state which ones were already corrected and which still need a decision. List
    every task-level edit one by one - added, removed, split, reordered, reworded
