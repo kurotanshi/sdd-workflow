@@ -87,7 +87,7 @@ for every affected interaction boundary. Otherwise rerun the complete matrix.
   their stable v1 versions.
 - [ ] Confirm runtime `--version`, handshake, package identity, README,
   compatibility matrix, CLI fixtures, and tests all report the exact candidate
-  release and engine generation `1.0`.
+  release and the same candidate-declared engine generation.
 - [ ] Review `CHANGELOG.md`, migration, rollback, security/trust, and non-goals
   documents against the candidate bytes.
 - [ ] Record the final candidate commit in the release handoff. Tagging,

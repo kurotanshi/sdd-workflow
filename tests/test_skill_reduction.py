@@ -86,6 +86,36 @@ class SkillReductionTests(unittest.TestCase):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
 
+    def test_authoring_prefers_vertical_slices_without_file_count_limits(self) -> None:
+        text = AUTHORING.read_text(encoding="utf-8")
+        for anchor in (
+            "order tasks by dependency",
+            "vertical slices",
+            "leave the system usable",
+            "fixed file-count",
+            "another planning artifact",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
+    def test_implementation_quality_gates_are_conditional_and_evidence_bound(self) -> None:
+        text = SKILL.read_text(encoding="utf-8")
+        for anchor in (
+            "minimum context packet",
+            "target files",
+            "related tests",
+            "one existing similar pattern",
+            "framework, library, SDK, or tool version",
+            "official documentation",
+            "necessary source cannot be verified",
+            "Definition of Done",
+            "An existing script alone is not a declaration",
+            "conflicting declarations stop",
+            "no declaration means do not invent",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
     def test_report_records_non_regression_and_usage_diagnostic(self) -> None:
         text = REPORT.read_text(encoding="utf-8")
         for fact in (
