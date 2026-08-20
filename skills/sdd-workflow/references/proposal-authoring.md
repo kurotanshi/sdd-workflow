@@ -68,6 +68,13 @@ Compact examples for triggered reviews:
 7. Each task is one independently verifiable behavior change with a specific test or observable result. A new proposal has at most 10 tasks.
 8. After the tasks, add `## 驗收條件` and plain-language observable scenarios.
 
+For cross-file or cross-module work, order tasks by dependency and prefer
+vertical slices that leave the system usable and independently verifiable after
+each task. A horizontal prerequisite is acceptable only when the proposal
+states why it cannot form a usable slice yet. Do not impose a fixed file-count
+limit or create another planning artifact; small, obvious changes may keep a
+short proposal.
+
 The CLI alone decides whether the artifact is valid or how tasks are counted.
 Do not reproduce parser rules or normalize text manually.
 

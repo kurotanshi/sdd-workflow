@@ -2,6 +2,14 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## Unreleased
+
+### Added
+- `SKILL.md` 與 proposal authoring 新增條件式工程品質規則：依相依順序安排垂直 task、每條 task 使用最小 context、版本相依決策查對官方文件，以及套用專案明確宣告的 Definition of Done。
+
+### Changed
+- 版本分類決定為 MINOR candidate；proposal schema、CLI command surface、JSON output、machine authority 與 engine generation 不變。正式 release 仍須通過既有 release checklist 與 Agent regression gate。
+
 ## v1.2.0 — 2026-08-19
 
 ### Added

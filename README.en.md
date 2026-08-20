@@ -20,6 +20,7 @@ Its goal is to help AI Agents complete most change tasks by turning the expected
 - **Observable Acceptance Results**: Define the goal, scope, and observable acceptance results so the Agent knows what completion means.
 - **Approved Execution**: Split work into independently verifiable tasks and implement only an explicitly approved proposal.
 - **Task-by-Task Progress**: Implement and verify one task at a time instead of producing a large batch that is difficult to review.
+- **Engineering Evidence**: Load the minimum context before each task, check official documentation for version-dependent decisions, and apply only project-declared quality standards that are relevant to the change.
 - **Requirement Freezing**: Stop code changes when requirements change, revise the proposal, and wait for reapproval.
 - **Authoritative Recovery**: Recover authoritative state across sessions, handoffs, failed writes, and archival.
 - **Fail Closed Safety**: Fail closed when state or evidence is inconsistent instead of guessing or silently repairing it.
@@ -70,12 +71,7 @@ The install location is `~/.claude/skills/sdd-workflow/`. Start a fresh session 
    State changed requirements. The Agent revises the proposal and waits for a new `開始實作`.
 
 5. **Accept & Archive (`歸檔 <short-name>`)
-   Accept the completed result, then reply `歸檔 <short-name>` to move it under `sdd/archive/`.
-
-> [!TIP]
-> Replay the example with `python3 examples/sample-web-api/run-walkthrough.py`.
-
----
+   Accept the completed result, then reply `歸檔 <short-name>` to move it under `sdd/archive/`. Replay the example with `python3 examples/sample-web-api/run-walkthrough.py`.
 
 ## Workflow and Safety Boundaries
 
@@ -119,6 +115,10 @@ The amount of specification should match the task, but this Skill does not skip 
 - **Small Edit**: use a concise proposal, often with one task and a directly observable acceptance result.
 - **Typical Feature or Fix**: split distinct outcomes into independently verifiable tasks.
 - **Cross-Module or High-Risk Work**: state the impact, regression validation, revision, and recovery considerations.
+
+Cross-file or cross-module work is ordered by dependency and preferably sliced into vertical outcomes that leave the system usable and independently verifiable after each task. There is no fixed file-count limit and no second planning artifact is introduced for this guidance.
+
+During implementation, version-dependent framework, library, SDK, or tool decisions are checked against the project's actual version and official documentation. Before `complete-task`, the Agent applies only a Definition of Done explicitly declared in project instructions, contributor guidance, or CI documentation and relevant to the change. No declaration means no invented check; conflicting declarations stop for clarification.
 
 Every size follows `proposal → explicit approval → task-by-task implementation and verification → user acceptance → archive`. This makes results easier to check, but does not guarantee that an Agent never makes a mistake; acceptance conditions and actual validation remain the evidence of completion.
 
