@@ -51,7 +51,7 @@ class RuntimeDiscoveryTests(unittest.TestCase):
         data = envelope["data"]
         self.assertEqual(data["distribution_id"], "sdd-workflow")
         self.assertEqual(data["handshake_version"], 1)
-        self.assertEqual(data["engine_generation"], "1.2")
+        self.assertEqual(data["engine_generation"], "1.3")
         self.assertEqual(data["capabilities"], sorted(data["capabilities"]))
         self.assertRegex(data["runtime_identity_sha256"], r"^[0-9a-f]{64}$")
         self.assertRegex(data["skill_sha256"], r"^[0-9a-f]{64}$")
@@ -118,8 +118,8 @@ class RuntimeDiscoveryTests(unittest.TestCase):
             ),
             "generation": (
                 handshake_envelope(
-                    engine_version="1.3.0",
-                    engine_generation="1.3",
+                    engine_version="1.4.0",
+                    engine_generation="1.4",
                 ),
                 "RUNTIME_INCOMPATIBLE",
             ),

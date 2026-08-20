@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v1.2.0 ｜ [繁體中文](./README.md)
+> Version v1.3.0 ｜ [繁體中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -142,9 +142,9 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 
 ---
 
-## v1.2.0
+## v1.3.0
 
-This minor release adds the optional `自審提案` phase. The Agent checks a proposal's premise, correctness, SDD process, design direction, and applicable security, reversibility, performance, and dependency risks using concrete evidence. It may correct clear gaps in a draft, while approved proposals remain read-only; self-review never approves or implements. Proposal schemas, CLI commands, and the JSON output version remain unchanged.
+This minor release adds conditional engineering evidence: cross-file work is ordered by dependency and prefers usable, independently verifiable vertical outcomes; each task starts with minimum context; version-dependent decisions use the project's version and official documentation; and completion applies only relevant Definition of Done standards explicitly declared by the project. Proposal schemas, CLI commands, and the JSON output version remain unchanged.
 
 Replace the complete package when updating. Never mix files from different releases.
 

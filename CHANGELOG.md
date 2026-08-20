@@ -2,13 +2,17 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
-## Unreleased
+## v1.3.0 — 2026-08-20
 
 ### Added
 - `SKILL.md` 與 proposal authoring 新增條件式工程品質規則：依相依順序安排垂直 task、每條 task 使用最小 context、版本相依決策查對官方文件，以及套用專案明確宣告的 Definition of Done。
 
 ### Changed
-- 版本分類決定為 MINOR candidate；proposal schema、CLI command surface、JSON output、machine authority 與 engine generation 不變。正式 release 仍須通過既有 release checklist 與 Agent regression gate。
+- 中英文 README 同步工程品質查證、垂直切片、官方來源與專案宣告 DoD 的使用方式、邊界與最新 release 摘要。
+- Engine release 更新為 `1.3.0`，engine generation 更新為 `1.3`；proposal schema v1/v2、CLI command surface、JSON output v1 與 machine envelopes 均不變。
+
+### Validation
+- 變更源自已歸檔提案 `add-engineering-quality-gates`；完整 deterministic gates、Agent matrix 與 release package 證據記錄於 v1.3.0 release gate。
 
 ## v1.2.0 — 2026-08-19
 
