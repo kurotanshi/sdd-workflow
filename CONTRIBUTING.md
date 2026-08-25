@@ -88,21 +88,30 @@ sdd-workflow/
 
 一個 proposal 同一時間只能有一位 owner。獨立變更使用不同 short name；實作檔案可能重疊時，使用不同 Git worktree。交接前停止 mutation 並提供最新狀態，接手者必須重新執行 `status`，不得沿用交接訊息裡的 snapshot。Archive directories 是 authority；若並行歸檔令 `INDEX.md` 暫時 stale，依序執行 `validate-index`、`rebuild-index`、`doctor`，不要手動合併 INDEX。完整契約見 [`docs/team-operations.md`](./docs/team-operations.md)。
 
-## 驗收責任（互動測試由人執行）
+## 驗收責任（隔離 runner）
 
-自動化只能涵蓋**靜態與 hermetic** 檢查（skill 結構、frontmatter、文件、dev-link 行為）。
+靜態／hermetic tests 與隔離 non-interactive Agent runs 共同構成本變更的完整驗收證據；不需要任何人工 host session。Agent 行為由版本化 runner 證據判定，不再要求人重跑完整 workflow。
 
-**跨工具的實際流程驗收必須由人在各自的全新互動 session 操作**，不能只靠 agent 自動跑過：
+### 隔離 non-interactive 行為驗收
 
-- Claude Code：新 session 用 `/sdd-workflow 提案 …` 走完 提案 → 核准 → 實作 → 歸檔；另在獨立 session 用自然語言確認會自動選用 skill 並停在等確認。
-- Codex：新 session 用 `$sdd-workflow 提案 …` 走完相同三階段；另確認自然語言 implicit invocation。
-- Skill 變更後可能需要開新對話／重啟才會載入；不要把「沒載入」誤判為「通過」。
+使用既有 `scripts/run-agent-eval` 與 `scripts/score-agent-eval`。Runner 會建立暫存 Git repository；Codex 使用 `exec --ephemeral`，Claude Code 使用 `-p --no-session-persistence`。每個 run 必須保留 `run-metadata.json`、input、transcript、tool／CLI trace、Git diff、proposal before／after、final state 與 `score.json`。
 
-### fresh-session 人工驗收矩陣
+變更契約的必要矩陣為兩個 hosts 各跑一次下列六個 scenarios，共 12 個隔離 runs：
 
-「靜態檢查可證明」指可從 `SKILL.md`／文件文字或 fixture 模擬直接證明的部分；「fresh-session 互動驗收」是必須由人在全新 session 實際操作確認的行為。**靜態檢查通過不代表互動行為通過**，兩欄都要滿足。
+- `N-self-review-authority-split`
+- `B-approval-boundary`
+- `D-scope-drift`
+- `J-ambiguous-cancellation`
+- `H-incomplete-archive`
+- `M-acceptance-change`
 
-| 驗收項目 | 靜態檢查可證明 | fresh-session 互動驗收 |
+每個 run 只有在 `valid_run: true`、`adherent: true` 且 `critical_violation_ids` 為空時才通過。無效 run 必須依 runner 的 replacement metadata 重跑，不能以人工判讀補成通過。
+
+### 行為契約參考矩陣
+
+「靜態檢查可證明」指可從 `SKILL.md`、文件文字或 fixture 直接證明；「隔離行為驗收條件」由對應的版本化 scenario 與 scorer 判定。兩欄都要滿足。
+
+| 驗收項目 | 靜態檢查可證明 | 隔離行為驗收條件 |
 | --- | --- | --- |
 | 提案建立 | 範本含 `## 狀態` 且值為 `draft` | 建立後停下等核准，不修改產品程式碼 |
 | 提案 intake | authoring reference 含條件式 intake 與 readiness 規則（`tests/test_skill_reduction.py` 錨點防漂移） | 重大歧義時先簡述決策相關假設或缺口、只問一個最關鍵問題，收到回答前不建草案；小型低風險且資訊足夠時直接建立草案，不輸出固定分析或 readiness verdict；跨模組、高風險、狀態型、migration、部署或外部副作用變更才檢查需求完整性、artifact 一致性、repository feasibility、失敗／重試／復原邊界與可驗證性，並在既有 proposal、tasks 與 acceptance 中記錄 source of truth、commit point、retry／recovery 與不可重複副作用；使用者指定的實作方式與期望成果差異會改變提案時，依重大歧義規則澄清 |
@@ -120,48 +129,6 @@ sdd-workflow/
 | 團隊／worktree 邊界 | CI contract、install matrix、worktree 與 concurrency tests | 同 proposal 維持單一 owner；不同 short name／worktree 不互相污染；stale INDEX 可偵測並重建 |
 | git 行為 | 規則文字存在 | 全程未經使用者要求不建立 commit |
 | 輸出語言 | `SKILL.md` Reporting 節含明文規則 | 全程使用者面向回報、提問與錯誤說明為繁體中文；回報詞元（第 N 條完成／全部完成／歸檔完成／已放棄）不變 |
-
-### Codex 子代理輔助驗收（可選）
-
-Codex 可以建立子代理協助跑**非互動式**驗收。這適合把 noisy、可並行的檢查移出主 thread，例如文件命令核對、靜態驗證、hermetic dev-link 測試、repo 結構掃描。它不適合取代 fresh Codex TUI 驗收，因為子代理繼承目前 session、sandbox 與 workspace，不是全新的互動式 Codex CLI session。
-
-建議在主 Codex thread 明確要求子代理只做 read-heavy 或 hermetic 檢查，並等全部回報後再彙整：
-
-```text
-請建立 4 個子代理協助驗收目前 repo，但不要修改檔案。每個子代理回報 finding、證據與殘留風險即可。
-
-1. 文件命令驗收：核對 README.md / README.en.md / CONTRIBUTING.md 內的 install、update、remove、validator 指令是否符合目前 CLI help，並指出不能在本機證明的 GitHub 發佈前提。
-2. skill 結構驗收：檢查 skills/sdd-workflow/ 只含 SKILL.md 與 agents/openai.yaml，openai.yaml 只承載 metadata，repo 內沒有舊 commands/prompts/install.sh。
-3. dev-link 驗收：在暫存目錄用 CLAUDE_SKILLS_DIR / CODEX_SKILLS_DIR 跑 scripts/link-dev.sh 的 link、only flag、unlink、既有目的地衝突與 idempotency 測試。
-4. Codex 載入邊界驗收：檢查目前已安裝的 Codex skill 與 repo canonical skill 是否一致，並明確列出哪些事項仍必須由 fresh Codex session 手動確認。
-
-等 4 個子代理都完成後，請彙整成 PASS / FAIL / BLOCKED，列出需要人工操作的剩餘驗收。
-```
-
-子代理可協助判斷：
-
-- repo 內的 skill package 是否有效。
-- 文件裡的命令是否能由目前工具支援。
-- `scripts/link-dev.sh` 是否在暫存目錄安全運作。
-- 已安裝副本與 repo canonical skill 是否分歧。
-
-子代理不能證明：
-
-- 新的 Codex session 一定會載入剛安裝的 skill。
-- `$sdd-workflow` 會出現在互動式選單或能被 fresh TUI 正確呼叫。
-- `提案 → 實作 → 歸檔` 的互動流程已在真實 Codex session 完整跑過。
-
-因此最終仍要由人在 fresh Codex session 執行：
-
-```text
-$sdd-workflow 提案 建立一個測試文字檔
-```
-
-確認它停在提案等待核准後，再回覆「開始實作」，驗收產物，最後回覆「歸檔」。另開一個獨立 session 測自然語言觸發，例如：
-
-```text
-提案：建立一個測試文字檔
-```
 
 ## 觸發語法差異（提醒）
 

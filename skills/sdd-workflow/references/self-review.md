@@ -50,14 +50,24 @@ one exception to the `always` layers, and it is never reported as `通過`.
 1. Related code and regression: grep every caller of each function, field, or
    setting being changed; decide for each whether it must change too. Missing
    ones belong in 影響範圍.
-2. Existing data and state: when a field, format, stored value, or setting shape
+2. Rule authority: inspect whether the proposed change decides one rule in a
+   second place, makes a client reimplement a rule already enforced by a server,
+   or persists state that can be derived from an existing authority. Two
+   locations are enough for this authority-split check; it is separate from the
+   Layer 3 threshold for general code duplication. A finding requires concrete
+   repository locations and the resulting behavioral or state divergence. When
+   the evidence proves a split but cannot establish which location should remain
+   authoritative, report the unresolved finding and stop rather than choosing.
+   Similar code alone is not a finding when it neither decides the same rule nor
+   persists derived state.
+3. Existing data and state: when a field, format, stored value, or setting shape
    changes, state what happens to data that already exists. Grep finds code, not
    data, so this is checked separately.
-3. Exception paths: for each task, state the empty, error, and concurrent cases.
+4. Exception paths: for each task, state the empty, error, and concurrent cases.
    A low-frequency case may be excluded, but the exclusion is written down.
-4. Falsifiable acceptance: every task maps to acceptance that can be judged true
+5. Falsifiable acceptance: every task maps to acceptance that can be judged true
    or false. "應該正常運作" is not acceptance.
-5. Existing tests: identify tests whose assertions the new behavior invalidates.
+6. Existing tests: identify tests whose assertions the new behavior invalidates.
 
 ## Layer 2 - SDD process (always)
 

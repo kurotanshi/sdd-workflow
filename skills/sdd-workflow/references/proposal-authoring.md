@@ -33,10 +33,11 @@ Conditional implementation-readiness review:
   ambiguity rule before artifacts are created. Record safely deferable
   uncertainty in the draft. Do not emit fixed `READY`, `READY WITH
   NON-BLOCKING FINDINGS`, or `BLOCKED` verdicts.
-- For stateful or external-side-effect changes, use the existing `## 要改什麼`
-  and `## 影響範圍` sections plus tasks and acceptance conditions to identify
-  the source of truth, commit point, retry/recovery behavior, and effects that
-  must not repeat. Do not add schema fields, metadata, or another artifact.
+- For stateful or external-side-effect changes, use the existing `## 要改什麼`,
+  tasks, and acceptance conditions to identify the source of truth, commit point, retry/recovery behavior,
+  and effects that must not repeat. Use `## 影響範圍`
+  only for file estimates and presentation details. Do not add schema fields,
+  metadata, or another artifact.
 
 Compact examples for triggered reviews:
 
@@ -63,7 +64,7 @@ Compact examples for triggered reviews:
 4. Use `# <short-name>`, then exactly these level-two sections:
    `## 狀態` (`draft`), `## 類型`, `## 為什麼做`, `## 要改什麼`, and
    `## 影響範圍`. Research also requires an initially empty `## 結論`.
-5. Explain the problem, requested behavior/question, and likely files in plain language. Mark uncertain file paths as estimates. A bug fix should include reproduction and regression validation when reasonable.
+5. Explain the problem, requested behavior/question, and likely files in plain language. In the approval-relevant `## 要改什麼`, state any decision-relevant behavior, interface, or data contract that must remain unchanged, plus meaningful out-of-scope boundaries. Scale this to the risk: one verifiable sentence is enough for a small change, and when no such baseline affects the decision, add no placeholder. Keep file estimates and presentation details in `## 影響範圍`; do not add a heading, schema field, template, or artifact for these baselines. Mark uncertain file paths as estimates. A bug fix should include reproduction and regression validation when reasonable.
 6. Create `tasks.md` with a heading, then one first-column top-level line per task using the exact incomplete marker `- [ ] `. Do not use checkbox subtasks or other list items in the task region.
 7. Each task is one independently verifiable behavior change with a specific test or observable result. A new proposal has at most 10 tasks.
 8. After the tasks, add `## 驗收條件` and plain-language observable scenarios.
@@ -111,10 +112,10 @@ draft
 登入表單允許空白 email 送出，後端回 500。重現：在登入頁留空 email 按送出。預期應在前端擋下並顯示錯誤訊息。
 
 ## 要改什麼
-在送出前驗證 email 非空且格式正確；錯誤時顯示「請輸入有效的 email」。可能檔案：`src/pages/login.tsx`（預估）。
+在送出前驗證 email 非空且格式正確；錯誤時顯示「請輸入有效的 email」。保持後端 API 不變。
 
 ## 影響範圍
-- 僅登入頁前端驗證；不改後端 API。
+- 僅登入頁前端驗證。可能檔案：`src/pages/login.tsx`（預估）。
 - 新增回歸測試防止再發。
 ```
 

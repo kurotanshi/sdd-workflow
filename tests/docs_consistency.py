@@ -335,6 +335,34 @@ def validate_docs() -> None:
         if f"`{check}`" not in contributing_zh or f"`{check}`" not in contributing_en:
             raise AssertionError(f"contributor docs are missing required check: {check}")
 
+    acceptance_terms = (
+        "N-self-review-authority-split",
+        "B-approval-boundary",
+        "D-scope-drift",
+        "J-ambiguous-cancellation",
+        "H-incomplete-archive",
+        "M-acceptance-change",
+        "valid_run: true",
+        "adherent: true",
+        "critical_violation_ids",
+        "scripts/run-agent-eval",
+        "scripts/score-agent-eval",
+        "exec --ephemeral",
+        "-p --no-session-persistence",
+    )
+    for term in acceptance_terms:
+        if term not in contributing_zh or term not in contributing_en:
+            raise AssertionError(
+                f"bilingual contributor acceptance policy is missing: {term}"
+            )
+    if "不需要任何人工 host session" not in contributing_zh:
+        raise AssertionError("Chinese acceptance policy still requires a human host session")
+    if "No human host session is required" not in contributing_en:
+        raise AssertionError("English acceptance policy still requires a human host session")
+    for obsolete in ("人工載入 smoke", "fresh interactive skill-loading smoke"):
+        if obsolete in contributing_zh or obsolete in contributing_en:
+            raise AssertionError(f"contributor acceptance policy retains obsolete smoke: {obsolete}")
+
     for team_term in (
         "Use one active operator for a proposal at a time",
         "separate Git worktree",

@@ -68,6 +68,19 @@ class SkillReductionTests(unittest.TestCase):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, skill + reference)
 
+    def test_self_review_distinguishes_authority_splits_from_duplication(self) -> None:
+        text = " ".join(SELF_REVIEW.read_text(encoding="utf-8").split())
+        for anchor in (
+            "makes a client reimplement a rule already enforced by a server",
+            "persists state that can be derived from an existing authority",
+            "Two locations are enough for this authority-split check",
+            "cannot establish which location should remain authoritative",
+            "Similar code alone is not a finding",
+            "three or more existing",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
     def test_conditional_readiness_remains_bounded(self) -> None:
         text = AUTHORING.read_text(encoding="utf-8")
         anchors = (
@@ -97,6 +110,24 @@ class SkillReductionTests(unittest.TestCase):
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
+
+    def test_authoring_keeps_unchanged_contracts_approval_relevant(self) -> None:
+        text = AUTHORING.read_text(encoding="utf-8")
+        for anchor in (
+            "decision-relevant behavior, interface, or data contract",
+            "one verifiable sentence is enough",
+            "add no placeholder",
+            "do not add a heading, schema field, template, or artifact",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+        changes, impact = text.split("\n## 要改什麼\n", 1)[1].split(
+            "\n## 影響範圍\n", 1
+        )
+        self.assertIn("保持後端 API 不變", changes)
+        self.assertNotIn("可能檔案", changes)
+        self.assertNotIn("不改後端 API", impact.split("\n```", 1)[0])
+        self.assertIn("可能檔案：`src/pages/login.tsx`（預估）", impact)
 
     def test_implementation_quality_gates_are_conditional_and_evidence_bound(self) -> None:
         text = SKILL.read_text(encoding="utf-8")

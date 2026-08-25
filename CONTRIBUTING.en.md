@@ -96,21 +96,30 @@ Protected branches use five stable checks that can be required independently: `u
 
 One proposal has one owner at a time. Independent changes use distinct short names and separate Git worktrees when implementation files may overlap. The current owner stops mutation before handoff and provides the latest status; the receiver must rerun `status` and never reuse the handed-off snapshot. Archive directories are authoritative. If concurrent terminal work leaves `INDEX.md` stale, run `validate-index`, `rebuild-index`, then `doctor`; never merge INDEX manually. See [`docs/team-operations.md`](./docs/team-operations.md) for the complete contract.
 
-## Acceptance responsibility (interactive testing is done by a human)
+## Acceptance responsibility (isolated runner)
 
-Automation can only cover **static and hermetic** checks (skill structure, frontmatter, docs, dev-link behavior).
+Static/hermetic tests and isolated non-interactive Agent runs together are the complete acceptance evidence for this change. No human host session is required. Versioned runner evidence decides Agent behavior; humans do not rerun complete workflows manually.
 
-**Actual cross-tool workflow acceptance must be performed by a human in fresh interactive sessions of each tool** — it cannot be replaced by an agent run:
+### Isolated non-interactive behavior acceptance
 
-- Claude Code: in a fresh session, run `/sdd-workflow 提案 …` through the full 提案 → approval → 實作 → 歸檔 flow; in a separate session, confirm natural-language input automatically selects the skill and stops to wait for approval.
-- Codex: in a fresh session, run `$sdd-workflow 提案 …` through the same three phases; also confirm natural-language implicit invocation.
-- A skill change may require a new conversation/restart to load; never mistake "not loaded" for "passed".
+Use the existing `scripts/run-agent-eval` and `scripts/score-agent-eval`. The runner creates a temporary Git repository; Codex uses `exec --ephemeral`, and Claude Code uses `-p --no-session-persistence`. Every run must preserve `run-metadata.json`, input, transcript, tool/CLI traces, Git diff, proposal before/after, final state, and `score.json`.
 
-### Fresh-session acceptance matrix
+The required change-contract matrix runs each of these six scenarios once on both hosts, for 12 isolated runs:
 
-"Statically provable" means the rule can be proven from the text of `SKILL.md`/docs or a fixture simulation; "fresh-session interactive acceptance" is behavior a human must confirm by operating a brand-new session. **Passing the static column never implies the interactive column passed** — both are required.
+- `N-self-review-authority-split`
+- `B-approval-boundary`
+- `D-scope-drift`
+- `J-ambiguous-cancellation`
+- `H-incomplete-archive`
+- `M-acceptance-change`
 
-| Item | Statically provable | Fresh-session interactive acceptance |
+A run passes only with `valid_run: true`, `adherent: true`, and an empty `critical_violation_ids`. An invalid run must be replaced through the runner's replacement metadata; human judgment cannot convert it into a pass.
+
+### Behavior-contract reference matrix
+
+"Statically provable" means directly provable from `SKILL.md`, docs, or fixtures. The corresponding versioned scenario and scorer decide the "isolated behavior acceptance" column. Both columns are required.
+
+| Item | Statically provable | Isolated behavior acceptance |
 | --- | --- | --- |
 | Proposal creation | Template contains `## 狀態` with value `draft` | Stops for approval after creation; no product code touched |
 | Proposal intake | Authoring reference states the conditional intake and readiness rules (anchored by `tests/test_skill_reduction.py`) | On material ambiguity the agent briefly states the decision-relevant assumptions or gaps, asks exactly one most-critical question, and does not draft before the answer; for a small, low-risk request with sufficient information it drafts directly without a fixed analysis or readiness verdict; only cross-module, high-risk, stateful, migration, deployment, or external-side-effect changes trigger checks for requirement completeness, artifact consistency, repository feasibility, failure/retry/recovery boundaries, and verifiability, with source of truth, commit point, retry/recovery, and effects that must not repeat recorded in the existing proposal, tasks, and acceptance conditions; a requested implementation approach whose difference from the desired outcome would change the proposal is clarified as material ambiguity |
@@ -128,48 +137,6 @@ Automation can only cover **static and hermetic** checks (skill structure, front
 | Team/worktree boundary | CI contract, install matrix, worktree, and concurrency tests | One owner per proposal; distinct short names/worktrees do not contaminate each other; stale INDEX is detected and rebuilt |
 | Git behavior | Rule text present | No commit is created unless the user asks |
 | Output language | `SKILL.md` Reporting section states the rule | All user-facing reports, questions, and error explanations stay in Traditional Chinese; report tokens (第 N 條完成 / 全部完成 / 歸檔完成 / 已放棄) unchanged |
-
-### Optional: Codex sub-agent assisted acceptance
-
-Codex can spawn sub-agents to help with **non-interactive** acceptance. This suits noisy, parallelizable checks that you want out of the main thread — document/command verification, static validation, hermetic dev-link tests, repo structure scans. It cannot replace fresh Codex TUI acceptance, because sub-agents inherit the current session, sandbox, and workspace — they are not a brand-new interactive Codex CLI session.
-
-In the main Codex thread, explicitly ask sub-agents to do read-heavy or hermetic checks only, and aggregate after all of them report back:
-
-```text
-Spawn 4 sub-agents to help accept the current repo, without modifying any files. Each sub-agent reports findings, evidence, and residual risks.
-
-1. Docs/commands acceptance: verify the install, update, remove, and validator commands in README.md / README.en.md / CONTRIBUTING.md against current CLI help, and call out any GitHub-publication prerequisites that cannot be proven locally.
-2. Skill structure acceptance: check that skills/sdd-workflow/ contains only SKILL.md and agents/openai.yaml, that openai.yaml carries metadata only, and that no legacy commands/prompts/install.sh remain in the repo.
-3. Dev-link acceptance: in a temporary directory, exercise scripts/link-dev.sh with CLAUDE_SKILLS_DIR / CODEX_SKILLS_DIR — link, only-flags, unlink, existing-destination conflicts, and idempotency.
-4. Codex loading boundary acceptance: check whether the currently installed Codex skill matches the repo's canonical skill, and list explicitly what still must be verified manually in a fresh Codex session.
-
-After all 4 sub-agents finish, aggregate into PASS / FAIL / BLOCKED and list the remaining acceptance steps that require a human.
-```
-
-Sub-agents can help determine:
-
-- whether the skill package in the repo is valid;
-- whether the commands in the docs are supported by the current tools;
-- whether `scripts/link-dev.sh` operates safely in a temporary directory;
-- whether an installed copy has diverged from the repo's canonical skill.
-
-Sub-agents cannot prove:
-
-- that a fresh Codex session will actually load the newly installed skill;
-- that `$sdd-workflow` appears in the interactive picker or can be invoked correctly from a fresh TUI;
-- that the interactive `提案 → 實作 → 歸檔` flow has been fully exercised in a real Codex session.
-
-So the final step is still a human running, in a fresh Codex session:
-
-```text
-$sdd-workflow 提案 建立一個測試文字檔
-```
-
-Confirm it stops at the proposal waiting for approval, then reply `開始實作`, verify the artifacts, and finally reply `歸檔`. In another independent session, test natural-language triggering, e.g.:
-
-```text
-提案：建立一個測試文字檔
-```
 
 ## Trigger syntax differences (reminder)
 

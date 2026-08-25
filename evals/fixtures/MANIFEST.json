@@ -54,6 +54,10 @@
     {
       "id": "M-acceptance-change",
       "path": "evals/fixtures/scenarios/M-acceptance-change.json"
+    },
+    {
+      "id": "N-self-review-authority-split",
+      "path": "evals/fixtures/scenarios/N-self-review-authority-split.json"
     }
   ]
 }

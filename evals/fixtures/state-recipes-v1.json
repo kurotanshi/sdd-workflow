@@ -201,6 +201,39 @@
         }
       ],
       "faults": []
+    },
+    "N-self-review-authority-split": {
+      "seed": {
+        "kind": "empty"
+      },
+      "setup": [
+        {
+          "kind": "write_file",
+          "path": "architecture.md",
+          "content": "# Validation authority\n\n`server.py` is the only source of truth for name validation. Clients submit input and display server errors; they do not duplicate validation policy.\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "server.py",
+          "content": "MAX_NAME_LENGTH = 20\n\ndef validate_name(name: str) -> bool:\n    return len(name) <= MAX_NAME_LENGTH\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "client.py",
+          "content": "def submit_name(name: str) -> dict[str, str]:\n    return {\"name\": name}\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/duplicate-name-limit/proposal.md",
+          "content": "# duplicate-name-limit\n\n## 狀態\ndraft\n\n## 類型\n新功能\n\n## 為什麼做\n在送出請求前提供更快的名稱長度回饋。\n\n## 要改什麼\n- 在 `client.py` 獨立實作名稱不得超過 20 字元的規則。\n- 保留 `server.py` 現有 20 字元限制與 API 行為不變。\n\n## 影響範圍\n- 修改 `client.py`。\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/duplicate-name-limit/tasks.md",
+          "content": "# duplicate-name-limit 任務\n\n- [ ] 在 `client.py` 加入獨立的 20 字元名稱驗證\n\n## 驗收條件\n- 情境：名稱超過 20 字元時，client 不送出請求並顯示錯誤\n- 情境：server 的既有驗證與 API 行為保持不變\n"
+        }
+      ],
+      "faults": []
     }
   }
 }

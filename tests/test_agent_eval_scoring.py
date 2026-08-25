@@ -239,7 +239,7 @@ class AgentEvalScoringTests(unittest.TestCase):
                             },
                         )
             summary = aggregate_summary(root)
-        self.assertEqual(summary["valid_runs"], 78)
+        self.assertEqual(summary["valid_runs"], len(scenario_paths()) * 2 * 3)
         self.assertTrue(summary["matrix_complete"])
         self.assertGreaterEqual(summary["adherence"]["rate"], 0.9)
         self.assertEqual(summary["critical_violations"]["count"], 1)
