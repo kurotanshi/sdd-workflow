@@ -122,6 +122,18 @@ class SkillReductionTests(unittest.TestCase):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
 
+    def test_main_proposal_step_requires_bounded_high_risk_discovery(self) -> None:
+        text = " ".join(SKILL.read_text(encoding="utf-8").split())
+        for anchor in (
+            "high-risk review gate applies, before authoring",
+            "bounded filename and reference searches",
+            "applicable project guidance, architecture decisions, configuration",
+            "affected core flow and callers, and tests",
+            "do not inspect unrelated directories",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
     def test_authoring_prefers_vertical_slices_without_file_count_limits(self) -> None:
         text = AUTHORING.read_text(encoding="utf-8")
         for anchor in (

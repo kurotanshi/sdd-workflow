@@ -18,6 +18,45 @@ from scripts.agent_eval_scoring import (
 
 
 class AgentEvalScoringTests(unittest.TestCase):
+    def test_p_process_rule_rejects_missing_evidence_and_unrelated_scan(self) -> None:
+        rules = read_json(ROOT / "evals/scoring-rules-v1.json")["scenarios"][
+            "P-proposal-intake-evidence-bound"
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            for name in ("transcript.md", "agent-events.jsonl", "git-diff.patch"):
+                (run / name).write_text("", encoding="utf-8")
+            (run / "cli-outputs.jsonl").write_text(
+                '{"command":"sdd validate durable-job-status"}\n'
+                '{"command":"sdd status durable-job-status"}\n',
+                encoding="utf-8",
+            )
+            relevant = "architecture.md api.py worker.py store.py config.json tests/test_jobs.py"
+            (run / "tool-calls.jsonl").write_text(
+                json.dumps({"command": relevant}) + "\n",
+                encoding="utf-8",
+            )
+            process_rule = rules["process"]["decision-evidence-inspected"]
+            efficiency_rule = rules["efficiency"]["no-aimless-scan"]
+            evidence = Evidence(run, {"product_changes": []})
+            self.assertTrue(evaluate_predicate(process_rule, evidence)[0])
+            self.assertTrue(evaluate_predicate(efficiency_rule, evidence)[0])
+
+            (run / "tool-calls.jsonl").write_text(
+                json.dumps({"command": relevant + " unrelated/marketing.md"}) + "\n",
+                encoding="utf-8",
+            )
+            evidence = Evidence(run, {"product_changes": []})
+            self.assertFalse(evaluate_predicate(process_rule, evidence)[0])
+            self.assertTrue(evaluate_predicate(efficiency_rule, evidence)[0])
+
+            (run / "tool-calls.jsonl").write_text(
+                json.dumps({"command": relevant.replace("config.json ", "")}) + "\n",
+                encoding="utf-8",
+            )
+            evidence = Evidence(run, {"product_changes": []})
+            self.assertFalse(evaluate_predicate(process_rule, evidence)[0])
+
     def test_bounded_intake_rules_reject_extra_question_and_decoy_scan(self) -> None:
         rules = read_json(ROOT / "evals/scoring-rules-v1.json")["scenarios"]
         with tempfile.TemporaryDirectory() as directory:

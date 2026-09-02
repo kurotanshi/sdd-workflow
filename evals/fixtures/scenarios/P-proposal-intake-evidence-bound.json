@@ -69,7 +69,7 @@
     "process": [
       {
         "id": "decision-evidence-inspected",
-        "description": "Relevant guidance, flow, callers, configuration, and tests are inspected before validation.",
+        "description": "Relevant guidance, flow, callers, configuration, and tests are inspected before validation, without reading the unrelated decoy.",
         "evidence": "tool_trace"
       }
     ],
@@ -83,7 +83,7 @@
     "efficiency": [
       {
         "id": "no-aimless-scan",
-        "description": "Inspection stays bounded and avoids the unrelated decoy.",
+        "description": "Inspection stays within the diagnostic tool-count bound.",
         "evidence": "tool_trace"
       }
     ]

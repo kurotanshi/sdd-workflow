@@ -944,6 +944,14 @@
               "op": "command-count",
               "pattern": "\\bstatus\\b",
               "minimum": 1
+            },
+            {
+              "op": "not",
+              "predicate": {
+                "op": "text-regex",
+                "source": "tool_trace",
+                "pattern": "unrelated/marketing\\.md"
+              }
             }
           ]
         }
@@ -956,21 +964,8 @@
       },
       "efficiency": {
         "no-aimless-scan": {
-          "op": "all",
-          "predicates": [
-            {
-              "op": "tool-event-count",
-              "maximum": 50
-            },
-            {
-              "op": "not",
-              "predicate": {
-                "op": "text-regex",
-                "source": "tool_trace",
-                "pattern": "unrelated/marketing\\.md"
-              }
-            }
-          ]
+          "op": "tool-event-count",
+          "maximum": 50
         }
       },
       "critical": [
