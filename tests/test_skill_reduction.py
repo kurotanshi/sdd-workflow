@@ -125,10 +125,14 @@ class SkillReductionTests(unittest.TestCase):
     def test_main_proposal_step_requires_bounded_high_risk_discovery(self) -> None:
         text = " ".join(SKILL.read_text(encoding="utf-8").split())
         for anchor in (
+            "Before authoring, revising, or any repository inspection for a proposal",
             "high-risk review gate applies, use this closed discovery sequence before authoring",
             "Read the user-named targets first",
             "For each still-missing category",
-            "use only targeted filename or reference searches",
+            "search that category separately using only a targeted filename or reference search",
+            "Do not combine missing categories into one search",
+            "read every decision-relevant match",
+            "a search-result listing is not inspected evidence",
             "applicable project guidance, architecture decisions, configuration",
             "affected core flow and callers, and tests",
             "Stop as soon as every category has enough decision evidence",
@@ -149,7 +153,10 @@ class SkillReductionTests(unittest.TestCase):
             "closed discovery sequence",
             "Read the user-named targets first",
             "For each still-missing category",
-            "use only targeted filename or reference searches",
+            "search that category separately using only a targeted filename or reference search",
+            "Do not combine missing categories into one search",
+            "read every decision-relevant match",
+            "a search-result listing is not inspected evidence",
             "Stop as soon as every category has enough decision evidence",
             "Do not list the repository root, use repo-wide globs",
             "content searches without an explicit file, path, or include scope",
@@ -157,6 +164,13 @@ class SkillReductionTests(unittest.TestCase):
             for source, text in texts.items():
                 with self.subTest(anchor=anchor, source=source):
                     self.assertIn(anchor, text)
+
+    def test_main_reads_authoring_reference_before_proposal_inspection(self) -> None:
+        text = " ".join(SKILL.read_text(encoding="utf-8").split())
+        self.assertLess(
+            text.index("Before authoring, revising, or any repository inspection"),
+            text.index("Inspect enough project context"),
+        )
 
     def test_authoring_prefers_vertical_slices_without_file_count_limits(self) -> None:
         text = AUTHORING.read_text(encoding="utf-8")

@@ -1,6 +1,7 @@
 # Proposal authoring reference
 
-Read this file completely before creating or revising an SDD proposal.
+Read this file completely before creating, revising, or inspecting the
+repository for an SDD proposal.
 
 ## New proposal
 
@@ -31,9 +32,12 @@ Conditional implementation-readiness review:
   1. Read the user-named targets first.
   2. For each still-missing category—applicable project guidance and
      requirements, architecture decisions, configuration, the affected core
-     flow and callers, and tests—use only targeted filename or reference
-     searches, then inspect only relevant matches. A file not named by the user
-     is not evidence that no applicable guidance or configuration exists.
+     flow and callers, and tests—search that category separately using only a
+     targeted filename or reference search. Do not combine missing categories
+     into one search. After each search, read every decision-relevant match
+     before moving to the next category; a search-result listing is not
+     inspected evidence. A file not named by the user is not evidence that no
+     applicable guidance or configuration exists.
   3. Stop as soon as every category has enough decision evidence; do not scan
      the repository aimlessly. Do not list the repository root, use repo-wide
      globs, or run content searches without an explicit file, path, or include

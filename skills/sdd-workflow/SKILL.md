@@ -64,11 +64,12 @@ python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-archive-r
 
 ## 提案
 
-Before authoring or revising, read [`references/proposal-authoring.md`](./references/proposal-authoring.md) fully.
+Before authoring, revising, or any repository inspection for a proposal, read
+[`references/proposal-authoring.md`](./references/proposal-authoring.md) fully.
 
 1. Inspect enough project context to describe current behavior and likely files; do not implement. When the reference's high-risk review gate applies, use this closed discovery sequence before authoring:
    - Read the user-named targets first.
-   - For each still-missing category—applicable project guidance, architecture decisions, configuration, affected core flow and callers, and tests—use only targeted filename or reference searches, then inspect only relevant matches.
+   - For each still-missing category—applicable project guidance, architecture decisions, configuration, affected core flow and callers, and tests—search that category separately using only a targeted filename or reference search. Do not combine missing categories into one search. After each search, read every decision-relevant match before moving to the next category; a search-result listing is not inspected evidence.
    - Stop as soon as every category has enough decision evidence. Do not list the repository root, use repo-wide globs, or run content searches without an explicit file, path, or include scope. Treat a filename, path, or search context as sufficient to exclude an unrelated candidate; never list its directory or open it merely to confirm or prove it is unrelated.
 2. Author the Schema v2 draft and top-level task checklist exactly as the reference requires.
 3. Run `validate`, then `status`. On success report canonical short name, type, behavior, task count, and acceptance scenarios.
