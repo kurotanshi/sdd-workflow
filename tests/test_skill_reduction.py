@@ -125,10 +125,15 @@ class SkillReductionTests(unittest.TestCase):
     def test_main_proposal_step_requires_bounded_high_risk_discovery(self) -> None:
         text = " ".join(SKILL.read_text(encoding="utf-8").split())
         for anchor in (
-            "high-risk review gate applies, before authoring",
-            "bounded filename and reference searches",
+            "high-risk review gate applies, use this closed discovery sequence before authoring",
+            "Read the user-named targets first",
+            "For each still-missing category",
+            "use only targeted filename or reference searches",
             "applicable project guidance, architecture decisions, configuration",
             "affected core flow and callers, and tests",
+            "Stop as soon as every category has enough decision evidence",
+            "Do not list the repository root, use repo-wide globs",
+            "content searches without an explicit file, path, or include scope",
             "filename, path, or search context as sufficient to exclude",
             "never list its directory or open it merely to confirm or prove it is unrelated",
         ):
