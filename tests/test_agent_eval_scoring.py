@@ -10,6 +10,7 @@ from scripts.agent_eval_scoring import (
     Evidence,
     ROOT,
     aggregate_summary,
+    evaluate_predicate,
     read_json,
     scenario_paths,
     score_run,
@@ -17,6 +18,42 @@ from scripts.agent_eval_scoring import (
 
 
 class AgentEvalScoringTests(unittest.TestCase):
+    def test_bounded_intake_rules_reject_extra_question_and_decoy_scan(self) -> None:
+        rules = read_json(ROOT / "evals/scoring-rules-v1.json")["scenarios"]
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            (run / "transcript.md").write_text(
+                "`policy.py` 是唯一權威，是否改用共用規則？\n",
+                encoding="utf-8",
+            )
+            (run / "tool-calls.jsonl").write_text(
+                '{"command":"sed -n 1,80p api.py worker.py policy.py"}\n',
+                encoding="utf-8",
+            )
+            for name in ("cli-outputs.jsonl", "agent-events.jsonl", "git-diff.patch"):
+                (run / name).write_text("", encoding="utf-8")
+            evidence = Evidence(run, {"product_changes": []})
+            question_rule = rules["Q-proposal-intake-material-alternative"][
+                "outcome"
+            ]["one-material-question"]
+            bounded_rule = rules["Q-proposal-intake-material-alternative"][
+                "efficiency"
+            ]["bounded-alternative-check"]
+            self.assertTrue(evaluate_predicate(question_rule, evidence)[0])
+            self.assertTrue(evaluate_predicate(bounded_rule, evidence)[0])
+
+            (run / "transcript.md").write_text(
+                "`policy.py` 是唯一權威，是否改用共用規則？是否仍要複製？\n",
+                encoding="utf-8",
+            )
+            (run / "tool-calls.jsonl").write_text(
+                '{"command":"sed -n 1,80p unrelated/marketing.md"}\n',
+                encoding="utf-8",
+            )
+            evidence = Evidence(run, {"product_changes": []})
+            self.assertFalse(evaluate_predicate(question_rule, evidence)[0])
+            self.assertFalse(evaluate_predicate(bounded_rule, evidence)[0])
+
     def test_command_oracle_never_falls_back_to_skill_read_text(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             run = Path(directory)

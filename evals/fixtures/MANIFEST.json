@@ -58,6 +58,30 @@
     {
       "id": "N-self-review-authority-split",
       "path": "evals/fixtures/scenarios/N-self-review-authority-split.json"
+    },
+    {
+      "id": "O-proposal-intake-low-risk",
+      "path": "evals/fixtures/scenarios/O-proposal-intake-low-risk.json"
+    },
+    {
+      "id": "P-proposal-intake-evidence-bound",
+      "path": "evals/fixtures/scenarios/P-proposal-intake-evidence-bound.json"
+    },
+    {
+      "id": "Q-proposal-intake-material-alternative",
+      "path": "evals/fixtures/scenarios/Q-proposal-intake-material-alternative.json"
+    },
+    {
+      "id": "R-proposal-intake-tracked-review",
+      "path": "evals/fixtures/scenarios/R-proposal-intake-tracked-review.json"
+    },
+    {
+      "id": "S-proposal-intake-one-off-review",
+      "path": "evals/fixtures/scenarios/S-proposal-intake-one-off-review.json"
+    },
+    {
+      "id": "T-proposal-intake-self-review-boundary",
+      "path": "evals/fixtures/scenarios/T-proposal-intake-self-review-boundary.json"
     }
   ]
 }

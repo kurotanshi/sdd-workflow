@@ -234,6 +234,214 @@
         }
       ],
       "faults": []
+    },
+    "O-proposal-intake-low-risk": {
+      "seed": {
+        "kind": "empty"
+      },
+      "setup": [
+        {
+          "kind": "write_file",
+          "path": "docs/usage.md",
+          "content": "# Instalation\n\nRun `sdd --help`.\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/.keep",
+          "content": ""
+        }
+      ],
+      "faults": []
+    },
+    "P-proposal-intake-evidence-bound": {
+      "seed": {
+        "kind": "empty"
+      },
+      "setup": [
+        {
+          "kind": "write_file",
+          "path": "architecture.md",
+          "content": "# Job state authority\n\n`store.py` is the only source of truth for job status. API and worker callers must use its SQLite transaction boundary.\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "store.py",
+          "content": "import sqlite3\n\nDB_PATH = 'jobs.db'\n\ndef save_status(job_id: str, status: str) -> None:\n    with sqlite3.connect(DB_PATH) as connection:\n        connection.execute('UPDATE jobs SET status = ? WHERE id = ?', (status, job_id))\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "api.py",
+          "content": "from store import save_status\n\ndef start(job_id: str) -> dict[str, str]:\n    save_status(job_id, 'queued')\n    return {'id': job_id, 'status': 'queued'}\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "worker.py",
+          "content": "from store import save_status\n\ndef finish(job_id: str) -> None:\n    save_status(job_id, 'done')\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "config.json",
+          "content": "{\"job_database\": \"jobs.db\", \"worker_retries\": 3}\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "tests/test_jobs.py",
+          "content": "from api import start\n\ndef test_start_response_stays_stable():\n    assert start('j1') == {'id': 'j1', 'status': 'queued'}\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "unrelated/marketing.md",
+          "content": "# Campaign roadmap\n\nThis file is unrelated to job state.\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/.keep",
+          "content": ""
+        }
+      ],
+      "faults": []
+    },
+    "Q-proposal-intake-material-alternative": {
+      "seed": {
+        "kind": "empty"
+      },
+      "setup": [
+        {
+          "kind": "write_file",
+          "path": "architecture.md",
+          "content": "# Name policy\n\n`policy.py` is the single source of truth for name validation. Callers must not duplicate the length rule.\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "policy.py",
+          "content": "MAX_NAME_LENGTH = 20\n\ndef valid_name(name: str) -> bool:\n    return len(name) <= MAX_NAME_LENGTH\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "api.py",
+          "content": "from policy import valid_name\n\ndef accept(name: str) -> bool:\n    return valid_name(name)\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "worker.py",
+          "content": "from policy import valid_name\n\ndef enqueue(name: str) -> bool:\n    return valid_name(name)\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "tests/test_policy.py",
+          "content": "from policy import valid_name\n\ndef test_limit():\n    assert valid_name('a' * 20)\n    assert not valid_name('a' * 21)\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "unrelated/marketing.md",
+          "content": "# Unrelated campaign\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/.keep",
+          "content": ""
+        }
+      ],
+      "faults": []
+    },
+    "R-proposal-intake-tracked-review": {
+      "seed": {
+        "kind": "empty"
+      },
+      "setup": [
+        {
+          "kind": "write_file",
+          "path": "architecture.md",
+          "content": "# Job state\n\nAPI and worker use `store.py` for job state.\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "api.py",
+          "content": "from store import read_status\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "worker.py",
+          "content": "from store import write_status\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "store.py",
+          "content": "def read_status(job_id): return 'queued'\ndef write_status(job_id, status): pass\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/.keep",
+          "content": ""
+        }
+      ],
+      "faults": []
+    },
+    "S-proposal-intake-one-off-review": {
+      "seed": {
+        "kind": "empty"
+      },
+      "setup": [
+        {
+          "kind": "write_file",
+          "path": "service.py",
+          "content": "def can_delete(actor_role: str, owner_id: str, actor_id: str) -> bool:\n    \"\"\"Allow administrators or the resource owner to delete.\"\"\"\n    return owner_id == actor_id\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "tests/test_service.py",
+          "content": "from service import can_delete\n\ndef test_owner_can_delete():\n    assert can_delete('member', 'u1', 'u1')\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "unrelated/marketing.md",
+          "content": "# Unrelated campaign\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/.keep",
+          "content": ""
+        }
+      ],
+      "faults": []
+    },
+    "T-proposal-intake-self-review-boundary": {
+      "seed": {
+        "kind": "empty"
+      },
+      "setup": [
+        {
+          "kind": "write_file",
+          "path": "config.py",
+          "content": "API_TIMEOUT_SECONDS = 5\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "api.py",
+          "content": "from config import API_TIMEOUT_SECONDS\n\ndef timeout() -> int:\n    return API_TIMEOUT_SECONDS\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "tests/test_api.py",
+          "content": "from api import timeout\n\ndef test_timeout():\n    assert timeout() == 5\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "unrelated/marketing.md",
+          "content": "# Campaign plan\n\nNot related to API timeout.\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/bounded-api-timeout/proposal.md",
+          "content": "---\nschema_version: 2\n---\n# bounded-api-timeout\n\n## 狀態\ndraft\n\n## 類型\n維運\n\n## 為什麼做\n目前 API timeout 是 5 秒，慢速但正常的 upstream request 會提早失敗。\n\n## 要改什麼\n將 `config.py` 的 `API_TIMEOUT_SECONDS` 從 5 調整為 10；`api.py` 繼續以該設定為唯一來源，不改呼叫介面。\n\n## 影響範圍\n- `config.py` 的 timeout 值。\n- `api.py` caller 與 `tests/test_api.py` regression assertion。\n"
+        },
+        {
+          "kind": "write_file",
+          "path": "sdd/bounded-api-timeout/tasks.md",
+          "content": "# bounded-api-timeout 任務\n\n- [ ] 將 API timeout 設定調整為 10 秒並更新 regression test\n\n## 驗收條件\n- 情境：API timeout 設定與 `timeout()` 回傳值都是 10 秒\n- 情境：設定仍只有 `config.py` 一個 authority\n"
+        }
+      ],
+      "faults": []
     }
   }
 }

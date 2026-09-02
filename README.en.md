@@ -59,7 +59,7 @@ The install location is `~/.claude/skills/sdd-workflow/`. Start a fresh session 
      ```text
      /sdd-workflow 提案 Fix the health-check API returning 500 when the database is offline
      ```
-   The Agent creates `sdd/<short-name>/proposal.md` and `tasks.md`, records the expected outcome and acceptance conditions, validates them, and stops without changing product code.
+   The Agent creates `sdd/<short-name>/proposal.md` and `tasks.md`, records the expected outcome and acceptance conditions, validates them, and stops without changing product code. Before drafting cross-module or high-risk work, the Agent read-only inspects the decision-relevant guidance, current change, core flow, callers, configuration, and tests. It checks whether the requested technical direction meets the goal and whether a simpler, more secure, or more maintainable alternative would change the proposal. Small low-risk work still gets a concise draft directly, without a separate review report. A full repository, architecture, or security review that must be tracked and archived through SDD uses a bounded `研究` proposal; a one-off read-only review need not enter SDD, and `自審提案` remains scoped to an existing proposal.
 
 2. **Self-review (optional)**
    Before approval, run `$sdd-workflow 自審提案` in Codex or `/sdd-workflow 自審提案` in Claude Code. The Agent checks the premise, correctness, SDD process, design direction, and applicable risks. It may correct concrete gaps in a draft, but only reports on an approved proposal; self-review never approves or implements.

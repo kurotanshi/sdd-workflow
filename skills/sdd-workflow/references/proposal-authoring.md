@@ -25,10 +25,22 @@ Conditional implementation-readiness review:
   deployment, or external/irreversible side-effect changes. For a small,
   low-risk proposal with sufficient information, skip the review and author
   the draft directly.
+- When the review applies, before drafting, inspect only the decision-relevant
+  repository evidence: the applicable project guidance and requirements,
+  current change, affected core flow and callers, configuration, and tests.
+  Keep this inspection read-only; do not scan the repository aimlessly, modify
+  product code, or turn intake into a standalone review report.
 - When the review applies, check requirement completeness; consistency among
   the proposal, tasks, and acceptance conditions; repository feasibility;
   state, failure, retry, and recovery boundaries; and whether acceptance can
   be verified.
+- Use that evidence to test whether the current or requested technical approach
+  satisfies the desired outcome and whether a simpler, more secure, or more
+  maintainable alternative would change the proposal's behavior, scope,
+  impact, or acceptance conditions. Such an alternative is material ambiguity
+  and follows the existing one-question rule. When no proposal-changing
+  alternative is evidenced, author the final direction directly without a
+  separate architecture or security review report.
 - A blocking gap that would change the proposal follows the existing material
   ambiguity rule before artifacts are created. Record safely deferable
   uncertainty in the draft. Do not emit fixed `READY`, `READY WITH
@@ -38,6 +50,10 @@ Conditional implementation-readiness review:
   and effects that must not repeat. Use `## 影響範圍`
   only for file estimates and presentation details. Do not add schema fields,
   metadata, or another artifact.
+- A full repository, architecture, or security review that the user wants
+  tracked and archived through SDD is a bounded `研究` proposal whose report is
+  the deliverable. A one-off read-only review need not enter SDD, and neither
+  case expands `自審提案` beyond reviewing an existing proposal.
 
 Compact examples for triggered reviews:
 

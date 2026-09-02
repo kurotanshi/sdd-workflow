@@ -99,6 +99,25 @@ class SkillReductionTests(unittest.TestCase):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
 
+    def test_pre_draft_approach_review_stays_evidence_bound(self) -> None:
+        text = " ".join(AUTHORING.read_text(encoding="utf-8").split())
+        for anchor in (
+            "When the review applies, before drafting",
+            "decision-relevant repository evidence",
+            "affected core flow and callers",
+            "do not scan the repository aimlessly",
+            "modify product code",
+            "simpler, more secure, or more maintainable alternative",
+            "behavior, scope, impact, or acceptance conditions",
+            "existing one-question rule",
+            "without a separate architecture or security review report",
+            "bounded `研究` proposal",
+            "one-off read-only review need not enter SDD",
+            "neither case expands `自審提案`",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
     def test_authoring_prefers_vertical_slices_without_file_count_limits(self) -> None:
         text = AUTHORING.read_text(encoding="utf-8")
         for anchor in (

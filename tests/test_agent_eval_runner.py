@@ -23,6 +23,33 @@ RUNNER = ROOT / "scripts/run-agent-eval"
 
 
 class AgentEvalRunnerTests(unittest.TestCase):
+    def test_bounded_intake_recipes_materialize_without_runtime_changes(self) -> None:
+        for scenario_id in (
+            "O-proposal-intake-low-risk",
+            "P-proposal-intake-evidence-bound",
+            "Q-proposal-intake-material-alternative",
+            "R-proposal-intake-tracked-review",
+            "S-proposal-intake-one-off-review",
+            "T-proposal-intake-self-review-boundary",
+        ):
+            with self.subTest(scenario=scenario_id):
+                _, recipes, _ = load_scenario(scenario_id)
+                with tempfile.TemporaryDirectory() as directory:
+                    workspace = Path(directory)
+                    copy_repository(workspace)
+                    materialize_state(workspace, scenario_id, recipes)
+                    self.assertTrue(workspace.is_dir())
+                    if scenario_id == "T-proposal-intake-self-review-boundary":
+                        status = capture_cli_envelope(
+                            workspace,
+                            ["status", "bounded-api-timeout"],
+                        )
+                        self.assertEqual(status["exit_code"], 0)
+                        self.assertEqual(
+                            status["envelope"]["data"]["status"],
+                            "draft",
+                        )
+
     def test_index_recovery_recipe_has_only_rebuildable_index_drift(self) -> None:
         _, recipes, _ = load_scenario("L-index-corruption")
         with tempfile.TemporaryDirectory() as directory:

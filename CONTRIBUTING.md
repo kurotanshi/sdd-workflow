@@ -114,7 +114,7 @@ sdd-workflow/
 | 驗收項目 | 靜態檢查可證明 | 隔離行為驗收條件 |
 | --- | --- | --- |
 | 提案建立 | 範本含 `## 狀態` 且值為 `draft` | 建立後停下等核准，不修改產品程式碼 |
-| 提案 intake | authoring reference 含條件式 intake 與 readiness 規則（`tests/test_skill_reduction.py` 錨點防漂移） | 重大歧義時先簡述決策相關假設或缺口、只問一個最關鍵問題，收到回答前不建草案；小型低風險且資訊足夠時直接建立草案，不輸出固定分析或 readiness verdict；跨模組、高風險、狀態型、migration、部署或外部副作用變更才檢查需求完整性、artifact 一致性、repository feasibility、失敗／重試／復原邊界與可驗證性，並在既有 proposal、tasks 與 acceptance 中記錄 source of truth、commit point、retry／recovery 與不可重複副作用；使用者指定的實作方式與期望成果差異會改變提案時，依重大歧義規則澄清 |
+| 提案 intake | authoring reference 含條件式 intake 與 readiness 規則（`tests/test_skill_reduction.py` 錨點防漂移） | 重大歧義時先簡述決策相關假設或缺口、只問一個最關鍵問題，收到回答前不建草案；小型低風險且資訊足夠時直接建立草案，不輸出固定分析或 readiness verdict；跨模組、高風險、狀態型、migration、部署或外部副作用變更才唯讀檢查與決策相關的專案規範、目前變更、核心 flow、caller、設定與測試，並檢查需求完整性、artifact 一致性、repository feasibility、失敗／重試／復原邊界與可驗證性；若更簡單、安全或易維護的替代方向會改變 proposal 的行為、範圍、影響或驗收條件，依重大歧義規則澄清，否則直接寫出最終方向；在既有 proposal、tasks 與 acceptance 中記錄 source of truth、commit point、retry／recovery 與不可重複副作用；需追蹤歸檔的完整 review 使用有界 `研究` proposal，一次性唯讀 review 不強制進入 SDD，`自審提案` 不擴張成 repository audit |
 | 核准語意 | CLI transition tests 與 Skill command rule | `draft` 只說「實作」會詢問；「開始實作」以 snapshot 呼叫 `approve` 並驗證 manifest、metadata 與 `approved` |
 | 缺檔防呆 | 規則文字存在 | 缺目錄或任一 artifact 時要求先提案、不動程式碼 |
 | 修訂 | 規則文字存在 | 保留已勾任務、未勾任務最多 10 條、重設 `draft` 重新等核准；實質改變目標時建議另開新變更 |

@@ -58,7 +58,7 @@ Install skills/sdd-workflow from https://github.com/kurotanshi/sdd-workflow into
      ```text
      /sdd-workflow 提案 修正健康檢查 API 在資料庫離線時回傳 500 的問題
      ```
-   Agent 會建立 `sdd/<短名稱>/proposal.md` 與 `tasks.md`，寫出預期成果與驗收條件，驗證後停下，不修改產品程式碼。
+   Agent 會建立 `sdd/<短名稱>/proposal.md` 與 `tasks.md`，寫出預期成果與驗收條件，驗證後停下，不修改產品程式碼。跨模組或高風險工作會在成案前唯讀檢查與決策相關的文件、目前變更、核心 flow、caller、設定與測試，判斷指定技術方向是否符合目標，以及是否有會改變 proposal 的更簡單、安全或易維護方案；小型低風險工作仍直接建立精簡草案，不另產審查報告。完整 repository／architecture／security review 若要由 SDD 追蹤歸檔，使用有界的 `研究` proposal；一次性唯讀 review 不必進入 SDD，`自審提案` 也仍只審既有 proposal。
 
 2. （可選）在核准前執行 `$sdd-workflow 自審提案`（Codex）或 `/sdd-workflow 自審提案`（Claude Code）。Agent 會檢查前提、正確性、SDD 流程、設計取向與適用的風險條件；草案可修正明確缺口，已核准提案只回報。自審永遠不會核准或實作。
 

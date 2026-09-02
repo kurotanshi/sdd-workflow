@@ -26,14 +26,14 @@ class AgentScenarioFixtureTests(unittest.TestCase):
             for entry in self.manifest["scenarios"]
         ]
 
-    def test_manifest_contains_exactly_roadmap_scenarios_a_through_n(self) -> None:
+    def test_manifest_contains_exactly_scenarios_a_through_t(self) -> None:
         self.assertEqual(self.manifest["manifest_version"], 1)
         entries = self.manifest["scenarios"]
         ids = [entry["id"] for entry in entries]
-        self.assertEqual(len(ids), 14)
+        self.assertEqual(len(ids), 20)
         self.assertEqual(
             [scenario_id.split("-", 1)[0] for scenario_id in ids],
-            list("ABCDEFGHIJKLMN"),
+            list("ABCDEFGHIJKLMNOPQRST"),
         )
         self.assertEqual(len(ids), len(set(ids)))
         for entry in entries:
@@ -79,7 +79,7 @@ class AgentScenarioFixtureTests(unittest.TestCase):
                 self.assertLessEqual(set(scenario), required | optional)
                 self.assertEqual(scenario["scenario_version"], 1)
                 self.assertEqual(scenario["scorer_version"], 1)
-                self.assertRegex(scenario_id, r"^[A-N]-[a-z0-9-]+$")
+                self.assertRegex(scenario_id, r"^[A-T]-[a-z0-9-]+$")
                 self.assertTrue(set(scenario["protocol_rules"]) <= known_rules)
                 self.assertTrue(scenario["allowed_tool_calls"])
                 self.assertTrue(scenario["required_observations"])
@@ -283,6 +283,37 @@ class AgentScenarioFixtureTests(unittest.TestCase):
         self.assertIn("`client.py` 獨立實作", files["sdd/duplicate-name-limit/proposal.md"])
         self.assertEqual(scenario["expected_final_state"]["proposal_status"], "draft")
         self.assertEqual(scenario["expected_final_state"]["product_changes"], "none")
+
+    def test_bounded_proposal_intake_scenarios_cover_each_branch(self) -> None:
+        scenarios = {item["scenario_id"]: item for item in self.load_scenarios()}
+        expected = {
+            "O-proposal-intake-low-risk",
+            "P-proposal-intake-evidence-bound",
+            "Q-proposal-intake-material-alternative",
+            "R-proposal-intake-tracked-review",
+            "S-proposal-intake-one-off-review",
+            "T-proposal-intake-self-review-boundary",
+        }
+        self.assertLessEqual(expected, set(scenarios))
+        self.assertEqual(
+            scenarios["Q-proposal-intake-material-alternative"]
+            ["expected_final_state"]["proposal_status"],
+            "absent",
+        )
+        self.assertIn(
+            "研究",
+            scenarios["R-proposal-intake-tracked-review"]["user_input"]["text"],
+        )
+        self.assertEqual(
+            scenarios["S-proposal-intake-one-off-review"]
+            ["expected_final_state"]["proposal_status"],
+            "absent",
+        )
+        self.assertEqual(
+            scenarios["T-proposal-intake-self-review-boundary"]
+            ["expected_final_state"]["proposal_status"],
+            "draft",
+        )
 
 
 if __name__ == "__main__":
