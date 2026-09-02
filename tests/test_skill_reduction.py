@@ -140,6 +140,24 @@ class SkillReductionTests(unittest.TestCase):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
 
+    def test_main_and_authoring_share_closed_discovery_contract(self) -> None:
+        texts = {
+            "main": " ".join(SKILL.read_text(encoding="utf-8").split()),
+            "authoring": " ".join(AUTHORING.read_text(encoding="utf-8").split()),
+        }
+        for anchor in (
+            "closed discovery sequence",
+            "Read the user-named targets first",
+            "For each still-missing category",
+            "use only targeted filename or reference searches",
+            "Stop as soon as every category has enough decision evidence",
+            "Do not list the repository root, use repo-wide globs",
+            "content searches without an explicit file, path, or include scope",
+        ):
+            for source, text in texts.items():
+                with self.subTest(anchor=anchor, source=source):
+                    self.assertIn(anchor, text)
+
     def test_authoring_prefers_vertical_slices_without_file_count_limits(self) -> None:
         text = AUTHORING.read_text(encoding="utf-8")
         for anchor in (
