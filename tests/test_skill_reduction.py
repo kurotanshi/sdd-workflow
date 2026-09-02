@@ -103,6 +103,10 @@ class SkillReductionTests(unittest.TestCase):
         text = " ".join(AUTHORING.read_text(encoding="utf-8").split())
         for anchor in (
             "When the review applies, before drafting",
+            "one bounded discovery pass",
+            "targeted filename and reference searches",
+            "architecture decisions",
+            "not named by the user",
             "decision-relevant repository evidence",
             "affected core flow and callers",
             "do not scan the repository aimlessly",

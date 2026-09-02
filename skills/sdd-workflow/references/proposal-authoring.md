@@ -25,11 +25,15 @@ Conditional implementation-readiness review:
   deployment, or external/irreversible side-effect changes. For a small,
   low-risk proposal with sufficient information, skip the review and author
   the draft directly.
-- When the review applies, before drafting, inspect only the decision-relevant
-  repository evidence: the applicable project guidance and requirements,
-  current change, affected core flow and callers, configuration, and tests.
-  Keep this inspection read-only; do not scan the repository aimlessly, modify
-  product code, or turn intake into a standalone review report.
+- When the review applies, before drafting, make one bounded discovery pass
+  from the user-named targets to locate decision-relevant repository evidence.
+  Use targeted filename and reference searches for applicable project guidance
+  and requirements, architecture decisions, configuration, the affected core
+  flow and callers, and tests. A file not named by the user is not evidence that
+  no applicable guidance or configuration exists. Inspect only relevant
+  matches; do not scan the repository aimlessly, enumerate unrelated
+  directories, modify product code, or turn intake into a standalone review
+  report.
 - When the review applies, check requirement completeness; consistency among
   the proposal, tasks, and acceptance conditions; repository feasibility;
   state, failure, retry, and recovery boundaries; and whether acceptance can
