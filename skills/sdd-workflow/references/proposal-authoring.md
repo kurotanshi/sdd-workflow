@@ -33,11 +33,13 @@ Conditional implementation-readiness review:
   2. For each still-missing category—applicable project guidance and
      requirements, architecture decisions, configuration, the affected core
      flow and callers, and tests—search that category separately using only a
-     targeted filename or reference search. Do not combine missing categories
-     into one search. After each search, read every decision-relevant match
-     before moving to the next category; a search-result listing is not
-     inspected evidence. A file not named by the user is not evidence that no
-     applicable guidance or configuration exists.
+     targeted filename or reference search. For missing architecture decisions,
+     the filename search must case-insensitively match `architecture*`; for
+     missing configuration, it must case-insensitively match `*config*`. Do not
+     combine missing categories into one search. Keep a category missing until
+     every decision-relevant match from its search has been read; a search-result
+     listing is not inspected evidence. A file not named by the user is not
+     evidence that no applicable guidance or configuration exists.
   3. Stop as soon as every category has enough decision evidence; do not scan
      the repository aimlessly. Do not list the repository root, use repo-wide
      globs, or run content searches without an explicit file, path, or include
