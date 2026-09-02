@@ -129,7 +129,8 @@ class SkillReductionTests(unittest.TestCase):
             "bounded filename and reference searches",
             "applicable project guidance, architecture decisions, configuration",
             "affected core flow and callers, and tests",
-            "do not inspect unrelated directories",
+            "filename, path, or search context as sufficient to exclude",
+            "never list its directory or open it merely to confirm or prove it is unrelated",
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, text)
