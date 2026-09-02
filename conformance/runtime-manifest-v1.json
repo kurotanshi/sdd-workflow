@@ -62,6 +62,7 @@
       ],
       "selectors": [
         "tests.test_atomic_write",
+        "tests.test_recovery_protocol",
         "tests.test_transition_failures",
         "tests.test_terminal_validation"
       ]
@@ -103,7 +104,8 @@
         "tests.test_compatibility",
         "tests.test_parser",
         "tests.test_schema_v2",
-        "tests.test_archive_model"
+        "tests.test_archive_model",
+        "tests.test_recovery_projection"
       ]
     },
     {

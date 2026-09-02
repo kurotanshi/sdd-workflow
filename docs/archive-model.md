@@ -75,6 +75,10 @@ New terminal transitions extend the proposal-local `.sdd/metadata.json` envelope
 ```
 
 - A directory with recovery evidence remains a `legacy` record; the block only supplies the summary that has no INDEX-row source and audits the confirmed repair.
+- Reconstruction may add a top-level `reconstruction` receipt beside
+  `recovery`. It records protocol and candidate digests only; it is not managed
+  terminal authority. The record stays in the same directory and remains a
+  `legacy` record.
 - `confirmed_evidence` holds the pre-repair raw-byte digests printed by the read-only preflight and confirmed at execution; they are the repair's optimistic concurrency token.
 - `archive_date`, `short_name`, and `terminal_status` must agree with the directory name and the archived proposal status; disagreement or any malformed field is `ARCHIVE_RECORD_MISMATCH`, never a silent fallback to another source.
 
@@ -114,3 +118,11 @@ The minimal INDEX row is deterministically rendered from `archive_date`, `short_
 - Directory/metadata short-name, date, status, or proposal-status disagreement is `ARCHIVE_RECORD_MISMATCH` with an evidence-only field diff.
 - Multiple legacy INDEX rows matching one directory, one row matching multiple directories, or an unparsable escaped row is `AMBIGUOUS_STATE`; the adapter does not select by order or timestamp.
 - Missing summary evidence is `UNKNOWN_STATE`. Supported remediation is the explicitly confirmed `repair-archive-record` path, or `rebuild-index --directory NAME --summary TEXT` when only the summary is missing; there is still no automatic recovery, and manual archive edits remain unsupported.
+- Strict Markdown/task validation failures and registered malformed recovery-v1
+  fields route to the read-only reconstruction preflight. Unknown JSON
+  versions/fields, invalid JSON that might conceal authority, and conflicting
+  identity/status remain inspection-only.
+- Reconstruction uses target-local private staged copies and single-file
+  atomic replacements before rebuilding derived INDEX. It never moves the
+  record, writes a managed `terminal` object, reopens lifecycle, or executes
+  the historical proposal's project tests.

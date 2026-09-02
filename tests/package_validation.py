@@ -31,6 +31,7 @@ def validate_package() -> None:
         "scripts/sdd.py",
         "scripts/sdd_core/__init__.py",
         "scripts/sdd_core/active_metadata.py",
+        "scripts/sdd_core/active_recovery.py",
         "scripts/sdd_core/approval.py",
         "scripts/sdd_core/archive_model.py",
         "scripts/sdd_core/archive_index.py",
@@ -46,6 +47,8 @@ def validate_package() -> None:
         "scripts/sdd_core/parser_legacy.py",
         "scripts/sdd_core/parser_v1.py",
         "scripts/sdd_core/parser_v2.py",
+        "scripts/sdd_core/recovery_projection.py",
+        "scripts/sdd_core/recovery_protocol.py",
         "scripts/sdd_core/scanner.py",
         "scripts/sdd_core/snapshot.py",
         "scripts/sdd_core/summary_input.py",
@@ -122,7 +125,7 @@ def validate_package() -> None:
         "validate", "list", "status", "abandon-preflight", "approve", "begin-revision",
         "complete-task"
         , "rebuild-index", "validate-index", "doctor", "archive", "abandon"
-        , "repair-archive-record"
+        , "repair-archive-record", "repair-proposal-format"
     }
     if commands != expected or "parse" in commands:
         raise AssertionError(f"unexpected public CLI commands: {sorted(commands)}")

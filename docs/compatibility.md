@@ -65,6 +65,28 @@ They are not mutation-compatible: `approve`, `begin-revision`,
 `upgrade_or_recreate_proposal`. A successful read result is never evidence that
 a requested lifecycle transition completed.
 
+## Registered reconstruction compatibility
+
+Explicit reconstruction is narrower than read compatibility and is never a
+normal parser fallback. The first supported matrix is:
+
+| Artifact | Reconstructable | Fail closed |
+| --- | --- | --- |
+| Markdown | v0.2.0–v0.2.3 unversioned v1-shaped proposals; registered top-level checkbox marker/spacing deviations | Unknown/future schema, unknown sections, ambiguous identity/status |
+| Checkbox | Column-zero `-`, `*`, `+`, or ordered marker; state blank/`x`/`X`; non-empty task text | Indented, empty text, unknown state, or ordinary list item in the task region |
+| JSON | Metadata v1 and recovery v1 fields proven by repository history | Unknown version/field, invalid JSON, or possible managed terminal authority |
+
+Missing type, scope, acceptance, or archive summary is not derived. The
+preflight lists the required explicit input and produces no candidate until it
+is supplied; supplied values cannot override existing authority. A currently
+readable historical artifact, current Schema v2 artifact, or valid managed
+archive returns no-op and retains exact bytes.
+
+Active reconstruction produces Schema v2 `draft` and requires reapproval.
+Archive reconstruction preserves terminal state/location and creates only
+recovery evidence. Completed historical proposals are records, not reopened
+work: their original project tests are never rerun as part of recovery.
+
 An upgrade replaces one complete Skill package. Existing project proposals
 remain in place and are inspected with the new package before mutation. If a
 downgrade is required, use a package that explicitly supports every artifact

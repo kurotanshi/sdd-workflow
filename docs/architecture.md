@@ -30,6 +30,7 @@ Machine-managed active artifacts live inside the proposal directory so a later t
 sdd/<short-name>/
 ├── proposal.md
 ├── tasks.md
+├── .sdd-recovery/              # private recovery receipts/copies; never authority
 └── .sdd/
     ├── metadata.json
     └── approval-manifest.json
@@ -41,6 +42,11 @@ sdd/<short-name>/
 - Both files use UTF-8 JSON with a trailing LF. Serialization is deterministic for reproducible fixtures and identity hashes, but correctness uses parsed structural comparison, never JSON key order.
 - No v0.4 command adds an explicit proposal schema marker to an otherwise unversioned v1 Markdown artifact.
 - Draft proposals may have no `.sdd/` directory. An approved proposal without a valid manifest is `legacy_unattested`, not silently repaired or treated as historically attested.
+- `.sdd-recovery/` is owned by explicit reconstruction commands. Normal parser
+  and discovery paths never read it as lifecycle authority. The pure recovery
+  projection module owns every registered legacy encoding; active and archive
+  transitions share only the staged replacement protocol and retain separate
+  lifecycle rules.
 - `approve <short> --expected-snapshot <digest> --establish-manifest` is the only Proposal A baseline-establishment path. It accepts only a mutation-safe v1 proposal already in `approved`, treats the flag as the caller's explicit reconfirmation, writes a new manifest/envelope, and leaves the Markdown bytes—including an absent schema declaration—unchanged. Ordinary `approve` never adopts an already-approved proposal.
 
 ## Active metadata envelope

@@ -20,6 +20,7 @@ sdd.py [--root PATH] [--json] complete-task SHORT_NAME TASK_NUMBER --expected-ta
 sdd.py [--root PATH] [--json] rebuild-index [--directory NAME --summary TEXT]
 sdd.py [--root PATH] [--json] validate-index
 sdd.py [--root PATH] [--json] doctor
+sdd.py [--root PATH] [--json] repair-proposal-format SHORT_NAME [--type TYPE --scope TEXT --acceptance TEXT] [--apply --expected-proposal-sha256 DIGEST --expected-tasks-sha256 DIGEST --expected-candidate-proposal-sha256 DIGEST --expected-candidate-tasks-sha256 DIGEST] [--restore-operation OPERATION_ID]
 sdd.py [--root PATH] [--json] repair-archive-record NAME [--terminal-status STATUS --summary TEXT --expected-proposal-sha256 DIGEST --expected-tasks-sha256 DIGEST]
 sdd.py [--root PATH] [--json] archive SHORT_NAME --expected-snapshot DIGEST (--summary TEXT | --summary-file PATH) [--dry-run]
 sdd.py [--root PATH] [--json] abandon SHORT_NAME --expected-snapshot DIGEST (--summary TEXT | --summary-file PATH) [--dry-run]
@@ -105,7 +106,8 @@ Read compatibility never authorizes mutation. When a readable legacy proposal
 has `mutation_safe: false`, `approve`, `begin-revision`, `complete-task`,
 `archive`, and `abandon` all exit nonzero without writing and return
 `ERROR_LEGACY_MUTATION_UNSUPPORTED` with action
-`upgrade_or_recreate_proposal`. Existing parser warnings remain in the same
+`upgrade_or_recreate_proposal` except that `archive` routes a registered
+format to `repair_proposal_format`. Existing parser warnings remain in the same
 envelope. A mutation command must never return a successful parse-only result
 when no transition was attempted.
 
@@ -119,9 +121,11 @@ when no transition was attempted.
 
 `validate-index` performs the same read-only adaptation and compares the derived rendering with current `INDEX.md`. A missing, unsafe, non-UTF-8, reordered, or otherwise different INDEX returns `ERROR_INDEX_STALE`, action `rebuild_index`, and deterministic `/lines/<index>` differences without changing bytes.
 
-`doctor` is read-only and reports evidence-bound findings for active/archive collisions, lifecycle/location mismatch, stale INDEX, transaction-shaped temporary files, partial machine artifacts, Approval Manifest mismatch, and managed-state drift. A finding describes observed state and remediation action; it never identifies the editor, invents a unique cause, or repairs files.
+`doctor` is read-only and reports evidence-bound findings for active/archive collisions, lifecycle/location mismatch, stale INDEX, transaction-shaped temporary files, incomplete private recovery operations, partial machine artifacts, Approval Manifest mismatch, and managed-state drift. `RECOVERY_STAGED_STATE` exposes only operation identity/state and routes to `resume_or_restore_recovery`; committed/restored receipts are not findings. A finding describes observed state and remediation action; it never identifies the editor, invents a unique cause, or repairs files.
 
-`repair-archive-record` targets one direct archive directory that lacks managed terminal evidence. Without execution flags it is a read-only preflight: data reports the directory identity, the expected terminal status derived from the directory suffix (`-abandoned` or none), the currently parsed status, a `missing` list drawn from `terminal_status`, `machine_evidence`, and `index_row`, and labeled `evidence` SHA-256 digests of the raw archived `proposal.md` and `tasks.md` bytes. Execution requires `--terminal-status`, `--summary`, `--expected-proposal-sha256`, and `--expected-tasks-sha256` together; the digests are the concurrency token and any byte drift after preflight fails closed. Repair fills only missing fields: it replaces a non-terminal proposal status through the managed status writer and records the confirmed summary as recovery evidence in `.sdd/metadata.json`; it never moves a directory, never derives a summary, and never changes an existing terminal status or correct record. After repair it rebuilds the derived INDEX when every record adapts cleanly, otherwise it reports the remaining diagnostics with `data.repaired` preserved.
+`repair-proposal-format` is a dedicated active recovery command, not a parser fallback. Preflight returns a redacted `projection` with registered encoding, source/candidate digests, required explicit inputs, evidence-source hashes, and field-level changes; it never returns source or candidate bodies. Only top-level non-empty checkbox deviations with blank/`x`/`X` state and registered list markers are normalizable. Apply requires all four Markdown digests from the same projection and installs only a strictly validated Schema v2 `draft` through the staged recovery protocol. Existing approval/attestation artifacts block recovery with `inspect_machine_metadata`. The result does not carry approval and therefore requires the ordinary approval/task/acceptance gates. `--restore-operation` restores exact private originals only while no later lifecycle mutation is observable.
+
+`repair-archive-record` targets one direct archive directory. Without execution flags it is a read-only preflight: data reports identity, terminal-state evidence, missing fields, raw artifact digests, and the same redacted recovery projection. The original evidence-repair flags remain supported for readable records. When `reconstruction_required` is true, apply additionally requires candidate proposal/tasks/metadata digests and the reported `recovery_timestamp`; an existing metadata source also requires `--expected-metadata-sha256`. The staged operation reconstructs registered Markdown or recovery-v1 JSON, keeps the directory and terminal status, writes recovery evidence without a managed `terminal` object, and rebuilds INDEX. It never derives missing semantics, never reruns historical project tests, and never rewrites already-valid Markdown merely because recovery JSON needs repair. Valid managed records are evidence-backed `NO_OP`; an exact reconstruction retry is `ALREADY_APPLIED`.
 
 `archive` and `abandon` accept exactly one summary source. Inline `--summary` rejects CR/LF; `--summary-file` reads at most 65,536 bytes as strict UTF-8, allows multiple lines, and rejects stdin (`-`), empty/whitespace-only content, and NUL. Metadata preserves the decoded source exactly. INDEX display normalizes CRLF/CR to LF, replaces each LF with ` ⏎ `, then applies backslash/pipe escaping.
 
@@ -136,6 +140,11 @@ when no transition was attempted.
 | Unknown schema | `ERROR_UNSUPPORTED_SCHEMA_VERSION` | `use_supported_engine` |
 | Invalid/unknown schema metadata | `ERROR_INVALID_SCHEMA_METADATA` / `ERROR_UNKNOWN_SCHEMA_FIELD` | `fix_artifact_format` |
 | Managed mutation attempted on a readable legacy proposal | `ERROR_LEGACY_MUTATION_UNSUPPORTED` | `upgrade_or_recreate_proposal` |
+| Archive blocked by a registered active legacy format | parser/legacy diagnostic | `repair_proposal_format` |
+| INDEX/doctor finds a registered recoverable archive format | archive diagnostic | `repair_archive_record` |
+| Recovery lacks explicit type/scope/acceptance/summary | `ERROR_RECOVERY_INPUT_REQUIRED` | `provide_recovery_input` |
+| Recovery receipt is incomplete | `RECOVERY_STAGED_STATE` | `resume_or_restore_recovery` |
+| Recovery retry/restore conflicts with current lifecycle bytes | `ERROR_RECOVERY_RETRY_CONFLICT` / `ERROR_RECOVERY_RESTORE_UNSAFE` | `rerun_repair_preflight` / `inspect_lifecycle_state` |
 | Artifact format invalid | parser diagnostic code | `fix_artifact_format` |
 | Snapshot mismatch in a later mutation | `ERROR_SNAPSHOT_MISMATCH` | `refresh_status` |
 | Task ordinal absent / task text identity changed | `ERROR_TASK_NOT_FOUND` / `ERROR_TASK_IDENTITY_MISMATCH` | `refresh_status` |

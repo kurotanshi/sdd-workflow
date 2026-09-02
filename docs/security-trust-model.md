@@ -51,6 +51,7 @@ proof of authorship.
 | Approval substitution | Structural Approval Manifest comparison and explicit reapproval after semantic revision. |
 | Direct managed-state edits | Attestation comparison, doctor diagnostics, and human inspection; never silently bless drift. |
 | Partial multi-file transition | One documented authoritative commit point plus staged operation evidence and bounded recovery. |
+| Legacy reconstruction disclosure or partial replacement | Redacted preflight, exact source/candidate digests, target-local `0700` recovery directories, `0600` raw copies/receipts, single-file atomic replacement, and evidence-bound resume/restore. |
 | Runtime substitution or mixed package | Package-local discovery, identity/Skill hashes, capability and version handshake, no PATH fallback. |
 | Ambiguous proposal or cancellation | Human selection/confirmation before mutation; source-control rollback remains separate. |
 | Untrusted proposal content | Treat Markdown as data; never execute proposal text or interpolate it into a shell command. |
@@ -68,6 +69,14 @@ The cooperative concurrency model has no lock, lease, authenticated owner, or
 INDEX compare-and-swap. M4 recovery evidence supports stale rejection and
 deterministic repair; it does not justify stronger ownership claims. The v1
 release therefore keeps the recorded no-lock decision.
+
+Artifact reconstruction also has no cross-file atomic commit. A committed
+receipt proves only that its saved candidate digests matched after every
+replacement. An incomplete receipt remains diagnostically visible. Restore is
+allowed only while every current target is still either the saved original or
+candidate; this prevents recovery from silently undoing later lifecycle work.
+Private copies can contain the entire proposal and therefore remain local and
+must not be pasted into reports or transcripts.
 
 ## Secrets and privacy
 

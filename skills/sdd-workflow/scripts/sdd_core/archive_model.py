@@ -157,6 +157,19 @@ def load_legacy_archive_records(
         except (OSError, UnicodeDecodeError) as error:
             diagnostics.append(ArchiveDiagnostic("UNKNOWN_STATE", relative, str(error)))
             continue
+        if (
+            outcome.model is None
+            or not outcome.task_counts_reliable
+            or any(item.severity.value == "error" for item in outcome.diagnostics)
+        ):
+            diagnostics.append(
+                ArchiveDiagnostic(
+                    "ARCHIVE_RECORD_MISMATCH",
+                    relative,
+                    "Archived proposal artifacts fail strict format validation",
+                )
+            )
+            continue
         status = outcome.model.status if outcome.model is not None else None
         if status not in {"completed", "abandoned"}:
             diagnostics.append(
@@ -430,7 +443,12 @@ def _load_managed_record(directory: Path, metadata_path: Path) -> ArchiveRecord:
         proposal_text=proposal.read_text(encoding="utf-8"),
         task_scan=scan_tasks(tasks.read_text(encoding="utf-8")),
     )
-    if outcome.model is None or outcome.model.status != status:
+    if (
+        outcome.model is None
+        or outcome.model.status != status
+        or not outcome.task_counts_reliable
+        or any(item.severity.value == "error" for item in outcome.diagnostics)
+    ):
         raise ValueError("archived proposal status disagrees with terminal metadata")
     return ArchiveRecord(
         directory_name=directory.name,

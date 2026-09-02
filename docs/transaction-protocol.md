@@ -61,6 +61,39 @@ Both commands support `--dry-run`. Dry run executes all deterministic validation
 
 These rules are identical for `archive` and `abandon`; only source-state/task preconditions, terminal status, and destination suffix differ.
 
+## Artifact reconstruction staged protocol v1
+
+Legacy reconstruction is a separate multi-file protocol and likewise makes no
+ACID claim:
+
+```text
+confirm source/candidate digests
+→ save private originals, candidates, identity, and staged receipt
+→ strictly validate every candidate
+→ atomically replace each authoritative file and record progress
+→ verify final digests
+→ mark receipt committed
+→ rebuild derived INDEX when the target is archived
+```
+
+The target-local `.sdd-recovery/<operation-id>/` and its `copies/` directory
+use mode `0700`; copied bytes and the manifest use `0600`. Normal active and
+archive discovery never treats this area as proposal authority. Reports expose
+only digests, operation state, and structured field changes.
+
+A retry accepts each file only when it equals the saved original or candidate;
+anything else is `ERROR_RECOVERY_RETRY_CONFLICT`. Replacement before receipt
+update is recoverable because retry recognizes the candidate digest and records
+the completed step. Success requires all candidate digests plus a committed
+receipt. Exact repeats return `ALREADY_APPLIED`.
+
+Explicit restore performs an all-path safety check before changing anything,
+then restores saved originals and removes only files the operation proved it
+created. It is resumable after partial restore. A later approval, task
+completion, terminal mutation, or any unrelated byte value produces
+`ERROR_RECOVERY_RESTORE_UNSAFE`; automatic rollback is then forbidden and the
+private evidence remains for inspection.
+
 ## Upgrade, activation, and downgrade
 
 Implementation availability does not activate a Skill path. Until the managed-mutation pilot passes for approve/revision, complete-task, archive, and abandon together, `SKILL.md` remains on its coherent v0.3 script-read/prose-write path.

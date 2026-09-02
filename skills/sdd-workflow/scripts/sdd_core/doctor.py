@@ -18,6 +18,7 @@ from .approval import (
 )
 from .archive_index import validate_archive_index
 from .archive_model import load_archive_records
+from .archive_recovery import recovery_action_for_archive_diagnostic
 from .discovery import list_active_proposal_paths
 from .managed_state import ManagedStateError, compare_attested_state
 from .parser_v1 import parse_with_schema
@@ -26,6 +27,7 @@ from .runtime_discovery import RuntimeDiscoveryError, load_identity
 from .runtime_identity import PACKAGE_ROOT, SKILL_FILE, runtime_handshake
 from .scanner import scan_tasks
 from .version import ENGINE_VERSION, engine_generation
+from .recovery_protocol import RECOVERY_AREA_NAME, inspect_recovery_state
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,7 +62,7 @@ def diagnose_project(project_root: Path) -> tuple[DoctorFinding, ...]:
         findings.append(
             DoctorFinding(
                 diagnostic.code,
-                "inspect_archive_state",
+                recovery_action_for_archive_diagnostic(archive_root, diagnostic),
                 diagnostic.path,
                 diagnostic.message,
             )
@@ -81,6 +83,7 @@ def diagnose_project(project_root: Path) -> tuple[DoctorFinding, ...]:
     archived_names = {record.short_name for record in archive_scan.records}
     for paths in active:
         relative = f"sdd/{paths.directory.name}"
+        findings.extend(_recovery_state_findings(paths.directory, relative))
         if paths.directory.name in archived_names:
             findings.append(
                 DoctorFinding(
@@ -90,6 +93,7 @@ def diagnose_project(project_root: Path) -> tuple[DoctorFinding, ...]:
                     "The same short name exists in active and archive locations",
                 )
             )
+
         proposal_bytes = paths.proposal.read_bytes()
         tasks_bytes = paths.tasks.read_bytes()
         outcome = parse_with_schema(
@@ -216,6 +220,15 @@ def diagnose_project(project_root: Path) -> tuple[DoctorFinding, ...]:
                 )
             )
 
+    if archive_root.is_dir() and not archive_root.is_symlink():
+        for directory in sorted(archive_root.iterdir(), key=lambda item: item.name):
+            if directory.is_dir() and not directory.is_symlink():
+                findings.extend(
+                    _recovery_state_findings(
+                        directory, f"sdd/archive/{directory.name}"
+                    )
+                )
+
     sdd_root = project_root / "sdd"
     for directory, directory_names, file_names in os.walk(sdd_root, followlinks=False):
         directory_names[:] = sorted(directory_names)
@@ -231,6 +244,47 @@ def diagnose_project(project_root: Path) -> tuple[DoctorFinding, ...]:
                     )
                 )
     return tuple(sorted(findings, key=lambda item: item.sort_key))
+
+
+def _recovery_state_findings(
+    target: Path, relative: str
+) -> tuple[DoctorFinding, ...]:
+    area = target / RECOVERY_AREA_NAME
+    if (
+        area.is_symlink()
+        or (area.exists() and not area.is_dir())
+        or (area.is_dir() and area.stat().st_mode & 0o077)
+    ):
+        return (
+            DoctorFinding(
+                "ERROR_RECOVERY_STAGED_STATE_INVALID",
+                "inspect_recovery_state",
+                f"{relative}/{RECOVERY_AREA_NAME}",
+                "Recovery area is not a safe private directory",
+            ),
+        )
+    findings: list[DoctorFinding] = []
+    for operation in inspect_recovery_state(target):
+        state = str(operation["state"])
+        if state in {"staged", "applying", "restoring"}:
+            findings.append(
+                DoctorFinding(
+                    "RECOVERY_STAGED_STATE",
+                    "resume_or_restore_recovery",
+                    f"{relative}/{RECOVERY_AREA_NAME}/{operation['operation_id']}",
+                    f"Recovery operation is incomplete in state: {state}",
+                )
+            )
+        elif state == "invalid":
+            findings.append(
+                DoctorFinding(
+                    "ERROR_RECOVERY_STAGED_STATE_INVALID",
+                    "inspect_recovery_state",
+                    f"{relative}/{RECOVERY_AREA_NAME}/{operation['operation_id']}",
+                    "Recovery operation evidence is invalid",
+                )
+            )
+    return tuple(findings)
 
 
 def diagnose_runtime_package() -> tuple[DoctorFinding, ...]:

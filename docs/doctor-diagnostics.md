@@ -13,6 +13,8 @@ Status: v0.4 Proposal C contract
 | `PARTIAL_TRANSITION_DETECTED` | A defined artifact set/phase is only partly present, such as exactly one of metadata and Approval Manifest. | Which command created it, whether commit occurred, or whether deleting the remainder is safe. | `inspect_machine_metadata` |
 | `OUT_OF_BAND_DRIFT` | Current parsed managed projection differs structurally from stored attestation. | Who edited it or whether the edit was manual, malicious, accidental, or interrupted. | `inspect_managed_state_drift` |
 | `ERROR_INDEX_STALE` | Current INDEX bytes differ from deterministic rendering of complete canonical records. | That archive authority is damaged. | `rebuild_index` |
+| `RECOVERY_STAGED_STATE` | A private recovery receipt is `staged`, `applying`, or `restoring`. | That any unrecorded step succeeded, or that rollback is still safe. | `resume_or_restore_recovery` |
+| `ERROR_RECOVERY_STAGED_STATE_INVALID` | A recovery area/receipt is unsafe, unreadable, or violates its versioned structure. | Which bytes are authoritative or whether deletion is safe. | `inspect_recovery_state` |
 | `ENGINE_VERSION_SKEW` | Parsed metadata names a strictly newer major/minor writer generation than the running engine. | That artifact format is incompatible, that the writer caused drift, or that timestamps decide authority. | `use_compatible_engine` |
 | `ENGINE_VERSION_UNKNOWN` | Metadata writer is not strict `MAJOR.MINOR.PATCH` SemVer. | Which engine wrote it or whether its format is unsupported. | `inspect_engine_version` |
 | `RUNTIME_SKILL_VERSION_SKEW` | The installed `SKILL.md` SHA-256 differs from the value fixed by the package identity manifest. | Which file was replaced, who replaced it, or whether either file should win. | `reinstall_complete_distribution` |
@@ -26,6 +28,13 @@ More specific evidence-based codes (`ACTIVE_ARCHIVE_COLLISION`, `STATUS_LOCATION
 - For `PARTIAL_TRANSITION_DETECTED`, compare operation evidence, status/checkbox commit points, and all staged artifacts. Do not delete, complete, or roll back files solely from the generic diagnostic.
 - For `OUT_OF_BAND_DRIFT`, inspect the JSON Pointer differences and the relevant command history. A fresh `status` does not refresh attestation; repair requires an explicit later protocol or a valid revision path.
 - For `ERROR_INDEX_STALE`, run `rebuild-index` only after all archive records adapt without unknown/ambiguous/mismatch diagnostics.
+- For `RECOVERY_STAGED_STATE`, use the reported operation ID with the same
+  confirmed digest set to resume, or explicitly invoke the matching repair
+  command's `--restore-operation`. Restore must stop if current bytes show a
+  later lifecycle mutation. Never delete `.sdd-recovery` by hand.
+- Committed and restored receipts are retained audit evidence and are not
+  findings. Doctor output includes operation IDs/states, never stored source or
+  candidate bodies.
 
 Every finding reports paths and observed differences when available. Wording uses “differs,” “missing,” “multiple,” or “present”; it avoids “was modified by,” “caused by,” and other historical assertions unsupported by artifacts.
 

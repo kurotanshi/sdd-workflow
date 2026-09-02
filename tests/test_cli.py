@@ -400,7 +400,11 @@ class CliContractTests(unittest.TestCase):
                         [
                             (
                                 "ERROR_LEGACY_MUTATION_UNSUPPORTED",
-                                "upgrade_or_recreate_proposal",
+                                (
+                                    "repair_proposal_format"
+                                    if command == "archive"
+                                    else "upgrade_or_recreate_proposal"
+                                ),
                             )
                         ],
                     )

@@ -15,6 +15,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -186,6 +187,45 @@ class DeviantArchiveBlocksIndexTests(unittest.TestCase):
 
 
 class SupportedRecoveryTests(unittest.TestCase):
+    def test_managed_archive_repair_is_no_op_and_preserves_all_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "sdd/archive"
+            archive.mkdir(parents=True)
+            (archive / "INDEX.md").write_text(INDEX_HEADER)
+            code, archived = archive_proposal(
+                root, "managed-record", "Managed archive summary."
+            )
+            self.assertEqual(code, 0, archived)
+            target = Path(archived["data"]["destination"])
+            before = tree_bytes(root)
+            code, preflight = invoke(
+                root, "repair-archive-record", target.name
+            )
+            self.assertEqual(code, 0, preflight)
+            self.assertEqual(
+                preflight["data"]["projection"]["disposition"], "no-op"
+            )
+            self.assertEqual(tree_bytes(root), before)
+
+            evidence = preflight["data"]["evidence"]
+            code, no_op = invoke(
+                root,
+                "repair-archive-record",
+                target.name,
+                "--terminal-status",
+                "completed",
+                "--summary",
+                "Must not replace managed evidence.",
+                "--expected-proposal-sha256",
+                evidence["proposal_sha256"],
+                "--expected-tasks-sha256",
+                evidence["tasks_sha256"],
+            )
+            self.assertEqual(code, 0, no_op)
+            self.assertEqual(no_op["data"]["outcome"], "NO_OP")
+            self.assertEqual(tree_bytes(root), before)
+
     def test_recovery_repairs_records_and_unblocks_future_archives(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -250,6 +290,178 @@ class SupportedRecoveryTests(unittest.TestCase):
                 (root / "sdd/archive/INDEX.md").read_text(encoding="utf-8"),
             )
 
+    def test_reconstructs_malformed_completed_archive_without_terminal_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "sdd/archive"
+            target = archive / "2025-01-08-legacy-rebuild"
+            target.mkdir(parents=True)
+            (target / "proposal.md").write_text(
+                ARCHIVED_PROPOSAL_TEMPLATE.format(
+                    short_name="legacy-rebuild", status="completed"
+                )
+            )
+            (target / "tasks.md").write_text(
+                DEVIANT_TASKS.replace(
+                    "- [x] Implemented before the manual move.",
+                    "+ [X]Implemented before the manual move.",
+                )
+            )
+            (archive / "INDEX.md").write_text(
+                INDEX_HEADER
+                + "- 2025-01-08 | legacy-rebuild | completed | Historical work.\n"
+            )
+
+            code, preflight = invoke(
+                root, "repair-archive-record", "2025-01-08-legacy-rebuild"
+            )
+            self.assertEqual(code, 0, preflight)
+            data = preflight["data"]
+            projection = data["projection"]
+            self.assertTrue(data["reconstruction_required"])
+            self.assertEqual(projection["disposition"], "ready")
+            source = projection["source_digests"]
+            candidate = projection["candidate_digests"]
+            before_directory = target
+
+            with mock.patch("subprocess.run") as historical_tests:
+                code, repaired = invoke(
+                    root,
+                    "repair-archive-record",
+                    "2025-01-08-legacy-rebuild",
+                    "--terminal-status",
+                    "completed",
+                    "--summary",
+                    "Historical work.",
+                    "--expected-proposal-sha256",
+                    source["proposal.md"],
+                    "--expected-tasks-sha256",
+                    source["tasks.md"],
+                    "--expected-candidate-proposal-sha256",
+                    candidate["proposal.md"],
+                    "--expected-candidate-tasks-sha256",
+                    candidate["tasks.md"],
+                    "--expected-candidate-metadata-sha256",
+                    candidate[".sdd/metadata.json"],
+                    "--recovery-timestamp",
+                    data["recovery_timestamp"],
+                )
+            historical_tests.assert_not_called()
+            self.assertEqual(code, 0, repaired)
+            self.assertTrue(repaired["data"]["committed"])
+            self.assertEqual(repaired["data"]["outcome"], "APPLIED")
+            self.assertEqual(target, before_directory)
+            self.assertTrue(target.is_dir())
+            self.assertIn("\ncompleted\n", (target / "proposal.md").read_text())
+            self.assertIn(
+                "- [x] Implemented before the manual move.",
+                (target / "tasks.md").read_text(),
+            )
+            metadata = json.loads((target / ".sdd/metadata.json").read_text())
+            self.assertIn("recovery", metadata)
+            self.assertIn("reconstruction", metadata)
+            self.assertNotIn("terminal", metadata)
+
+            code, validation = invoke(root, "validate-index")
+            self.assertEqual(code, 0, validation)
+            code, doctor = invoke(root, "doctor")
+            self.assertEqual(code, 0, doctor)
+
+            code, repeated = invoke(
+                root,
+                "repair-archive-record",
+                "2025-01-08-legacy-rebuild",
+                "--terminal-status",
+                "completed",
+                "--summary",
+                "Historical work.",
+                "--expected-proposal-sha256",
+                source["proposal.md"],
+                "--expected-tasks-sha256",
+                source["tasks.md"],
+                "--expected-candidate-proposal-sha256",
+                candidate["proposal.md"],
+                "--expected-candidate-tasks-sha256",
+                candidate["tasks.md"],
+                "--expected-candidate-metadata-sha256",
+                candidate[".sdd/metadata.json"],
+                "--recovery-timestamp",
+                data["recovery_timestamp"],
+            )
+            self.assertEqual(code, 0, repeated)
+            self.assertEqual(repeated["data"]["outcome"], "ALREADY_APPLIED")
+
+    def test_rebuilds_registered_malformed_recovery_json_without_rewriting_markdown(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "sdd/archive"
+            target = archive / "2025-01-09-json-rebuild"
+            target.mkdir(parents=True)
+            (target / "proposal.md").write_text(
+                ARCHIVED_PROPOSAL_TEMPLATE.format(
+                    short_name="json-rebuild", status="completed"
+                )
+            )
+            (target / "tasks.md").write_text(DEVIANT_TASKS)
+            machine = target / ".sdd"
+            machine.mkdir()
+            (machine / "metadata.json").write_text(
+                json.dumps(
+                    {
+                        "metadata_version": 1,
+                        "recovery": {
+                            "recovery_version": 1,
+                            "archive_date": "2025-01-09",
+                        },
+                    }
+                )
+            )
+            (archive / "INDEX.md").write_text(
+                INDEX_HEADER
+                + "- 2025-01-09 | json-rebuild | completed | JSON recovery.\n"
+            )
+            proposal_before = (target / "proposal.md").read_bytes()
+            tasks_before = (target / "tasks.md").read_bytes()
+
+            code, preflight = invoke(
+                root, "repair-archive-record", "2025-01-09-json-rebuild"
+            )
+            self.assertEqual(code, 0, preflight)
+            data = preflight["data"]
+            projection = data["projection"]
+            self.assertEqual(projection["encoding"], "recovery-v1")
+            source = projection["source_digests"]
+            candidate = projection["candidate_digests"]
+            code, repaired = invoke(
+                root,
+                "repair-archive-record",
+                "2025-01-09-json-rebuild",
+                "--terminal-status",
+                "completed",
+                "--summary",
+                "JSON recovery.",
+                "--expected-proposal-sha256",
+                source["proposal.md"],
+                "--expected-tasks-sha256",
+                source["tasks.md"],
+                "--expected-metadata-sha256",
+                source[".sdd/metadata.json"],
+                "--expected-candidate-proposal-sha256",
+                candidate["proposal.md"],
+                "--expected-candidate-tasks-sha256",
+                candidate["tasks.md"],
+                "--expected-candidate-metadata-sha256",
+                candidate[".sdd/metadata.json"],
+                "--recovery-timestamp",
+                data["recovery_timestamp"],
+            )
+            self.assertEqual(code, 0, repaired)
+            self.assertEqual((target / "proposal.md").read_bytes(), proposal_before)
+            self.assertEqual((target / "tasks.md").read_bytes(), tasks_before)
+            metadata = json.loads((machine / "metadata.json").read_text())
+            self.assertEqual(metadata["recovery"]["summary"], "JSON recovery.")
+            self.assertNotIn("terminal", metadata)
+
 
 def tree_bytes(root: Path) -> dict[str, bytes]:
     return {
@@ -260,6 +472,122 @@ def tree_bytes(root: Path) -> dict[str, bytes]:
 
 
 class FailClosedTests(unittest.TestCase):
+    def test_unknown_metadata_top_level_field_blocks_preflight_and_apply(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "sdd/archive"
+            target = archive / "2025-01-11-unknown-metadata"
+            target.mkdir(parents=True)
+            (target / "proposal.md").write_text(
+                ARCHIVED_PROPOSAL_TEMPLATE.format(
+                    short_name="unknown-metadata", status="completed"
+                )
+            )
+            (target / "tasks.md").write_text(
+                DEVIANT_TASKS.replace("- [x]", "+ [X]", 1)
+            )
+            machine = target / ".sdd"
+            machine.mkdir()
+            (machine / "metadata.json").write_text(
+                json.dumps(
+                    {
+                        "metadata_version": 1,
+                        "writer": {"engine": "sdd-workflow", "version": "0.2.3"},
+                        "last_operation": {"kind": "legacy", "operation_id": "old"},
+                        "unknown_authority": {"must_not_be_dropped": True},
+                    }
+                )
+            )
+            (archive / "INDEX.md").write_text(
+                INDEX_HEADER
+                + "- 2025-01-11 | unknown-metadata | completed | Historical work.\n"
+            )
+            before = tree_bytes(root)
+
+            preflight_code, preflight = invoke(
+                root, "repair-archive-record", target.name
+            )
+            source = preflight["data"]["projection"]["source_digests"]
+            apply_code, applied = invoke(
+                root,
+                "repair-archive-record",
+                target.name,
+                "--terminal-status",
+                "completed",
+                "--summary",
+                "Historical work.",
+                "--expected-proposal-sha256",
+                source["proposal.md"],
+                "--expected-tasks-sha256",
+                source["tasks.md"],
+                "--expected-metadata-sha256",
+                source[".sdd/metadata.json"],
+                "--expected-candidate-proposal-sha256",
+                "0" * 64,
+                "--expected-candidate-tasks-sha256",
+                "0" * 64,
+                "--expected-candidate-metadata-sha256",
+                "0" * 64,
+                "--recovery-timestamp",
+                "2025-01-11T00:00:00Z",
+            )
+
+            self.assertEqual(preflight_code, 1, preflight)
+            self.assertEqual(
+                preflight["errors"][0]["code"],
+                "ERROR_RECOVERY_FORMAT_UNREGISTERED",
+            )
+            self.assertEqual(
+                preflight["errors"][0]["action"], "inspect_machine_metadata"
+            )
+            self.assertEqual(
+                preflight["data"]["projection"]["candidate_digests"], {}
+            )
+            self.assertEqual(apply_code, 1, applied)
+            self.assertEqual(
+                applied["errors"][0]["code"],
+                "ERROR_RECOVERY_FORMAT_UNREGISTERED",
+            )
+            self.assertEqual(
+                applied["errors"][0]["action"], "inspect_machine_metadata"
+            )
+            self.assertEqual(tree_bytes(root), before)
+
+    def test_duplicate_index_summary_blocks_reconstruction_without_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "sdd/archive"
+            target = archive / "2025-01-10-ambiguous-summary"
+            target.mkdir(parents=True)
+            (target / "proposal.md").write_text(
+                ARCHIVED_PROPOSAL_TEMPLATE.format(
+                    short_name="ambiguous-summary", status="completed"
+                )
+            )
+            (target / "tasks.md").write_text(
+                DEVIANT_TASKS.replace("- [x]", "+ [X]", 1)
+            )
+            (archive / "INDEX.md").write_text(
+                INDEX_HEADER
+                + "- 2025-01-10 | ambiguous-summary | completed | First.\n"
+                + "- 2025-01-10 | ambiguous-summary | completed | Second.\n"
+            )
+            before = tree_bytes(root)
+            code, preflight = invoke(
+                root, "repair-archive-record", "2025-01-10-ambiguous-summary"
+            )
+            self.assertEqual(code, 1, preflight)
+            self.assertEqual(
+                preflight["errors"][0]["code"],
+                "ERROR_RECOVERY_EVIDENCE_AMBIGUOUS",
+            )
+            self.assertEqual(
+                preflight["errors"][0]["action"], "inspect_archive_state"
+            )
+            self.assertEqual(tree_bytes(root), before)
+
     def test_preflight_is_read_only_and_execute_fails_closed_on_evidence_mismatch(
         self,
     ) -> None:

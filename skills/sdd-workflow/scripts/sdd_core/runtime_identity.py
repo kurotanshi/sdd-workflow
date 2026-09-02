@@ -26,6 +26,8 @@ CAPABILITIES = (
     "doctor-v1",
     "managed-attestation-v1",
     "managed-transitions-v1",
+    "recovery-projection-v1",
+    "recovery-staged-protocol-v1",
     "schema-v1",
     "schema-v2",
     "terminal-transitions-v1",

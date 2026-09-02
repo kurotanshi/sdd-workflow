@@ -24,6 +24,7 @@ from .parser_v1 import (
     parse_with_schema,
     select_schema_from_document,
 )
+from .parser_v2 import VALID_V2_CHANGE_TYPES
 from .scanner import scan_tasks
 from .snapshot import SnapshotManifest, build_snapshot
 from .active_metadata import ActiveMetadataError, parse_active_metadata
@@ -43,8 +44,12 @@ from .archive_recovery import (
     RepairPreflight,
     execute_archive_repair,
     preflight_archive_repair,
+    recovery_action_for_archive_diagnostic,
     validate_repairable_target,
 )
+from .active_recovery import execute_proposal_repair, preflight_proposal_repair
+from .recovery_projection import RecoveryProjection, RecoverySupplement
+from .recovery_protocol import restore_staged_recovery
 from .doctor import (
     collect_environment_evidence,
     diagnose_project,
@@ -75,6 +80,8 @@ _ACTION_BY_CODE = {
     "ERROR_SYMLINK_UNSUPPORTED": "inspect_project_path",
     "ERROR_UNSUPPORTED_SCHEMA_VERSION": "use_supported_engine",
     "ERROR_LEGACY_MUTATION_UNSUPPORTED": "upgrade_or_recreate_proposal",
+    "ERROR_INVALID_TASK_CHECKBOX": "repair_proposal_format",
+    "ERROR_REQUIRED_SECTION_MISSING": "repair_proposal_format",
     "ERROR_ARTIFACT_ENCODING": "fix_artifact_format",
     "ERROR_USAGE": "fix_command_arguments",
     "ERROR_INTERNAL": "report_internal_error",
@@ -210,6 +217,47 @@ def build_parser() -> argparse.ArgumentParser:
     repair.add_argument("--summary")
     repair.add_argument("--expected-proposal-sha256")
     repair.add_argument("--expected-tasks-sha256")
+    repair.add_argument("--expected-metadata-sha256")
+    repair.add_argument("--expected-candidate-proposal-sha256")
+    repair.add_argument("--expected-candidate-tasks-sha256")
+    repair.add_argument("--expected-candidate-metadata-sha256")
+    repair.add_argument("--recovery-timestamp")
+    repair.add_argument(
+        "--type",
+        "--change-type",
+        dest="recovery_change_type",
+        choices=tuple(sorted(VALID_V2_CHANGE_TYPES)),
+    )
+    repair.add_argument("--scope", dest="recovery_scope")
+    repair.add_argument(
+        "--acceptance",
+        action="append",
+        default=[],
+        dest="recovery_acceptance_conditions",
+    )
+    repair.add_argument("--recovery-summary")
+    repair.add_argument("--restore-operation")
+    proposal_repair = commands.add_parser("repair-proposal-format")
+    proposal_repair.add_argument("short_name")
+    proposal_repair.add_argument(
+        "--type",
+        "--change-type",
+        dest="change_type",
+        choices=tuple(sorted(VALID_V2_CHANGE_TYPES)),
+    )
+    proposal_repair.add_argument("--scope")
+    proposal_repair.add_argument(
+        "--acceptance",
+        action="append",
+        default=[],
+        dest="acceptance_conditions",
+    )
+    proposal_repair.add_argument("--apply", action="store_true")
+    proposal_repair.add_argument("--expected-proposal-sha256")
+    proposal_repair.add_argument("--expected-tasks-sha256")
+    proposal_repair.add_argument("--expected-candidate-proposal-sha256")
+    proposal_repair.add_argument("--expected-candidate-tasks-sha256")
+    proposal_repair.add_argument("--restore-operation")
     for terminal_command in ("archive", "abandon"):
         terminal = commands.add_parser(terminal_command)
         terminal.add_argument("short_name")
@@ -393,6 +441,70 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
     if namespace.command == "abandon-preflight":
         parsed = _parse_one(root.path, namespace.short_name)
         return _preflight_result(namespace.short_name, parsed)
+    if namespace.command == "repair-proposal-format":
+        paths = resolve_proposal_paths(root.path, namespace.short_name)
+        supplement = RecoverySupplement(
+            change_type=namespace.change_type,
+            scope=namespace.scope,
+            acceptance_conditions=tuple(namespace.acceptance_conditions),
+        )
+        confirmations = (
+            namespace.expected_proposal_sha256,
+            namespace.expected_tasks_sha256,
+            namespace.expected_candidate_proposal_sha256,
+            namespace.expected_candidate_tasks_sha256,
+        )
+        if namespace.restore_operation is not None:
+            if namespace.apply or any(confirmations):
+                raise UsageError(
+                    "--restore-operation cannot be combined with --apply or digest confirmations"
+                )
+            restored = restore_staged_recovery(
+                paths.directory, namespace.restore_operation
+            )
+            return CommandResult(
+                command="repair-proposal-format",
+                data={
+                    "mode": "restore",
+                    "short_name": namespace.short_name,
+                    **restored.redacted_dict(),
+                },
+            )
+        if not namespace.apply:
+            if any(confirmations):
+                raise UsageError("digest confirmations require --apply")
+            projection = preflight_proposal_repair(paths, supplement=supplement)
+            return _recovery_projection_result(
+                "repair-proposal-format", namespace.short_name, projection
+            )
+        if not all(confirmations):
+            raise UsageError(
+                "--apply requires source and candidate proposal/tasks SHA-256 confirmations"
+            )
+        result = execute_proposal_repair(
+            paths,
+            supplement=supplement,
+            expected_source_digests={
+                "proposal.md": namespace.expected_proposal_sha256,
+                "tasks.md": namespace.expected_tasks_sha256,
+            },
+            expected_candidate_digests={
+                "proposal.md": namespace.expected_candidate_proposal_sha256,
+                "tasks.md": namespace.expected_candidate_tasks_sha256,
+            },
+        )
+        data: dict[str, Any] = {
+            "mode": "applied",
+            "short_name": namespace.short_name,
+            "outcome": result.outcome,
+            "projection": result.projection.redacted_dict(),
+        }
+        if result.protocol is not None:
+            data.update(result.protocol.redacted_dict())
+            data["committed"] = result.protocol.state == "committed"
+        else:
+            data["committed"] = False
+        return CommandResult(command="repair-proposal-format", data=data)
     if namespace.command == "approve":
         paths = resolve_proposal_paths(root.path, namespace.short_name)
         parsed = _parse_paths(paths)
@@ -496,7 +608,7 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             issues = tuple(
                 CliIssue(
                     item.code,
-                    "inspect_archive_state",
+                    recovery_action_for_archive_diagnostic(archive_root, item),
                     item.message,
                     "error",
                     path=item.path,
@@ -528,7 +640,11 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
         if scan.diagnostics:
             issues = tuple(
                 CliIssue(
-                    item.code, "inspect_archive_state", item.message, "error", path=item.path
+                    item.code,
+                    recovery_action_for_archive_diagnostic(archive_root, item),
+                    item.message,
+                    "error",
+                    path=item.path,
                 )
                 for item in scan.diagnostics
             )
@@ -577,6 +693,49 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
         )
     if namespace.command == "repair-archive-record":
         archive_root = root.path / "sdd/archive"
+        if namespace.restore_operation is not None:
+            conflicting = (
+                namespace.terminal_status,
+                namespace.summary,
+                namespace.expected_proposal_sha256,
+                namespace.expected_tasks_sha256,
+                namespace.expected_metadata_sha256,
+                namespace.expected_candidate_proposal_sha256,
+                namespace.expected_candidate_tasks_sha256,
+                namespace.expected_candidate_metadata_sha256,
+                namespace.recovery_timestamp,
+            )
+            if any(value is not None for value in conflicting):
+                raise UsageError(
+                    "--restore-operation cannot be combined with repair confirmations"
+                )
+            target, _ = validate_repairable_target(
+                archive_root, namespace.directory_name, allow_managed=True
+            )
+            restored = restore_staged_recovery(
+                target, namespace.restore_operation
+            )
+            scan = load_archive_records(archive_root)
+            index_rebuilt = False
+            index_sha256 = None
+            if not scan.diagnostics:
+                _, _, index_sha256 = rebuild_archive_index(
+                    archive_root, scan.records
+                )
+                index_rebuilt = True
+            return CommandResult(
+                command="repair-archive-record",
+                data={
+                    "mode": "restore",
+                    "directory": namespace.directory_name,
+                    **restored.redacted_dict(),
+                    "index_rebuilt": index_rebuilt,
+                    "index_sha256": index_sha256,
+                    "diagnostics": [
+                        item.to_dict() for item in scan.diagnostics
+                    ],
+                },
+            )
         execute_inputs = (
             namespace.terminal_status,
             namespace.summary,
@@ -585,17 +744,78 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
         )
         provided = [value is not None for value in execute_inputs]
         if not any(provided):
-            preflight = preflight_archive_repair(archive_root, namespace.directory_name)
+            if any(
+                value is not None
+                for value in (
+                    namespace.expected_metadata_sha256,
+                    namespace.expected_candidate_proposal_sha256,
+                    namespace.expected_candidate_tasks_sha256,
+                    namespace.expected_candidate_metadata_sha256,
+                    namespace.recovery_timestamp,
+                )
+            ):
+                raise UsageError("digest confirmations require repair execution inputs")
+            preflight = preflight_archive_repair(
+                archive_root,
+                namespace.directory_name,
+                supplement=RecoverySupplement(
+                    change_type=namespace.recovery_change_type,
+                    scope=namespace.recovery_scope,
+                    acceptance_conditions=tuple(
+                        namespace.recovery_acceptance_conditions
+                    ),
+                    summary=namespace.recovery_summary,
+                ),
+            )
+            issues = tuple(
+                sorted(
+                    (
+                        CliIssue(
+                            item.code,
+                            item.action,
+                            item.message,
+                            "error",
+                        )
+                        for item in preflight.projection.issues
+                    ),
+                    key=lambda item: item.sort_key,
+                )
+            )
             return CommandResult(
                 command="repair-archive-record",
-                data={"mode": "preflight", **_repair_preflight_data(archive_root, preflight)},
+                data={
+                    "mode": "preflight",
+                    **_repair_preflight_data(archive_root, preflight),
+                },
+                errors=issues,
+                exit_code=1 if issues else 0,
             )
         if not all(provided):
             raise UsageError(
                 "repair execution requires --terminal-status, --summary, "
                 "--expected-proposal-sha256, and --expected-tasks-sha256 together"
             )
+        reconstruction_confirmations = (
+            namespace.expected_candidate_proposal_sha256,
+            namespace.expected_candidate_tasks_sha256,
+            namespace.expected_candidate_metadata_sha256,
+            namespace.recovery_timestamp,
+        )
+        if any(value is not None for value in reconstruction_confirmations) and not all(
+            value is not None for value in reconstruction_confirmations
+        ):
+            raise UsageError(
+                "archive reconstruction requires all candidate digests and "
+                "--recovery-timestamp together"
+            )
         summary = read_summary(inline=namespace.summary, file_path=None)
+        expected_candidates = None
+        if all(value is not None for value in reconstruction_confirmations):
+            expected_candidates = {
+                "proposal.md": namespace.expected_candidate_proposal_sha256,
+                "tasks.md": namespace.expected_candidate_tasks_sha256,
+                ".sdd/metadata.json": namespace.expected_candidate_metadata_sha256,
+            }
         result = execute_archive_repair(
             archive_root,
             namespace.directory_name,
@@ -603,6 +823,17 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             summary=summary,
             expected_proposal_sha256=namespace.expected_proposal_sha256,
             expected_tasks_sha256=namespace.expected_tasks_sha256,
+            expected_metadata_sha256=namespace.expected_metadata_sha256,
+            expected_candidate_digests=expected_candidates,
+            recovery_timestamp=namespace.recovery_timestamp,
+            supplement=RecoverySupplement(
+                change_type=namespace.recovery_change_type,
+                scope=namespace.recovery_scope,
+                acceptance_conditions=tuple(
+                    namespace.recovery_acceptance_conditions
+                ),
+                summary=summary,
+            ),
         )
         data = {
             "mode": "applied",
@@ -612,6 +843,8 @@ def execute(namespace: argparse.Namespace, *, cwd: str | Path | None) -> Command
             "index_rebuilt": result.index_rebuilt,
             "index_sha256": result.index_sha256,
             "diagnostics": [item.to_dict() for item in result.diagnostics],
+            "outcome": result.outcome,
+            "committed": result.committed,
         }
         if result.diagnostics:
             issues = tuple(
@@ -851,7 +1084,11 @@ def _mutation_outcome_result(
     code = outcome.mutation_block_code or "ERROR_INVALID_SOURCE_STATE"
     issue = CliIssue(
         code=code,
-        action=_ACTION_BY_CODE[code],
+        action=(
+            "repair_proposal_format"
+            if command == "archive" and code == "ERROR_LEGACY_MUTATION_UNSUPPORTED"
+            else _ACTION_BY_CODE[code]
+        ),
         message=(
             "Proposal artifact is readable but does not support managed mutation"
             if outcome.mutation_block_code is not None
@@ -1093,7 +1330,41 @@ def _repair_preflight_data(archive_root: Path, preflight: RepairPreflight) -> di
             "proposal_sha256": preflight.proposal_sha256,
             "tasks_sha256": preflight.tasks_sha256,
         },
+        "projection": preflight.projection.redacted_dict(),
+        "reconstruction_required": preflight.reconstruction_required,
+        "recovery_timestamp": preflight.recovery_timestamp,
     }
+
+
+def _recovery_projection_result(
+    command: str,
+    short_name: str,
+    projection: RecoveryProjection,
+) -> CommandResult:
+    issues = tuple(
+        sorted(
+            (
+                CliIssue(
+                    item.code,
+                    item.action,
+                    item.message,
+                    "error",
+                )
+                for item in projection.issues
+            ),
+            key=lambda item: item.sort_key,
+        )
+    )
+    return CommandResult(
+        command=command,
+        data={
+            "mode": "preflight",
+            "short_name": short_name,
+            "projection": projection.redacted_dict(),
+        },
+        errors=issues,
+        exit_code=1 if issues else 0,
+    )
 
 
 def _command_hint(arguments: Sequence[str]) -> str:
@@ -1102,7 +1373,7 @@ def _command_hint(arguments: Sequence[str]) -> str:
             "validate", "list", "status", "abandon-preflight", "approve", "begin-revision",
             "complete-task"
             , "rebuild-index", "validate-index", "doctor"
-            , "archive", "abandon", "repair-archive-record"
+            , "archive", "abandon", "repair-archive-record", "repair-proposal-format"
         }:
             return argument
     if "--version" in arguments:
@@ -1188,6 +1459,14 @@ def _write_human(result: CommandResult, *, stdout: TextIO, stderr: TextIO) -> No
         stdout.write(
             f"doctor: {'healthy' if result.data.get('healthy') else 'findings present'}\n"
         )
+    elif result.command == "repair-proposal-format" and result.data:
+        projection = result.data.get("projection", {})
+        label = result.data.get("outcome", projection.get("disposition", "unknown"))
+        stdout.write(f"{result.data.get('short_name')}: recovery {label}\n")
+    elif result.command == "repair-archive-record" and result.data:
+        projection = result.data.get("projection", {})
+        label = result.data.get("outcome", projection.get("disposition", "preflight"))
+        stdout.write(f"{result.data.get('directory')}: archive recovery {label}\n")
     elif result.command in {"archive", "abandon"} and result.data:
         if result.data.get("dry_run"):
             stdout.write(
@@ -1267,6 +1546,16 @@ def _human_current_state(result: CommandResult) -> str:
         return "index valid" if data.get("valid") else "index invalid"
     if result.command == "rebuild-index":
         return "index rebuilt"
+    if result.command == "repair-proposal-format":
+        if data.get("mode") == "applied":
+            return "draft"
+        if data.get("mode") == "restore":
+            return "restored"
+        return "recovery preflight complete"
+    if result.command == "repair-archive-record":
+        if data.get("mode") == "restore":
+            return "restored"
+        return "archive recovery complete"
     return "command complete"
 
 
@@ -1309,6 +1598,17 @@ def _human_next_action(result: CommandResult, action: str | None) -> str:
         return "validate archive index"
     if result.command == "doctor":
         return "continue workflow" if data.get("healthy") else "inspect findings"
+    if result.command == "repair-proposal-format":
+        projection = data.get("projection", {})
+        if data.get("mode") == "applied":
+            return "request explicit approval before implementation"
+        if projection.get("disposition") == "ready":
+            return "confirm source and candidate digests"
+        return "continue workflow"
+    if result.command == "repair-archive-record":
+        if data.get("mode") == "preflight":
+            return "confirm recovery evidence"
+        return "validate archive index"
     return "none"
 
 
@@ -1339,6 +1639,9 @@ def _human_required_user_action(
         return f"reply exactly: 確認放棄 {data.get('short_name')}"
     if result.command == "begin-revision":
         return "review revised scope and explicitly approve it"
+    if result.command in {"repair-proposal-format", "repair-archive-record"}:
+        if result.data.get("mode") == "preflight":
+            return "explicitly confirm the reported recovery digests"
     return "none"
 
 

@@ -52,6 +52,7 @@ python3 <skill-dir>/scripts/sdd.py --root <project-root> --json archive <short-n
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json abandon <short-name> --expected-snapshot <digest> --summary <single-line>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json doctor
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json rebuild-index [--directory <name> --summary <single-line>]
+python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-proposal-format <short-name> [--type <type> --scope <text> --acceptance <text>]
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-archive-record <directory-name> [--terminal-status <status> --summary <single-line> --expected-proposal-sha256 <digest> --expected-tasks-sha256 <digest>]
 ```
 
@@ -60,6 +61,7 @@ python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-archive-r
 - Consume the complete JSON even on nonzero exit. Branch on `ok`, then stable `errors[].code` and `errors[].action`, never message prose.
 - `status` is authoritative for ordered tasks, completion, acceptance, compatibility, and snapshot. `validate` is the strict format gate; `abandon-preflight` alone permits unreliable task-format counts.
 - Any error action is binding. Read [`references/runtime-recovery.md`](./references/runtime-recovery.md) fully before handling an error, abandonment, archive recovery, or doctor finding. Do not improvise repair or retry.
+- `repair-proposal-format` and reconstruction mode of `repair-archive-record` are explicit recovery only: first run them without apply confirmations, show the redacted projection and all requested digests, then stop for confirmation. Never treat recovery preflight as approval or implementation.
 - Before the first mutation in an implementation sequence, obtain fresh successful `status`. A successful `approve` or `complete-task` result then supplies the canonical `after_state`, exact next snapshot, and `next_task` for the next mutation in that sequence. `refresh_status` never preserves mutation intent automatically.
 
 ## 提案
@@ -128,6 +130,29 @@ Execution requires both printed 64-character hashes from a successful preflight 
 3. `APPLIED` and `ALREADY_APPLIED` succeed. `COMMITTED_DERIVED_ARTIFACT_STALE` means the terminal move committed: never move it back; follow the reference's INDEX recovery. Other results stop by action.
 4. Never manipulate archive directories or INDEX directly. Use `doctor` for ambiguous evidence.
 5. Report `歸檔完成`, or `已放棄` plus retained-work/count warnings, and the summary.
+
+## Legacy artifact recovery
+
+Follow the recovery reference when `archive`, `rebuild-index`, or `doctor`
+returns `repair_proposal_format`, `repair_archive_record`, or
+`resume_or_restore_recovery`.
+
+- Normal parsing remains strict. Never manually normalize checkboxes, add
+  frontmatter, rewrite recovery JSON, or edit INDEX.
+- Preflight is read-only and reports only digests, required explicit inputs,
+  evidence sources, and field-level changes. Do not request or reproduce raw
+  source/candidate bodies in chat.
+- Active reconstruction requires all source/candidate digests from one
+  preflight. A successful apply always produces Schema v2 `draft`, preserves
+  only reliable completion history, and requires a new `開始實作`; it never
+  creates or removes approval/attestation artifacts.
+- Archived completed reconstruction stays in its existing directory, creates
+  recovery evidence rather than managed `terminal` metadata, and rebuilds
+  INDEX. Never rerun or request the historical proposal's project tests; only
+  the recovery feature's own validation is relevant.
+- An incomplete staged operation must be resumed with the same confirmed
+  evidence or explicitly restored by operation ID. Never auto-restore after a
+  later approval, task completion, or terminal mutation.
 
 ## Reporting
 
