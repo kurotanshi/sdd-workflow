@@ -2,6 +2,34 @@
 
 本專案的所有重要變更都記錄在此檔。格式參考 [Keep a Changelog](https://keepachangelog.com/)，版本遵循 [SemVer](https://semver.org/)。
 
+## v1.4.0 — 2026-09-03
+
+### Added
+- 新增 `repair-proposal-format` 與擴充的 `repair-archive-record`：以唯讀 projection、來源／候選 digest 確認、私有 staged copies、可重試 commit receipt 與明確 restore，重建已登錄的 legacy proposal／archive 格式；不猜測缺少的 type、scope、acceptance 或 summary，也不把 reconstructed draft 視為已核准。
+- proposal intake 新增有界 repository evidence gate；proposal authoring 與自審新增 approval-relevant baseline、out-of-scope 與 authority-split 檢查，並加入 N–T 的版本化 Agent scenarios。
+
+### Changed
+- 中英文 README 同步高風險 proposal intake 與 review 邊界；recovery、archive、doctor、compatibility、transaction 與 CLI 文件同步新的重建契約。
+- Engine release 更新為 `1.4.0`，engine generation 更新為 `1.4`；proposal schema v1/v2、JSON output v1、discovery／handshake 與既有 machine envelopes 均不變。
+
+### Deprecated
+- None.
+
+### Removed
+- None.
+
+### Security
+- Reconstruction 只接受已登錄格式，以 exact digest 作為 optimistic concurrency token；原始與候選 bytes 僅保存在 target-local、私有權限的 recovery 目錄，公開結果只回傳摘要與 digest。
+
+### Migration
+- 現有有效 Schema v1/v2 proposal 與 managed archive 不需轉換；只有 stable action 指向 recovery command 的 legacy／malformed artifact 才能經使用者明確確認重建。
+
+### Rollback
+- 尚未執行 reconstruction 時可直接 pin 回完整 v1.3.0 package；已開始 staged recovery 時須由 v1.4.x 依 operation receipt resume 或 restore，不能刪除 recovery evidence 或混用舊版檔案。
+
+### Validation
+- 變更源自已歸檔提案 `strengthen-change-contracts`、`bounded-proposal-intake` 與版本化 recovery contracts；完整 deterministic gates、Agent matrix 與 release package 證據記錄於 v1.4.0 release gate。
+
 ## v1.3.0 — 2026-08-20
 
 ### Added

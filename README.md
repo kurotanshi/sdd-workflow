@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> 版本 v1.3.0 ｜ [English](./README.en.md)
+> 版本 v1.4.0 ｜ [English](./README.en.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -142,9 +142,9 @@ SDD 的規格份量應與任務相稱，但這個 Skill 不會因任務很小就
 
 ---
 
-## v1.3.0
+## v1.4.0
 
-這個 minor release 新增條件式工程品質查證：跨檔案工作優先依相依順序形成可運作、可獨立驗證的垂直成果；每條 task 開始前整理最小必要 context；版本相依決策查對專案版本與官方文件；完成前只套用專案明確宣告且相關的 Definition of Done。proposal schema、CLI 指令與 JSON output version 均不變。
+這個 minor release 新增有界的高風險 proposal intake、approval-relevant baseline 與 authority-split 檢查，並提供需明確確認、可重試與可安全 restore 的 legacy proposal／archive reconstruction。現有有效 proposal 不需轉換；proposal schema v1/v2 與 JSON output version 均不變。
 
 從舊版更新時請替換完整 package，不要混合不同版本的檔案。
 

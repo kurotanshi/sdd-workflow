@@ -1,6 +1,6 @@
 # sdd-workflow
 
-> Version v1.3.0 ｜ [繁體中文](./README.md)
+> Version v1.4.0 ｜ [繁體中文](./README.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -142,9 +142,9 @@ Most tasks that produce an observable project change fit the SDD framework, incl
 
 ---
 
-## v1.3.0
+## v1.4.0
 
-This minor release adds conditional engineering evidence: cross-file work is ordered by dependency and prefers usable, independently verifiable vertical outcomes; each task starts with minimum context; version-dependent decisions use the project's version and official documentation; and completion applies only relevant Definition of Done standards explicitly declared by the project. Proposal schemas, CLI commands, and the JSON output version remain unchanged.
+This minor release adds bounded high-risk proposal intake, approval-relevant baseline and authority-split checks, plus explicitly confirmed, retryable, safely restorable reconstruction for legacy proposals and archives. Existing valid proposals need no conversion; proposal schemas v1/v2 and JSON output version remain unchanged.
 
 Replace the complete package when updating. Never mix files from different releases.
 
