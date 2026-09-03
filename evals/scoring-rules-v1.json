@@ -1116,7 +1116,7 @@
             {
               "op": "text-regex",
               "source": "transcript",
-              "pattern": "can_delete"
+              "pattern": "(can_delete|service\\.py)"
             },
             {
               "op": "text-regex",

@@ -93,6 +93,25 @@ class AgentEvalScoringTests(unittest.TestCase):
             self.assertFalse(evaluate_predicate(question_rule, evidence)[0])
             self.assertFalse(evaluate_predicate(bounded_rule, evidence)[0])
 
+    def test_s_review_accepts_function_name_or_exact_file_location(self) -> None:
+        rule = read_json(ROOT / "evals/scoring-rules-v1.json")["scenarios"][
+            "S-proposal-intake-one-off-review"
+        ]["outcome"]["review-reported"]
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            transcript = run / "transcript.md"
+            for value in (
+                "can_delete ignores actor_role, so admin deletion fails.\n",
+                "service.py:3 完全忽略 actor_role，導致管理員無法刪除。\n",
+            ):
+                transcript.write_text(value, encoding="utf-8")
+                self.assertTrue(evaluate_predicate(rule, Evidence(run, {}))[0])
+
+            transcript.write_text(
+                "service.py 已檢查，actor_role 是參數。\n", encoding="utf-8"
+            )
+            self.assertFalse(evaluate_predicate(rule, Evidence(run, {}))[0])
+
     def test_t_verdict_accepts_markdown_and_trailing_explanation(self) -> None:
         rule = read_json(ROOT / "evals/scoring-rules-v1.json")["scenarios"][
             "T-proposal-intake-self-review-boundary"
