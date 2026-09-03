@@ -48,6 +48,8 @@ class SkillReductionTests(unittest.TestCase):
         anchors = (
             "is not automatically the desired",
             "ask exactly one most-critical question",
+            "one interrogative sentence",
+            "Any answer options are declarative",
             "create the draft directly",
             "Never emit a fixed analysis report",
         )

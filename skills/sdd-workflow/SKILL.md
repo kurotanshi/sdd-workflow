@@ -80,7 +80,8 @@ other reads may not.
 3. Run `validate`, then `status`. On success report canonical short name, type, behavior, task count, and acceptance scenarios.
 4. Stop for explicit approval. Never implement in the proposal turn.
 
-Material ambiguity requires a focused question before authoring. Existing rule
+Material ambiguity requires exactly one interrogative sentence with one question
+mark before authoring; any options are declarative. Existing rule
 authority that conflicts with the requested placement is material; requested
 unchanged behavior is a baseline, not missing implementation to design.
 

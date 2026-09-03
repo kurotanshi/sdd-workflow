@@ -18,8 +18,9 @@ Intake, before authoring:
   outcome; when the difference would change the proposal, treat it as
   material ambiguity.
 - On material ambiguity, briefly state the decision-relevant assumptions or
-  gaps and ask exactly one most-critical question; do not create the draft
-  before the answer.
+  gaps and ask exactly one most-critical question: one interrogative sentence
+  with one `?` or `？`. Any answer options are declarative, not extra questions.
+  Do not create the draft before the answer.
 - Otherwise create the draft directly, marking safely deferable uncertainty
   in the proposal. Never emit a fixed analysis report or force a question
   when the answer cannot change the proposal.
