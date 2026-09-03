@@ -93,6 +93,21 @@ class AgentEvalScoringTests(unittest.TestCase):
             self.assertFalse(evaluate_predicate(question_rule, evidence)[0])
             self.assertFalse(evaluate_predicate(bounded_rule, evidence)[0])
 
+    def test_t_verdict_accepts_markdown_without_accepting_prose(self) -> None:
+        rule = read_json(ROOT / "evals/scoring-rules-v1.json")["scenarios"][
+            "T-proposal-intake-self-review-boundary"
+        ]["outcome"]["self-review-verdict"]
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            transcript = run / "transcript.md"
+            for value in ("通過\n", "**通過**\n", "`需修正`\n", "### 待你決定\n"):
+                transcript.write_text(value, encoding="utf-8")
+                self.assertTrue(evaluate_predicate(rule, Evidence(run, {}))[0])
+
+            for value in ("結論是通過\n", "**通過，但需補測試**\n"):
+                transcript.write_text(value, encoding="utf-8")
+                self.assertFalse(evaluate_predicate(rule, Evidence(run, {}))[0])
+
     def test_command_oracle_never_falls_back_to_skill_read_text(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             run = Path(directory)
