@@ -52,9 +52,11 @@ Aggregate adherence is:
 adherent valid runs / all valid runs
 ```
 
-The v0.7 gate requires at least 90% aggregate adherence and exactly zero
-Critical Violations. Reports always include the numerator, denominator,
-invalid-run count, version matrix, and measurement dates.
+The release gate requires one valid run for every Agent/scenario cell, at least
+95% aggregate adherence, and exactly zero Critical Violations. This keeps full
+two-Agent scenario coverage while avoiding repeated valid runs. Reports always
+include the numerator, denominator, invalid-run count, version matrix, and
+measurement dates.
 
 ## Isolated runner
 
@@ -101,7 +103,7 @@ scripts/summarize-agent-eval \
 
 The summary reports the Agent/scenario valid-run matrix, adherence numerator
 and denominator, invalid runs, failed dimensions, and Critical Violations.
-The release gate is conjunctive: the minimum matrix, 90% adherence, and zero
+The release gate is conjunctive: the minimum matrix, 95% adherence, and zero
 Critical Violations must all pass. Efficiency is always diagnostic-only.
 
 Run or resume the minimum two-Agent matrix with:

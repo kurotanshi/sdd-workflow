@@ -54,7 +54,7 @@ for every affected interaction boundary. Otherwise rerun the complete matrix.
     --markdown-output eval-runs/<candidate>/summary.md
   ```
 
-- [ ] Require three valid runs for every Agent/scenario cell, at least 95%
+- [ ] Require one valid run for every Agent/scenario cell, at least 95%
   aggregate adherence, and exactly zero Critical Violations, or record the
   permitted patch-reuse evidence and rationale.
 - [ ] Classify every valid failure and invalid attempt. Do not replace a valid

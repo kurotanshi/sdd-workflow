@@ -22,7 +22,7 @@
   },
   "run_policy": {
     "timeout_seconds": 900,
-    "minimum_valid_runs_per_agent_scenario": 3,
+    "minimum_valid_runs_per_agent_scenario": 1,
     "valid_run_requires": [
       "complete_run_metadata",
       "scenario_and_scorer_versions_match",

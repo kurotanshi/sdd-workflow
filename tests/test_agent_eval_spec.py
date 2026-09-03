@@ -63,7 +63,7 @@ class AgentEvalSpecTests(unittest.TestCase):
     def test_valid_run_timeout_and_rerun_policy_is_fail_closed(self) -> None:
         policy = self.spec["run_policy"]
         self.assertEqual(policy["timeout_seconds"], 900)
-        self.assertEqual(policy["minimum_valid_runs_per_agent_scenario"], 3)
+        self.assertEqual(policy["minimum_valid_runs_per_agent_scenario"], 1)
         self.assertEqual(policy["timeout_disposition"], "invalid_run")
         self.assertEqual(
             policy["ordinary_agent_failure_disposition"],

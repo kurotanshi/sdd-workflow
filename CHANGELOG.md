@@ -10,6 +10,7 @@
 
 ### Changed
 - 中英文 README 同步高風險 proposal intake 與 review 邊界；recovery、archive、doctor、compatibility、transaction 與 CLI 文件同步新的重建契約。
+- Agent release matrix 改為每個 Agent／scenario cell 一次有效執行；維持雙 Agent、完整 scenario 覆蓋、至少 95% aggregate adherence、Critical Violation 為零，以及只對 invalid harness／environment 執行最多三次嘗試。
 - Engine release 更新為 `1.4.0`，engine generation 更新為 `1.4`；proposal schema v1/v2、JSON output v1、discovery／handshake 與既有 machine envelopes 均不變。
 
 ### Deprecated
