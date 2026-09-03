@@ -106,6 +106,8 @@ class AgentEvalScoringTests(unittest.TestCase):
                 "`需修正`\n",
                 "### 待你決定\n",
                 "**通過**。無未解決發現\n",
+                "**判定：通過**\n",
+                "**驗證結論：通過**\n",
             ):
                 transcript.write_text(value, encoding="utf-8")
                 self.assertTrue(evaluate_predicate(rule, Evidence(run, {}))[0])
