@@ -68,6 +68,9 @@ python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-archive-r
 
 Before authoring, revising, or any repository inspection for a proposal, read
 [`references/proposal-authoring.md`](./references/proposal-authoring.md) fully.
+After phase selection, that complete reference read is the first repository
+operation; runtime discovery may precede it, but `pwd`, listings, searches, and
+other reads may not.
 
 1. Inspect enough project context to describe current behavior and likely files; do not implement. When the reference's high-risk review gate applies, use this closed discovery sequence before authoring:
    - Read the user-named targets first.
@@ -77,7 +80,9 @@ Before authoring, revising, or any repository inspection for a proposal, read
 3. Run `validate`, then `status`. On success report canonical short name, type, behavior, task count, and acceptance scenarios.
 4. Stop for explicit approval. Never implement in the proposal turn.
 
-Material ambiguity requires a focused question before authoring.
+Material ambiguity requires a focused question before authoring. Existing rule
+authority that conflicts with the requested placement is material; requested
+unchanged behavior is a baseline, not missing implementation to design.
 
 ## 自審提案
 
@@ -87,7 +92,7 @@ Before reviewing, read [`references/self-review.md`](./references/self-review.md
 
 1. Run `status`. Report canonical state before reviewing.
 2. Run the review layers defined in the reference. Every finding needs a concrete location; drop findings that cannot name one.
-3. `draft`: correct prose gaps and a genuinely defective task list in place, then rerun `validate` and `status`; itemise every task-level edit and give the task count before and after. Never resolve a conflict between proposals; report that for the user to decide. `approved`: never edit prose, report only and state that applying anything requires `提案`.
+3. `draft`: correct only concrete, evidence-backed prose gaps and a genuinely defective task list in place; never add generic risk disclaimers or unaffected-case prose. Then rerun `validate` and `status`; itemise every task-level edit and give the task count before and after. Never resolve a conflict between proposals; report that for the user to decide. `approved`: never edit prose, report only and state that applying anything requires `提案`.
 4. Report the verdict in chat as the reference requires, then stop. Never call `approve` and never implement.
 
 A design-direction finding is a question for the user, never a decision this skill makes.

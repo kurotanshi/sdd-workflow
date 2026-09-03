@@ -175,6 +175,36 @@ class SkillReductionTests(unittest.TestCase):
             text.index("Before authoring, revising, or any repository inspection"),
             text.index("Inspect enough project context"),
         )
+        for anchor in (
+            "complete reference read is the first repository operation",
+            "`pwd`, listings, searches, and other reads may not",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
+    def test_proposal_intake_preserves_baselines_and_existing_authority(self) -> None:
+        text = " ".join(AUTHORING.read_text(encoding="utf-8").split())
+        for anchor in (
+            "evaluation harnesses or fixtures",
+            "code-formatted filename in the request is a named target",
+            "approval-relevant baseline, not a request to invent",
+            "preserve the current observable behavior or configuration as-is",
+            "existing source of truth already enforces the requested rule",
+            "material authority split",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
+
+    def test_self_review_does_not_invent_generic_draft_edits(self) -> None:
+        text = " ".join(SELF_REVIEW.read_text(encoding="utf-8").split())
+        for anchor in (
+            "Edit a draft only for a concrete, evidence-backed defect",
+            "Never add a generic non-goal, risk disclaimer",
+            "null, error, concurrency",
+            "report `通過` without writing the proposal",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, text)
 
     def test_authoring_prefers_vertical_slices_without_file_count_limits(self) -> None:
         text = AUTHORING.read_text(encoding="utf-8")

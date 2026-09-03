@@ -1,7 +1,11 @@
 # Proposal authoring reference
 
 Read this file completely before creating, revising, or inspecting the
-repository for an SDD proposal.
+repository for an SDD proposal. After phase selection this complete read is the
+first repository operation; only runtime discovery may precede it. Do not run
+`pwd`, `ls`, `find`, `tree`, a broad glob/search, or inspect evaluation harnesses
+or fixtures to learn the scenario before reading this reference and the
+user-named targets. A code-formatted filename in the request is a named target.
 
 ## New proposal
 
@@ -19,6 +23,14 @@ Intake, before authoring:
 - Otherwise create the draft directly, marking safely deferable uncertainty
   in the proposal. Never emit a fixed analysis report or force a question
   when the answer cannot change the proposal.
+- A request to preserve or keep existing behavior or configuration is an
+  approval-relevant baseline, not a request to invent its implementation. If
+  local evidence does not expose a named implementation, preserve the current
+  observable behavior or configuration as-is; ask only when the missing choice
+  would change the requested outcome or its acceptance.
+- If an existing source of truth already enforces the requested rule, copying
+  that rule into callers is a material authority split. Ask the one material
+  question before drafting instead of proposing the duplicate implementation.
 
 Conditional implementation-readiness review:
 
@@ -29,7 +41,8 @@ Conditional implementation-readiness review:
 - When the review applies, before drafting, make one bounded discovery pass for
   decision-relevant repository evidence using this closed discovery sequence;
   targeted filename and reference searches are the only allowed expansion:
-  1. Read the user-named targets first.
+  1. Read the user-named targets first. Do not inspect an evaluation harness or
+     fixture as repository evidence.
   2. For each still-missing category—applicable project guidance and
      requirements, architecture decisions, configuration, the affected core
      flow and callers, and tests—search that category separately using only a

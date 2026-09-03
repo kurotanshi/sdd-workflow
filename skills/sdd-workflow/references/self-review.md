@@ -31,6 +31,10 @@ implements, and never changes lifecycle status.
   to justify the review. `無發現` is per-layer wording only, as in
   `設計取向：無發現`; the one-line verdict always uses a verdict token defined
   under Reporting, never `無發現`.
+- Edit a draft only for a concrete, evidence-backed defect. Never add a generic
+  non-goal, risk disclaimer, or statement that null, error, concurrency, or an
+  unaffected area does not change merely to demonstrate coverage. If there is
+  no defect, report `通過` without writing the proposal.
 - Never claim a caller, behavior, or conflict that was not actually inspected.
 
 ## Layer 0 - foundation (always)
