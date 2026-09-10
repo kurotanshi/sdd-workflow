@@ -2,3 +2,6 @@
 # （已於 2026-07-22 自 git 歷史中移除）；錨定根目錄，避免吞掉 tests/fixtures 內的 sdd/ 目錄
 /sdd/
 /eval-runs/
+.claude/
+.codex/
+.worktrees/
