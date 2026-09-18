@@ -4,10 +4,13 @@
   "host_probe": {
     "platform": "Linux-6.12.94+-x86_64-with-glibc2.41",
     "python": "3.13.5",
-    "codex_cli_present": false,
-    "claude_cli_present": false,
+    "codex_cli_present": true,
+    "claude_cli_present": true,
     "dual_host_load_verified": false,
-    "setup_failure": "Neither Codex nor Claude host CLIs are authenticated/available in this research environment; live 12-run pilot blocked. Boundary tests + collector/scorer simulation completed."
+    "setup_failure": "CLIs installed but neither Codex nor Claude is authenticated; live 12-run pilot still blocked. Dry-run matrix completed.",
+    "codex_cli_version": "codex-cli 0.155.0",
+    "claude_cli_version": "2.1.276 (Claude Code)",
+    "updated_at": "2026-09-18T04:39:52.119975+00:00"
   },
   "artifacts": {
     "candidate_proto_sha256": "8e23b1de61ed6b47ef0acf1f8f058832668be3b9e3018108dc925717e78c108d",
@@ -18,6 +21,7 @@
   "boundary_unittest": "boundary_results/unittest.txt",
   "notes": [
     "Product skills/sdd-workflow package was not modified by candidate prototype.",
-    "Raw live traces not collected due to host setup failure."
+    "One-click runner: pilot/scripts/run_dual_host_pilot.py",
+    "Raw live traces not collected due to missing host authentication."
   ]
 }
