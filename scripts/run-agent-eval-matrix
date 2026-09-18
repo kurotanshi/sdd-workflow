@@ -17,11 +17,9 @@ from agent_eval_scoring import (
     EVAL_SPEC_PATH,
     ROOT,
     aggregate_summary,
-    identity_mismatches,
     read_json,
     scenario_paths,
 )
-from agent_eval_lib import SKILL, git_head, sha256
 
 
 RUNNER = ROOT / "scripts/run-agent-eval"
@@ -32,24 +30,14 @@ def emit(value: dict[str, Any]) -> None:
     print(json.dumps(value, ensure_ascii=False, sort_keys=True), flush=True)
 
 
-def existing_valid_count(
-    root: Path,
-    agent: str,
-    scenario_id: str,
-    expected_identity: dict[str, Any],
-) -> int:
+def existing_valid_count(root: Path, agent: str, scenario_id: str) -> int:
     count = 0
     for path in root.glob(f"{agent}/{scenario_id}/*/score.json"):
         try:
             score = read_json(path)
-            metadata = read_json(path.parent / "run-metadata.json")
         except Exception:
             continue
-        if (
-            score.get("status") == "complete"
-            and score.get("valid_run")
-            and not identity_mismatches(metadata, expected_identity)
-        ):
+        if score.get("status") == "complete" and score.get("valid_run"):
             count += 1
     return count
 
@@ -88,8 +76,6 @@ def run_slot(
     scenario_id: str,
     slot: int,
     maximum_attempts: int,
-    expected_identity: dict[str, Any],
-    evaluation_mode: str,
     stop_event: threading.Event,
 ) -> dict[str, Any]:
     if stop_event.is_set():
@@ -112,20 +98,13 @@ def run_slot(
                 "attempts": attempts,
             }
         run_id = (
-            f"{evaluation_mode}-{agent}-{scenario_id.lower()}-"
+            f"baseline-{agent}-{scenario_id.lower()}-"
             f"slot-{slot}-attempt-{attempt}"
         )
         run_directory = artifact_root / agent / scenario_id / run_id
         if run_directory.exists():
             score = score_existing(run_directory)
-            try:
-                metadata = read_json(run_directory / "run-metadata.json")
-            except Exception:
-                metadata = {}
-            mismatches = identity_mismatches(metadata, expected_identity)
-            if score and not mismatches and score.get("critical_violation"):
-                stop_event.set()
-            if score and not mismatches and score.get("valid_run"):
+            if score and score.get("valid_run"):
                 return {
                     "agent": agent,
                     "scenario_id": scenario_id,
@@ -136,26 +115,8 @@ def run_slot(
                     "critical_violation": bool(score.get("critical_violation")),
                     "attempts": attempts,
                 }
-            if score and not mismatches and score.get("critical_violation"):
-                return {
-                    "agent": agent,
-                    "scenario_id": scenario_id,
-                    "slot": slot,
-                    "result": "existing_critical_invalid",
-                    "run_id": run_id,
-                    "attempts": attempts,
-                }
             replaces = run_id
-            attempts.append(
-                {
-                    "run_id": run_id,
-                    "result": (
-                        "existing_identity_mismatch"
-                        if mismatches
-                        else "existing_invalid"
-                    ),
-                }
-            )
+            attempts.append({"run_id": run_id, "result": "existing_invalid"})
             continue
 
         argv = [
@@ -206,9 +167,9 @@ def run_slot(
                 "invalid_reasons": score.get("invalid_reasons", []),
             }
         )
-        if score.get("critical_violation"):
-            stop_event.set()
         if score.get("valid_run"):
+            if score.get("critical_violation"):
+                stop_event.set()
             return {
                 "agent": agent,
                 "scenario_id": scenario_id,
@@ -217,15 +178,6 @@ def run_slot(
                 "run_id": run_id,
                 "adherent": bool(score.get("adherent")),
                 "critical_violation": bool(score.get("critical_violation")),
-                "attempts": attempts,
-            }
-        if score.get("critical_violation"):
-            return {
-                "agent": agent,
-                "scenario_id": scenario_id,
-                "slot": slot,
-                "result": "critical_invalid",
-                "run_id": run_id,
                 "attempts": attempts,
             }
         replaces = run_id
@@ -248,62 +200,29 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--codex-model", default="gpt-5.6-sol")
     value.add_argument("--claude-model", default="sonnet")
     value.add_argument("--jobs", type=int, default=2)
-    selection = value.add_mutually_exclusive_group(required=True)
-    selection.add_argument("--scenario", action="append", dest="scenarios")
-    selection.add_argument("--full-benchmark", action="store_true")
-    value.add_argument("--dry-run", action="store_true")
     return value
 
 
 def main(argv: list[str] | None = None) -> int:
-    argument_parser = parser()
-    arguments = argument_parser.parse_args(argv)
+    arguments = parser().parse_args(argv)
     if arguments.jobs < 1:
-        argument_parser.error("--jobs must be at least 1")
-    known_scenarios = scenario_paths()
-    selected_scenarios = (
-        sorted(known_scenarios)
-        if arguments.full_benchmark
-        else arguments.scenarios
-    )
-    if len(selected_scenarios) != len(set(selected_scenarios)):
-        argument_parser.error("--scenario values must be unique")
-    unknown = sorted(set(selected_scenarios) - set(known_scenarios))
-    if unknown:
-        argument_parser.error(f"unknown scenarios: {', '.join(unknown)}")
+        emit({"ok": False, "error": "--jobs must be at least 1"})
+        return 2
+    artifact_root = arguments.artifact_root.resolve()
+    artifact_root.mkdir(parents=True, exist_ok=True)
     spec = read_json(EVAL_SPEC_PATH)
+    minimum = spec["run_policy"]["minimum_valid_runs_per_agent_scenario"]
     maximum_attempts = spec["run_policy"]["rerun"]["maximum_attempts_per_planned_run"]
     models = {
         "codex": arguments.codex_model,
         "claude": arguments.claude_model,
     }
-    evaluation_mode = (
-        "full_benchmark" if arguments.full_benchmark else "affected_release"
-    )
-    required = (
-        spec["full_benchmark"]["valid_runs_per_cell"]
-        if arguments.full_benchmark
-        else spec["release_selection"]["valid_adherent_runs_per_cell"]
-    )
-    expected_identity = {
-        "skill_commit": git_head(),
-        "skill_sha256": sha256(SKILL),
-        "eval_spec_version": spec["eval_spec_version"],
-        "eval_spec_sha256": sha256(EVAL_SPEC_PATH),
-        "models": models,
-    }
-    artifact_root = arguments.artifact_root.resolve()
     jobs: list[dict[str, Any]] = []
     stop_event = threading.Event()
     for agent, model in models.items():
-        for scenario_id in selected_scenarios:
-            existing = existing_valid_count(
-                artifact_root,
-                agent,
-                scenario_id,
-                expected_identity,
-            )
-            for slot in range(existing + 1, required + 1):
+        for scenario_id in sorted(scenario_paths()):
+            existing = existing_valid_count(artifact_root, agent, scenario_id)
+            for slot in range(existing + 1, minimum + 1):
                 jobs.append(
                     {
                         "artifact_root": artifact_root,
@@ -312,32 +231,15 @@ def main(argv: list[str] | None = None) -> int:
                         "scenario_id": scenario_id,
                         "slot": slot,
                         "maximum_attempts": maximum_attempts,
-                        "expected_identity": expected_identity,
-                        "evaluation_mode": evaluation_mode,
                         "stop_event": stop_event,
                     }
                 )
-    if arguments.dry_run:
-        emit(
-            {
-                "ok": True,
-                "evaluation_mode": evaluation_mode,
-                "selected_scenarios": selected_scenarios,
-                "scheduled_slots": len(jobs),
-                "expected_identity": expected_identity,
-            }
-        )
-        return 0
-    artifact_root.mkdir(parents=True, exist_ok=True)
     emit(
         {
             "event": "matrix_started",
             "artifact_root": str(artifact_root),
-            "evaluation_mode": evaluation_mode,
-            "selected_scenarios": selected_scenarios,
             "scheduled_slots": len(jobs),
             "jobs": arguments.jobs,
-            "expected_identity": expected_identity,
         }
     )
     results: list[dict[str, Any]] = []
@@ -347,12 +249,7 @@ def main(argv: list[str] | None = None) -> int:
             result = future.result()
             results.append(result)
             emit({"event": "slot_completed", **result})
-    summary = aggregate_summary(
-        artifact_root,
-        selected_scenarios=selected_scenarios,
-        expected_identity=expected_identity,
-        evaluation_mode=evaluation_mode,
-    )
+    summary = aggregate_summary(artifact_root)
     emit(
         {
             "event": "matrix_completed",
@@ -364,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
             "summary": summary,
         }
     )
-    return 0 if summary["evaluation_pass"] else 1
+    return 0 if summary["release_gate_pass"] else 1
 
 
 if __name__ == "__main__":

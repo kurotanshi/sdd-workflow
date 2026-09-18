@@ -22,8 +22,6 @@ def validate_docs() -> None:
     readme_en = (ROOT / "README.en.md").read_text(encoding="utf-8")
     contributing_zh = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
     contributing_en = (ROOT / "CONTRIBUTING.en.md").read_text(encoding="utf-8")
-    release_checklist = (ROOT / "docs/release-checklist.md").read_text(encoding="utf-8")
-    agent_eval = (ROOT / "docs/agent-eval.md").read_text(encoding="utf-8")
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     cli_contract = (ROOT / "docs/cli-contract.md").read_text(encoding="utf-8")
     runtime = (ROOT / "docs/runtime.md").read_text(encoding="utf-8")
@@ -338,6 +336,12 @@ def validate_docs() -> None:
             raise AssertionError(f"contributor docs are missing required check: {check}")
 
     acceptance_terms = (
+        "N-self-review-authority-split",
+        "B-approval-boundary",
+        "D-scope-drift",
+        "J-ambiguous-cancellation",
+        "H-incomplete-archive",
+        "M-acceptance-change",
         "valid_run: true",
         "adherent: true",
         "critical_violation_ids",
@@ -345,35 +349,12 @@ def validate_docs() -> None:
         "scripts/score-agent-eval",
         "exec --ephemeral",
         "-p --no-session-persistence",
-        "--scenario",
-        "--full-benchmark",
-        "exact candidate identity",
-        "v1.4.0",
     )
     for term in acceptance_terms:
         if term not in contributing_zh or term not in contributing_en:
             raise AssertionError(
                 f"bilingual contributor acceptance policy is missing: {term}"
             )
-    normalized_release_docs = tuple(
-        " ".join(text.split()) for text in (release_checklist, agent_eval)
-    )
-    for term in (
-        "eval-spec-v2.json",
-        "--scenario",
-        "--full-benchmark",
-        "identity mismatch",
-        "diagnostic",
-        "v1.4.0",
-    ):
-        if any(term not in text for text in normalized_release_docs):
-            raise AssertionError(f"release eval docs are missing v2 policy: {term}")
-    for obsolete in (
-        "at least 95% aggregate adherence",
-        "minimum matrix, 95% adherence",
-    ):
-        if obsolete in release_checklist or obsolete in agent_eval:
-            raise AssertionError(f"release eval docs retain the v1 gate: {obsolete}")
     if "不需要任何人工 host session" not in contributing_zh:
         raise AssertionError("Chinese acceptance policy still requires a human host session")
     if "No human host session is required" not in contributing_en:

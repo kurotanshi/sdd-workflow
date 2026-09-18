@@ -5,49 +5,49 @@ description: "Manage software changes through a proposal-first SDD workflow: cre
 
 # SDD Workflow
 
-Enforce `提案 → 實作 → 歸檔`, including managed revision and abandonment.
+Enforce `提案 → 實作 → 歸檔`, including explicit revision and abandonment.
 
-## Invariants
+## Non-negotiable rules
 
 - State the plan before implementation. Never modify implementation files unless canonical proposal status is `approved`.
-- Phase words act only as explicit commands targeting this workflow or a proposal. Narrative mentions do nothing; unclear intent requires a question.
-- `開始實作` explicitly approves a `draft`. Plain `實作` continues only an `approved` proposal; otherwise ask for approval and stop.
-- Requirement changes during implementation or acceptance enter managed revision and require new `開始實作`.
-- Run package-local discovery once before the first SDD CLI command in a session. Zero, ambiguous, failed, or incompatible discovery must fail closed. Never substitute a runtime from `PATH`, another checkout, or another Agent's Skill root.
-- The bundled CLI is the only authority for discovery, parsing, validation, canonical status, tasks, acceptance, snapshots, diagnostics, managed fields, terminal moves, and INDEX. If it fails, fail closed and never fall back to prose parsing.
-- Never directly edit lifecycle status, checkbox markers, machine metadata, archive paths, or INDEX. Direct prose edits are limited to new draft authoring, authorized revision prose, and an approved research conclusion.
-- Work on and verify one canonical task at a time. Do not invent requirements, combine unrelated changes, or mark a task complete merely because code was written.
-- Abandonment requires read-only preflight followed by exact `確認放棄 <short-name>`. It retains implementation and Git work.
+- A phase word acts only as an explicit command targeting this workflow or a proposal. Narrative mentions do nothing; unclear intent requires a question.
+- `開始實作` explicitly approves a `draft`. Plain `實作` continues only `approved`; for draft or missing status, ask for approval and stop.
+- Requirement changes during implementation or acceptance always enter managed revision and require new `開始實作`; never hide new scope in task completion.
+- Run package-local discovery once before the first SDD CLI command in a session. Zero, ambiguous, failed, or incompatible discovery stops; never search `PATH`, another checkout, or another Agent's Skill root, because a runtime from elsewhere can apply a different contract to the same artifacts.
+- The bundled CLI is the only authority for discovery, parsing, validation, canonical status/tasks/acceptance, snapshots, diagnostics, managed fields, terminal moves, and INDEX. If unavailable, fail closed and do not fall back to prose parsing, because prose parsing cannot reproduce the canonical rules and drifts silently.
+- Never directly edit lifecycle status, checkbox markers, machine metadata, archive paths, or INDEX. Direct prose access is limited to new draft authoring, explicitly authorized revision prose, and an approved research conclusion.
+- Work on and verify one canonical task at a time. Do not invent requirements, combine unrelated changes, or mark completion merely because code was written.
+- Abandonment is read-only preflight followed by exact `確認放棄 <short-name>`. It never reverts implementation or Git changes, so abandoning a proposal can never destroy work.
 - Source-control rollback is outside SDD. Confirm its exact scope and never change proposal state because of it.
 - Do not create Git commits unless requested.
 
 ## Phase selection
 
-- `提案`: create a draft or revise the named proposal; do not implement.
-- `自審提案 [short-name]`: review an existing proposal; never approve or implement. Match this explicit command before its `提案` substring.
-- `開始實作`: approve a draft, verify `approved`, then implement tasks.
+- `提案`: create a new draft or explicitly revise the named proposal; no implementation.
+- `自審提案`, `自審提案 <short-name>`: adversarial review of an existing proposal; never approves and never implements. Selecting this phase requires the user to be issuing it as a phase command, not merely mentioning the term inside a descriptive, quoted, or documentation request such as `在 README 說明「自審提案」`. Once that holds, `自審提案` takes precedence over its substring `提案`, which must never match inside it. Never author or create a proposal on `自審提案`.
+- `開始實作`: approve a draft with the CLI, verify `approved`, then implement one task at a time.
 - `實作`: continue an approved proposal only.
-- `歸檔`: archive only after user acceptance and reliable full completion.
-- `放棄 [short-name]` or `取消提案`: run abandonment preflight and stop.
-- `確認放棄 <short-name>`: abandon only after matching successful preflight evidence in this conversation.
+- `歸檔`: archive only after user acceptance and reliable full task completion.
+- `放棄`, `放棄 <short-name>`, `取消提案`: run abandonment preflight and stop.
+- `確認放棄 <short-name>`: abandon only when this conversation contains a matching successful preflight.
+- A bare `取消`, or a cancellation request whose target is unclear—including `取消剛才的變更`, `算了`, `先不要`, or `不用了`—requires one question naming both choices: restore code/Git, or abandon the SDD proposal. Run no command first. Explicit code rollback such as `取消剛才的程式碼修改` is outside SDD and still requires exact-scope confirmation.
 
-A bare or ambiguous cancellation such as `取消剛才的變更` requires one question distinguishing code/Git restoration from proposal abandonment; run nothing first. Explicit code rollback still requires exact-scope confirmation and never changes proposal state. Never offer a bare `取消` as a phase-menu option.
+If invoked without a phase, ask for `提案`, `自審提案`, `開始實作`, `實作`, `歸檔`, `放棄`, or `取消提案`. Never offer a bare `取消` as a menu option. If no short name is given, use `list --state active`; continue automatically only for exactly one active candidate, never an archive directory.
 
-When invoked without a phase, ask for `提案`, `自審提案`, `開始實作`, `實作`, `歸檔`, `放棄`, or `取消提案`. If no short name is given, use `list --state active`; continue automatically only when exactly one active candidate exists. With two or more candidates, stop and request the short name—even if only one appears approved; never choose by status or modify a candidate first.
+## Deterministic command contract
 
-## CLI contract
-
-`<skill-dir>` is this skill directory. Use its runtime only:
+`<skill-dir>` is the directory containing this file. The bundled CLI is
+`python3 <skill-dir>/scripts/sdd.py`:
 
 ```text
 python3 <skill-dir>/scripts/discover-runtime.py
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json list --state active
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json validate <short-name>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json status <short-name>
+python3 <skill-dir>/scripts/sdd.py --root <project-root> --json abandon-preflight <short-name>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json approve <short-name> --expected-snapshot <digest>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json begin-revision <short-name> --expected-snapshot <digest>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json complete-task <short-name> <ordinal> --expected-task-digest <digest> --expected-snapshot <digest>
-python3 <skill-dir>/scripts/sdd.py --root <project-root> --json abandon-preflight <short-name>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json archive <short-name> --expected-snapshot <digest> --summary <single-line>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json abandon <short-name> --expected-snapshot <digest> --summary <single-line>
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json doctor
@@ -56,55 +56,110 @@ python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-proposal-
 python3 <skill-dir>/scripts/sdd.py --root <project-root> --json repair-archive-record <directory-name> [--terminal-status <status> --summary <single-line> --expected-proposal-sha256 <digest> --expected-tasks-sha256 <digest>]
 ```
 
-Execute discovery and every CLI call as one unwrapped, noninteractive command. Continue only when discovery returns `ok: true`, source `package-local`, and distribution `sdd-workflow`. Consume complete JSON even on nonzero exit; branch on `ok`, then stable `errors[].code` and binding `errors[].action`, never message prose.
-
-`status` is authoritative for ordered tasks, completion, acceptance, compatibility, and snapshot. `validate` is the strict format gate; only `abandon-preflight` may report unreliable task counts. Before handling any CLI error, abandonment, archive recovery, or doctor finding, read [`references/runtime-recovery.md`](./references/runtime-recovery.md) fully and follow it without improvised edits or retries.
-
-Before the first mutation, obtain fresh successful `status`. Successful `approve` and `complete-task` responses supply canonical `after_state`, next snapshot, and `next_task`; use those results for the next mutation. If a response is lost, retry once with identical inputs to obtain `ALREADY_APPLIED` evidence.
+- Execute discovery and each CLI command as one unwrapped, noninteractive call: no pipe, redirect, chaining, or exit-code helper.
+- Continue discovery only when JSON says `ok: true`, source `package-local`, and handshake distribution `sdd-workflow`; use that same resolved package runtime.
+- Consume the complete JSON even on nonzero exit. Branch on `ok`, then stable `errors[].code` and `errors[].action`, never message prose.
+- `status` is authoritative for ordered tasks, completion, acceptance, compatibility, and snapshot. `validate` is the strict format gate; `abandon-preflight` alone permits unreliable task-format counts.
+- Any error action is binding. Read [`references/runtime-recovery.md`](./references/runtime-recovery.md) fully before handling an error, abandonment, archive recovery, or doctor finding. Do not improvise repair or retry.
+- `repair-proposal-format` and reconstruction mode of `repair-archive-record` are explicit recovery only: first run them without apply confirmations, show the redacted projection and all requested digests, then stop for confirmation. Never treat recovery preflight as approval or implementation.
+- Before the first mutation in an implementation sequence, obtain fresh successful `status`. A successful `approve` or `complete-task` result then supplies the canonical `after_state`, exact next snapshot, and `next_task` for the next mutation in that sequence. `refresh_status` never preserves mutation intent automatically.
 
 ## 提案
 
-Before creating, revising, or inspecting a repository for a proposal, read [`references/proposal-authoring.md`](./references/proposal-authoring.md) fully; only runtime discovery may precede that read.
+Before authoring, revising, or any repository inspection for a proposal, read
+[`references/proposal-authoring.md`](./references/proposal-authoring.md) fully.
+After phase selection, that complete reference read is the first repository
+operation; runtime discovery may precede it, but `pwd`, listings, searches, and
+other reads may not.
 
-Inspect the minimum project context needed by that reference, author Schema v2 `proposal.md` and `tasks.md`, then run `validate` and `status`. On success report canonical short name, type, behavior, task count, and acceptance scenarios. Stop for explicit approval. Material ambiguity requires one focused question before authoring.
+1. Inspect enough project context to describe current behavior and likely files; do not implement. When the reference's high-risk review gate applies, use this closed discovery sequence before authoring:
+   - Read the user-named targets first.
+   - For each still-missing category—applicable project guidance, architecture decisions, configuration, affected core flow and callers, and tests—search that category separately using only a targeted filename or reference search. For missing architecture decisions, the filename search must case-insensitively match `architecture*`; for missing configuration, it must case-insensitively match `*config*`. Do not combine missing categories into one search. Keep a category missing until every decision-relevant match from its search has been read; a search-result listing is not inspected evidence.
+   - Stop as soon as every category has enough decision evidence. Do not list the repository root, use repo-wide globs, or run content searches without an explicit file, path, or include scope. Treat a filename, path, or search context as sufficient to exclude an unrelated candidate; never list its directory or open it merely to confirm or prove it is unrelated.
+2. Author the Schema v2 draft and top-level task checklist exactly as the reference requires.
+3. Run `validate`, then `status`. On success report canonical short name, type, behavior, task count, and acceptance scenarios.
+4. Stop for explicit approval. Never implement in the proposal turn.
 
-A research draft ends at an empty `## 結論`: never add placeholder text or perform the review during intake.
-
-For higher-risk changes, do not draft until user targets plus relevant guidance, architecture, configuration, callers, and tests are read or a scoped search proves a category absent. Never inspect eval fixtures or run application code in the project workspace.
-Use only targeted paths and searches: never `pwd`, `ls`, `find`, `tree`, or a root-wide glob; search tests by imports or references to the target modules, not guessed test filenames.
-A generic `*` search satisfies nothing. Search `architecture*`, `*config*`, callers, and test imports/references separately, read each match, then draft.
-Do not open a file merely to decide whether it is relevant; ignore search results outside those named evidence categories, including unrelated directories.
+Material ambiguity requires exactly one interrogative sentence with one question
+mark before authoring; any options are declarative. Existing rule
+authority that conflicts with the requested placement is material; requested
+unchanged behavior is a baseline, not missing implementation to design.
 
 ## 自審提案
 
-Run only on explicit `自審提案`. Read [`references/self-review.md`](./references/self-review.md) fully, run `status`, and apply its evidence layers and report contract.
+Optional on-demand review. Never automatic; run only on explicit `自審提案`.
 
-For a `draft`, correct only concrete evidence-backed prose or unchecked-task defects, then rerun `validate` and `status`; itemize every task edit and counts before/after. Never resolve conflicting proposals for the user. For `approved`, prose is frozen: report findings and require `提案` for changes. Never call `approve` and never implement.
-An authority split is a conflicting design decision: never rewrite it or return `通過`; name the authoritative and duplicate locations, explain drift, and ask the user to choose a direction.
+Before reviewing, read [`references/self-review.md`](./references/self-review.md) fully.
 
-## Revision
+1. Run `status`. Report canonical state before reviewing.
+2. Run the review layers defined in the reference. Every finding needs a concrete location; drop findings that cannot name one.
+3. `draft`: correct only concrete, evidence-backed prose gaps and a genuinely defective task list in place; never add generic risk disclaimers or unaffected-case prose. Then rerun `validate` and `status`; itemise every task-level edit and give the task count before and after. Never resolve a conflict between proposals; report that for the user to decide. `approved`: never edit prose, report only and state that applying anything requires `提案`.
+4. Report the verdict in chat as the reference requires, then stop. Never call `approve` and never implement.
 
-Stop implementation and run `status`. If approved, call `begin-revision` with its snapshot before editing prose. Change only agreed semantics, preserve checked task text and order, keep at most ten unchecked tasks, and use a new proposal for a materially different goal. Run `validate` and `status`, report retained completion and revised scope, then stop for new `開始實作`.
+A design-direction finding is a question for the user, never a decision this skill makes.
 
-## Implementation
+## 修訂
 
-1. Run fresh `status`; continue only from `approved`, or approve a draft when the command is `開始實作` and require successful `after_state`.
-2. Select the next unchecked canonical task and its acceptance conditions. Inspect the target files, related tests, and enough existing project patterns to make the smallest in-scope change. Consult applicable official documentation only when correctness depends on a versioned tool or dependency.
-3. Validate proportionally using relevant project-declared quality commands. A script's existence alone does not declare a gate. Conflicting declarations, missing necessary external evidence, a specification gap, or a changed outcome stop for a decision or revision.
-4. Compare the result with the exact task and acceptance. For research, write only observed output under `## 結論` and require a non-empty canonical conclusion.
-5. Call `complete-task` with current ordinal, task digest, and snapshot. Require `APPLIED` or evidence-backed `ALREADY_APPLIED`, and verify from `after_state` that only the intended task completed.
-6. Report `第 N 條完成` and validation, then use `next_task` and the returned snapshot for the next item. At full completion report `全部完成` and request acceptance; do not archive yet.
+1. Stop implementation and run `status`; continue only when mutation-safe.
+2. If approved, call `begin-revision` with that snapshot before editing prose. An already authorized draft may be edited directly.
+3. Change only the agreed semantics. Preserve checked task text/order as history; keep at most 10 unchecked tasks and use a new proposal when the goal materially changes.
+4. Run `validate` and `status`, report retained completed work and revised pending scope, then stop for new `開始實作`.
 
-## Abandonment
+Never edit status or checkbox markers during revision.
 
-Read the recovery reference, run `abandon-preflight`, and report canonical progress, warnings, whether counts are reliable, retained code/Git work, and labeled `proposal_sha256` and `tasks_sha256`. Ask for exact `確認放棄 <short-name>` and stop.
+## 實作
 
-Confirmation is valid only when both 64-character hashes from that successful preflight appear in this conversation. Rerun preflight and machine-compare each transcript hash with its fresh counterpart. Missing or changed evidence requires new confirmation; matching evidence permits `abandon` with the fresh snapshot.
+1. Run fresh `status`. Errors stop according to their binding action. Treat it as the current canonical state.
+2. Approval gate: `approved` continues; draft plus `開始實作` calls `approve` and requires its successful `after_state`; draft plus plain `實作` asks for approval and stops.
+3. Select the intended unchecked task from the current canonical state and its acceptance conditions. Before editing, load the minimum context packet: the current task and acceptance conditions, target files, related tests, and one existing similar pattern. If no similar pattern exists, say so and continue; do not load unrelated history or create a context artifact. When correctness depends on a framework, library, SDK, or tool version, identify the version from project dependency evidence and consult the applicable official documentation before choosing the pattern.
+4. Validate proportionally. Cite the official source for version-dependent decisions; if a necessary source cannot be verified, stop and report a blocker rather than claiming verification. Apply only a Definition of Done or quality command explicitly declared for the project in scoped instructions, contributor guidance, or CI documentation and relevant to this change. An existing script alone is not a declaration; conflicting declarations stop with an ambiguity report; no declaration means do not invent a new gate. A specification gap or changed outcome stops for a decision/revision.
+5. Compare the result with exact task wording and acceptance. For research, write only observed output under `## 結論` and require a non-empty canonical conclusion before final completion.
+6. Call `complete-task` with the current ordinal, task digest, and snapshot. Require `APPLIED` or evidence-backed `ALREADY_APPLIED`.
+7. Require its `after_state` to prove only the intended task completed, then report `第 N 條完成` plus validation. Use that state and `next_task` for the next task without another `status`; if the response was lost, retry once with the same inputs so operation evidence can return `ALREADY_APPLIED`.
+8. At full completion report `全部完成` and request acceptance; do not archive without `歸檔`.
 
-## Archive and terminal results
+## 放棄
 
-Run `status`; require at least one task, reliable counts, and all tasks complete. Call `archive` with its snapshot and a concise summary. `APPLIED` and `ALREADY_APPLIED` succeed. `COMMITTED_DERIVED_ARTIFACT_STALE` means the terminal move committed; never move it back, and recover INDEX through the recovery reference. Other errors follow their binding action. Never manipulate archive directories or INDEX directly.
+Preflight:
+
+1. Read the recovery reference, run `abandon-preflight`, and stop on structural/runtime errors.
+2. Report canonical progress; label unreliable counts and warning locations.
+3. State that code and Git are retained. Print labeled `proposal_sha256` and `tasks_sha256`.
+4. Ask for exact `確認放棄 <short-name>` and stop without mutation.
+
+Execution requires both printed 64-character hashes from a successful preflight for the same short name in this conversation. Rerun preflight and machine-compare each transcript hash with its corresponding fresh field. Any missing/different evidence stops for a new confirmation. On a match, call `abandon` with the fresh snapshot and a concise summary.
+
+## 歸檔 and terminal results
+
+1. Run `status`; require at least one task, reliable counts, and every task complete.
+2. Call `archive` with the fresh snapshot and concise summary.
+3. `APPLIED` and `ALREADY_APPLIED` succeed. `COMMITTED_DERIVED_ARTIFACT_STALE` means the terminal move committed: never move it back; follow the reference's INDEX recovery. Other results stop by action.
+4. Never manipulate archive directories or INDEX directly. Use `doctor` for ambiguous evidence.
+5. Report `歸檔完成`, or `已放棄` plus retained-work/count warnings, and the summary.
+
+## Legacy artifact recovery
+
+Follow the recovery reference when `archive`, `rebuild-index`, or `doctor`
+returns `repair_proposal_format`, `repair_archive_record`, or
+`resume_or_restore_recovery`.
+
+- Normal parsing remains strict. Never manually normalize checkboxes, add
+  frontmatter, rewrite recovery JSON, or edit INDEX.
+- Preflight is read-only and reports only digests, required explicit inputs,
+  evidence sources, and field-level changes. Do not request or reproduce raw
+  source/candidate bodies in chat.
+- Active reconstruction requires all source/candidate digests from one
+  preflight. A successful apply always produces Schema v2 `draft`, preserves
+  only reliable completion history, and requires a new `開始實作`; it never
+  creates or removes approval/attestation artifacts.
+- Archived completed reconstruction stays in its existing directory, creates
+  recovery evidence rather than managed `terminal` metadata, and rebuilds
+  INDEX. Never rerun or request the historical proposal's project tests; only
+  the recovery feature's own validation is relevant.
+- An incomplete staged operation must be resumed with the same confirmed
+  evidence or explicitly restored by operation ID. Never auto-restore after a
+  later approval, task completion, or terminal mutation.
 
 ## Reporting
 
-Write all user-facing workflow reports, questions, and error explanations in Traditional Chinese. Keep them short and evidence-based: canonical state, completed task and validation, blocker, next permitted action, and exact user action. Preserve the lifecycle report tokens `第 N 條完成`, `全部完成`, `歸檔完成`, and `已放棄`. Never infer an actor, cause, approval, or path the runtime did not prove.
+Write all user-facing workflow output—reports, questions, and error explanations—in Traditional Chinese, matching the built-in trigger words and report tokens. Keep reports short: current canonical state, completed task and validation, blocker, next permitted action, and exact user action. Never infer an actor, cause, approval, or path that the runtime did not prove.

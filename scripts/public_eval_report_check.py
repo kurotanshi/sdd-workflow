@@ -42,7 +42,7 @@ UNSAFE_PATTERNS = {
     ),
 }
 
-COMMON_SUMMARY_FACTS = (
+REQUIRED_SUMMARY_FACTS = (
     "Release gate: **PASS**",
     "Critical Violations: **0**",
     "Secret scan: PASS",
@@ -50,23 +50,8 @@ COMMON_SUMMARY_FACTS = (
     "Manual review: PASS",
 )
 
-V1_ADHERENCE_FACT = re.compile(
+ADHERENCE_FACT = re.compile(
     r"Adherence:.*\b[0-9]+/[0-9]+\b.*\b[0-9]+(?:\.[0-9]+)?%.*threshold",
-    re.IGNORECASE,
-)
-V2_REQUIRED_SUMMARY_FACTS = (
-    "Eval specification version: **2**",
-    "Evaluation mode: **affected release**",
-    "Selected matrix:",
-    "Identity mismatches: **0**",
-    "Candidate commit |",
-    "Skill content SHA-256 |",
-    "Eval specification SHA-256 |",
-    "Requested models |",
-)
-V2_ADHERENCE_FACT = re.compile(
-    r"Aggregate adherence \(diagnostic only\):.*\b[0-9]+/[0-9]+\b.*"
-    r"\b[0-9]+(?:\.[0-9]+)?%",
     re.IGNORECASE,
 )
 
@@ -110,15 +95,9 @@ def validate_report_directory(report_root: Path = PUBLIC_REPORT_ROOT) -> list[Pa
         raise PublicReportError("missing versioned Agent-eval summary report")
     for path in summaries:
         text = path.read_text(encoding="utf-8")
-        missing = [fact for fact in COMMON_SUMMARY_FACTS if fact not in text]
-        if "Eval specification version: **2**" in text:
-            missing.extend(
-                fact for fact in V2_REQUIRED_SUMMARY_FACTS if fact not in text
-            )
-            if V2_ADHERENCE_FACT.search(text) is None:
-                missing.append("v2 diagnostic aggregate adherence ratio and percentage")
-        elif V1_ADHERENCE_FACT.search(text) is None:
-            missing.append("v1 adherence ratio, percentage, and threshold")
+        missing = [fact for fact in REQUIRED_SUMMARY_FACTS if fact not in text]
+        if ADHERENCE_FACT.search(text) is None:
+            missing.append("version-specific adherence ratio, percentage, and threshold")
         if missing:
             raise PublicReportError(
                 f"{path.name}: missing publication facts: {', '.join(missing)}"

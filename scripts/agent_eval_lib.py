@@ -19,7 +19,7 @@ from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EVAL_SPEC_PATH = ROOT / "evals/eval-spec-v2.json"
+EVAL_SPEC_PATH = ROOT / "evals/eval-spec-v1.json"
 SCENARIO_MANIFEST_PATH = ROOT / "evals/fixtures/MANIFEST.json"
 RUNTIME = ROOT / "skills/sdd-workflow/scripts/sdd.py"
 SKILL = ROOT / "skills/sdd-workflow/SKILL.md"
@@ -706,7 +706,6 @@ def execute(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             ),
             "scorer_version": scenario["scorer_version"],
             "eval_spec_version": spec["eval_spec_version"],
-            "eval_spec_sha256": sha256(EVAL_SPEC_PATH),
             "permission_mode": permission_mode,
             "sampling": {
                 "temperature": None,

@@ -1,40 +1,105 @@
 # Proposal authoring reference
 
-Read this file completely before creating, revising, or inspecting a repository for an SDD proposal. After phase selection it is the first repository read; only runtime discovery may precede it. Do not inspect evaluation harnesses or fixtures to learn the scenario. Treat a code-formatted filename in the request as a user-named target.
+Read this file completely before creating, revising, or inspecting the
+repository for an SDD proposal. After phase selection this complete read is the
+first repository operation; only runtime discovery may precede it. Do not run
+`pwd`, `ls`, `find`, `tree`, a broad glob/search, or inspect evaluation harnesses
+or fixtures to learn the scenario before reading this reference and the
+user-named targets. A code-formatted filename in the request is a named target.
 
 ## New proposal
 
-Before authoring, identify assumptions or missing information that could materially change behavior, scope, impact, or acceptance. A requested implementation is not necessarily the desired outcome. Existing behavior the user asks to preserve is an approval-relevant baseline, not missing implementation to invent. If local evidence exposes no named implementation, preserve current observable behavior or configuration as-is; never reinterpret `preserve` as adding behavior. Ask only when the missing choice changes the requested outcome or acceptance. Overlap with an existing command is not by itself material ambiguity when the user names a new interface and observable checks; preserve that interface and record the smallest distinction supported by evidence. If an existing authority already enforces the requested rule, duplicating it in a caller is material ambiguity.
+Intake, before authoring:
 
-When material ambiguity exists, briefly state the decision evidence or gap and ask exactly one most-critical question using one interrogative sentence and one question mark. Options may follow as declarative statements. Do not draft before the answer. Otherwise draft directly; do not force a question or emit a fixed analysis/readiness report.
+- Identify implicit assumptions and missing information that could
+  materially change the requested behavior, scope, impact, or acceptance
+  conditions.
+- A requested implementation approach is not automatically the desired
+  outcome; when the difference would change the proposal, treat it as
+  material ambiguity.
+- On material ambiguity, briefly state the decision-relevant assumptions or
+  gaps and ask exactly one most-critical question: one interrogative sentence
+  with one `?` or `？`. Any answer options are declarative, not extra questions.
+  Do not create the draft before the answer.
+- Otherwise create the draft directly, marking safely deferable uncertainty
+  in the proposal. Never emit a fixed analysis report or force a question
+  when the answer cannot change the proposal.
+- A request to preserve or keep existing behavior or configuration is an
+  approval-relevant baseline, not a request to invent its implementation. If
+  local evidence does not expose a named implementation, preserve the current
+  observable behavior or configuration as-is; ask only when the missing choice
+  would change the requested outcome or its acceptance.
+- If an existing source of truth already enforces the requested rule, copying
+  that rule into callers is a material authority split. Ask the one material
+  question before drafting instead of proposing the duplicate implementation.
 
-### Evidence for higher-risk changes
+Conditional implementation-readiness review:
 
-For cross-module, high-risk, stateful, migration, deployment, or external/irreversible-side-effect changes, gather enough decision evidence before drafting. Start with user-named targets, then inspect only the relevant project guidance, architecture, configuration, affected core flow and callers, and tests needed to judge:
+- Run this review only for cross-module, high-risk, stateful, migration,
+  deployment, or external/irreversible side-effect changes. For a small,
+  low-risk proposal with sufficient information, skip the review and author
+  the draft directly.
+- When the review applies, before drafting, make one bounded discovery pass for
+  decision-relevant repository evidence using this closed discovery sequence;
+  targeted filename and reference searches are the only allowed expansion:
+  1. Read the user-named targets first. Do not inspect an evaluation harness or
+     fixture as repository evidence.
+  2. For each still-missing category—applicable project guidance and
+     requirements, architecture decisions, configuration, the affected core
+     flow and callers, and tests—search that category separately using only a
+     targeted filename or reference search. For missing architecture decisions,
+     the filename search must case-insensitively match `architecture*`; for
+     missing configuration, it must case-insensitively match `*config*`. Do not
+     combine missing categories into one search. Keep a category missing until
+     every decision-relevant match from its search has been read; a search-result
+     listing is not inspected evidence. A file not named by the user is not
+     evidence that no applicable guidance or configuration exists.
+  3. Stop as soon as every category has enough decision evidence; do not scan
+     the repository aimlessly. Do not list the repository root, use repo-wide
+     globs, or run content searches without an explicit file, path, or include
+     scope. Treat a filename, path, or search context as sufficient to exclude
+     an unrelated candidate; never list its directory or open it merely to
+     confirm or prove it is unrelated.
+  Do not modify product code or turn intake into a standalone review report.
+- When the review applies, check requirement completeness; consistency among
+  the proposal, tasks, and acceptance conditions; repository feasibility;
+  state, failure, retry, and recovery boundaries; and whether acceptance can
+  be verified.
+- Use that evidence to test whether the current or requested technical approach
+  satisfies the desired outcome and whether a simpler, more secure, or more
+  maintainable alternative would change the proposal's behavior, scope,
+  impact, or acceptance conditions. Such an alternative is material ambiguity
+  and follows the existing one-question rule. When no proposal-changing
+  alternative is evidenced, author the final direction directly without a
+  separate architecture or security review report.
+- A blocking gap that would change the proposal follows the existing material
+  ambiguity rule before artifacts are created. Record safely deferable
+  uncertainty in the draft. Do not emit fixed `READY`, `READY WITH
+  NON-BLOCKING FINDINGS`, or `BLOCKED` verdicts.
+- For stateful or external-side-effect changes, use the existing `## 要改什麼`,
+  tasks, and acceptance conditions to identify the source of truth, commit point, retry/recovery behavior,
+  and effects that must not repeat. Use `## 影響範圍`
+  only for file estimates and presentation details. Do not add schema fields,
+  metadata, or another artifact.
+- A full repository, architecture, or security review that the user wants
+  tracked and archived through SDD is a bounded `研究` proposal whose report is
+  the deliverable. A one-off read-only review need not enter SDD, and neither
+  case expands `自審提案` beyond reviewing an existing proposal.
 
-Before drafting, account for each applicable category with separate targeted evidence: guidance, `architecture*`, `*config*`, core flow/callers, and test imports/references. A catch-all glob cannot replace any category.
+Compact examples for triggered reviews:
 
-- requirement and artifact consistency;
-- repository feasibility and the existing rule authority;
-- state, failure, safety, retry/recovery, and verification boundaries;
-- whether a simpler, safer, or more maintainable direction would materially change the proposal.
+- Migration: name the authoritative old/new data, the cutover commit point,
+  how an interrupted run resumes, and any transformation that must not repeat.
+- External API: name the local authoritative record, when a remote result is
+  committed locally, how ambiguous responses are recovered, and calls such as
+  charging that must not repeat.
+- Message publication: name the event/outbox authority, the publication commit
+  point, stable identity used for retry, and event creation that must not repeat.
+- Deployment: name the desired-release authority, the traffic-switch commit
+  point, retry/rollback boundary, and irreversible migration that must not repeat.
 
-Use this closed discovery sequence:
-
-1. Read user-named targets first.
-2. For each still-missing applicable category, search separately by targeted filename or reference and read only decision-relevant matches. Architecture searches must match `architecture*`; configuration searches must match `*config*`. Search test files for imports or references to user-named modules and relevant entry points, not only by guessed filenames. A listing is not evidence.
-3. Do not draft until every applicable category has a decision-relevant match read or a scoped search found no match. Then stop. Never list the repository root, use a repository-wide glob or content search, inspect unrelated files, or search broadly to prove something absent; keep unknown internals as scoped uncertainty.
-
-Complete the applicable categories before deciding that ambiguity remains. A request to make an observable outcome happen establishes that the outcome is unmet; apparent calls do not override that premise. If repair mechanics leave outcome and acceptance unchanged, draft the smallest supported defect and fix instead of asking the user to identify the defect or choose the algorithm. If material ambiguity remains, authority is unclear, or safety evidence is insufficient, stop and apply the one-question rule rather than choosing for the user. Small low-risk work with sufficient information skips this review.
-
-Evidence gathering is read-only. During proposal intake, never run `pwd`, `ls`, `find .`, `tree`, an unscoped Glob/Grep, application code, or an experiment that relies on cleanup afterward in the project workspace. Target explicit paths or scoped patterns. If an empirical check is indispensable, isolate it in a disposable directory outside the project.
-
-For stateful or external effects, use `## 要改什麼`, tasks, and acceptance to identify the source of truth, commit point, retry/recovery behavior, and effects that must not repeat. Do not add metadata or a second planning artifact. A full review that needs tracked output is a bounded `研究` proposal; a one-off read-only review need not enter SDD, and neither expands `自審提案` into a repository audit.
-
-## Artifact contract
-
-1. Choose a unique lowercase English hyphen-case short name. Never overwrite `sdd/<short-name>/`; ask whether to revise it or choose another name.
-2. Classify the change as exactly one of `新功能`, `修 bug`, `重構`, `維運`, `文件`, or `研究`. Research asks a bounded evidence question and follows the normal lifecycle.
+1. Choose a unique lowercase English hyphen-case short name. Never overwrite an existing `sdd/<short-name>/`; ask whether to revise it or choose another name.
+2. Classify as exactly one of `新功能`, `修 bug`, `重構`, `維運`, `文件`, or `研究`. `研究` asks a bounded evidence question and uses the normal lifecycle.
 3. Create `proposal.md` as Schema v2 beginning at byte zero:
 
    ```text
@@ -43,26 +108,38 @@ For stateful or external effects, use `## 要改什麼`, tasks, and acceptance t
    ---
    ```
 
-4. Use `# <short-name>`, then exactly `## 狀態` (`draft`), `## 類型`, `## 為什麼做`, `## 要改什麼`, and `## 影響範圍`. A research draft ends at an empty `## 結論`; placeholder text is not a conclusion, and intake never performs the review.
-5. In plain language state the problem and requested behavior. Put approval-relevant changed and unchanged behavior, interfaces, data contracts, and meaningful exclusions in `## 要改什麼`; one verifiable sentence is enough when risk is low, and no placeholder is needed when no baseline matters. Keep likely files and presentation details in `## 影響範圍`, marking uncertain paths as estimates. A bug fix includes reproduction and regression validation when reasonable.
-6. Create `tasks.md` with a heading, then one first-column top-level `- [ ] ` line per task. Do not use checkbox subtasks or other lists in the task region.
-7. Make each task one independently verifiable behavior change with a specific check or observable result. Use at most ten tasks.
-8. Add `## 驗收條件` after the tasks, followed by plain-language observable scenarios.
+4. Use `# <short-name>`, then exactly these level-two sections:
+   `## 狀態` (`draft`), `## 類型`, `## 為什麼做`, `## 要改什麼`, and
+   `## 影響範圍`. Research also requires an initially empty `## 結論`.
+5. Explain the problem, requested behavior/question, and likely files in plain language. In the approval-relevant `## 要改什麼`, state any decision-relevant behavior, interface, or data contract that must remain unchanged, plus meaningful out-of-scope boundaries. Scale this to the risk: one verifiable sentence is enough for a small change, and when no such baseline affects the decision, add no placeholder. Keep file estimates and presentation details in `## 影響範圍`; do not add a heading, schema field, template, or artifact for these baselines. Mark uncertain file paths as estimates. A bug fix should include reproduction and regression validation when reasonable.
+6. Create `tasks.md` with a heading, then one first-column top-level line per task using the exact incomplete marker `- [ ] `. Do not use checkbox subtasks or other list items in the task region.
+7. Each task is one independently verifiable behavior change with a specific test or observable result. A new proposal has at most 10 tasks.
+8. After the tasks, add `## 驗收條件` and plain-language observable scenarios.
 
-Order cross-file tasks by dependency and prefer vertical slices that leave the system usable after each item. Use a horizontal prerequisite only when it cannot yet form a usable slice. Do not impose a fixed file count or create another planning artifact.
+For cross-file or cross-module work, order tasks by dependency and prefer
+vertical slices that leave the system usable and independently verifiable after
+each task. A horizontal prerequisite is acceptable only when the proposal
+states why it cannot form a usable slice yet. Do not impose a fixed file-count
+limit or create another planning artifact; small, obvious changes may keep a
+short proposal.
 
-The CLI alone parses, validates, and counts artifacts. Never reproduce parser rules or normalize managed text manually.
+The CLI alone decides whether the artifact is valid or how tasks are counted.
+Do not reproduce parser rules or normalize text manually.
 
 ## Revision
 
-- Edit only user-authorized semantic prose in an authorized draft/revision state.
-- Never edit lifecycle status, checkbox markers, machine metadata, archive paths, or INDEX.
-- Preserve checked task text and order as implementation history.
-- Revise or remove an unchecked task only when superseded; append new work without reusing old task identity.
-- Keep at most ten unchecked tasks. A materially different goal becomes another proposal.
-- Acceptance changes revise scope, affected tasks, acceptance, and impact; then validate and stop for reapproval.
+- Edit only user-authorized semantic prose while the proposal is in an authorized draft/revision state.
+- Never edit lifecycle status, checkbox markers, `.sdd` metadata, archive paths, or INDEX.
+- Preserve every checked task exactly in place as implementation history.
+- Revise/remove an unchecked task only when explicitly superseded; append new work without reusing an old task identity.
+- Keep at most 10 unchecked tasks. A materially different goal becomes a separate proposal.
+- Acceptance-time changes are ordinary scope changes: revise proposal scope, affected tasks, acceptance conditions, and impact, then validate and stop for reapproval.
 
 ## Worked example
+
+A complete, minimal, valid pair. Copied verbatim into `sdd/fix-login-empty-email/`,
+both files pass `validate` and `status` unchanged. The CLI remains the format
+authority; this example illustrates the rules above, it does not replace them.
 
 `proposal.md`:
 
@@ -79,13 +156,14 @@ draft
 修 bug
 
 ## 為什麼做
-空白 email 送出會令後端回 500。
+登入表單允許空白 email 送出，後端回 500。重現：在登入頁留空 email 按送出。預期應在前端擋下並顯示錯誤訊息。
 
 ## 要改什麼
-送出前驗證 email；錯誤時顯示「請輸入有效的 email」。保持後端 API 不變。
+在送出前驗證 email 非空且格式正確；錯誤時顯示「請輸入有效的 email」。保持後端 API 不變。
 
 ## 影響範圍
-可能檔案：`src/pages/login.tsx`（預估）。
+- 僅登入頁前端驗證。可能檔案：`src/pages/login.tsx`（預估）。
+- 新增回歸測試防止再發。
 ```
 
 `tasks.md`:
@@ -93,10 +171,10 @@ draft
 ```text
 # fix-login-empty-email 任務
 
-- [ ] 新增空白 email 不送出並顯示錯誤的回歸測試
-- [ ] 實作送出前驗證並讓測試通過
+- [ ] 新增失敗回歸測試：空白 email 送出應被前端擋下並顯示錯誤訊息
+- [ ] 實作送出前 email 驗證，讓回歸測試通過
 
 ## 驗收條件
-- 情境：空白 email 不送出並顯示「請輸入有效的 email」
-- 情境：合法 email 維持原有送出行為
+- 情境：登入頁留空 email 按送出，表單不送出並顯示「請輸入有效的 email」
+- 情境：輸入合法 email 可正常送出，行為與修復前相同
 ```

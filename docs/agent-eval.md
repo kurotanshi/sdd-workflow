@@ -1,16 +1,16 @@
 # Agent evaluation contract
 
-Status: eval specification version 2; scenario schema and scorer version 1
+Status: eval specification, scenario schema, and scorer version 1
 
 Agent evaluation measures whether an adapter follows the SDD workflow under
 non-deterministic execution. It is deliberately separate from deterministic
 runtime conformance.
 
-The active machine-readable contract is `evals/eval-spec-v2.json`; historical
-v1 evidence remains bound to `evals/eval-spec-v1.json`. Scenario fixtures still
-conform to `evals/schema/scenario-v1.schema.json`. Every run records the exact
-eval-spec version and SHA-256; reports must not reinterpret or combine evidence
-across spec identities.
+The machine-readable contract is
+`evals/eval-spec-v1.json`; scenario fixtures conform to
+`evals/schema/scenario-v1.schema.json`. Both are immutable version 1 inputs to
+a run. A report must name their versions rather than relying on a moving
+branch or an unqualified "current" Agent.
 
 ## Artifact boundary
 
@@ -28,10 +28,9 @@ fixtures automatically; public summaries live under `evals/reports/`.
 
 ## Valid runs and retries
 
-A valid run has complete pinned metadata, matching eval-spec version/SHA-256
-and scenario/scorer versions, input and trace artifacts, a final-state
-projection, no harness/environment failure, and a terminal Agent response
-before the 900-second timeout.
+A valid run has complete pinned metadata, matching scenario/scorer versions,
+input and trace artifacts, a final-state projection, no harness/environment
+failure, and a terminal Agent response before the 900-second timeout.
 
 Timeout, harness failure, and environment failure are invalid and may be
 retried up to three total attempts for one planned run. Each attempt gets a new
@@ -53,18 +52,11 @@ Aggregate adherence is:
 adherent valid runs / all valid runs
 ```
 
-An affected-scenario release gate requires one valid adherent run in every
-selected Codex/scenario and Claude/scenario cell. Any valid non-adherent run,
-cell still invalid after replacements are exhausted, identity mismatch, or
-Critical Violation fails the gate. Unselected scenarios are outside that
-matrix and do not make it incomplete.
-
-Aggregate adherence remains in reports as a diagnostic ratio only. Its former
-95% threshold is not a v2 release gate and cannot offset a failed cell.
-
-Full benchmark mode is separate and explicit: it plans three valid runs for
-both Agents across all 20 scenarios (`20 × 2 × 3 = 120`). It is never selected
-implicitly and is not labeled as release-gate evidence.
+The release gate requires one valid run for every Agent/scenario cell, at least
+95% aggregate adherence, and exactly zero Critical Violations. This keeps full
+two-Agent scenario coverage while avoiding repeated valid runs. Reports always
+include the numerator, denominator, invalid-run count, version matrix, and
+measurement dates.
 
 ## Isolated runner
 
@@ -83,9 +75,8 @@ scripts/run-agent-eval \
 Codex defaults to `workspace-write`; Claude Code defaults to `acceptEdits` with
 an explicit Bash/Edit/Write/Read/Glob/Grep allowlist. Each run records the
 permission mode, requested and observed model identities, host version, Skill
-commit and SHA-256, runtime version, scenario/scorer versions, exact eval-spec
-version and SHA-256, platform, and UTC timestamps. Use `--replaces-run-id` only
-under the versioned retry policy.
+commit and SHA-256, runtime version, scenario/scorer versions, platform, and
+UTC timestamps. Use `--replaces-run-id` only under the versioned retry policy.
 
 ## Scoring and aggregate summary
 
@@ -106,28 +97,20 @@ Aggregate completed scores without copying raw transcripts into the report:
 ```text
 scripts/summarize-agent-eval \
   --artifact-root eval-runs \
-  --scenario M-acceptance-change \
-  --skill-commit <exact-commit> \
-  --skill-sha256 <exact-skill-sha256> \
-  --codex-model <exact-model> \
-  --claude-model <exact-model-or-alias> \
   --json-output eval-summary.json \
   --markdown-output eval-summary.md
 ```
 
-Repeat `--scenario` for the exact affected selection used by the runner. The
-summary reports only that selected matrix, plus diagnostic aggregate adherence,
-invalid runs, failed dimensions, identity mismatches, and Critical Violations.
-Artifacts with another Skill commit/SHA-256, per-Agent requested model, or eval
-spec identity are classified and make the release gate fail; they never fill a
-selected cell.
+The summary reports the Agent/scenario valid-run matrix, adherence numerator
+and denominator, invalid runs, failed dimensions, and Critical Violations.
+The release gate is conjunctive: the minimum matrix, 95% adherence, and zero
+Critical Violations must all pass. Efficiency is always diagnostic-only.
 
 Run or resume the minimum two-Agent matrix with:
 
 ```text
 scripts/run-agent-eval-matrix \
   --artifact-root eval-runs/v07-baseline \
-  --scenario M-acceptance-change \
   --codex-model gpt-5.6-sol \
   --claude-model sonnet
 ```
@@ -135,14 +118,3 @@ scripts/run-agent-eval-matrix \
 The matrix runner counts existing valid runs, retries only invalid
 harness/environment attempts under the versioned three-attempt limit, scores
 each new artifact immediately, and never replaces a valid non-adherent run.
-Selection must be explicit, non-empty, unique, and known before the artifact
-root is created. Use `--dry-run` to inspect the plan, or `--full-benchmark` for
-the separate 120-slot benchmark. No automatic diff classifier or second eval
-configuration chooses scenarios; the release handoff records the rationale.
-
-## v1 to v2 transition
-
-The already-running v1.4.0 matrix completes under its original v1 policy and
-remains historical baseline evidence. Do not modify, delete, rescore, replace,
-or combine those raw artifacts with v2. Do not start another 120-run matrix for
-transition validation; new release candidates use explicit v2 selection.

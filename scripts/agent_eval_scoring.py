@@ -13,7 +13,7 @@ from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EVAL_SPEC_PATH = ROOT / "evals/eval-spec-v2.json"
+EVAL_SPEC_PATH = ROOT / "evals/eval-spec-v1.json"
 SCENARIO_MANIFEST_PATH = ROOT / "evals/fixtures/MANIFEST.json"
 SCORING_RULES_PATH = ROOT / "evals/scoring-rules-v1.json"
 
@@ -89,57 +89,7 @@ class Evidence:
         return sources[name]
 
     def command_lines(self) -> list[str]:
-        workspace_path = re.compile(r"(?:/[^\s\"']+)*/\.workspaces/[^\s\"']+")
-
-        def first_command(value: Any) -> str | None:
-            if isinstance(value, dict):
-                command = value.get("command")
-                if isinstance(command, str):
-                    return command
-                for child in value.values():
-                    found = first_command(child)
-                    if found is not None:
-                        return found
-            elif isinstance(value, list):
-                for child in value:
-                    found = first_command(child)
-                    if found is not None:
-                        return found
-            return None
-
-        commands: list[str] = []
-        for line in self.cli_lines:
-            try:
-                payload = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            command = first_command(payload)
-            if command is not None:
-                commands.append(workspace_path.sub("<workspace>", command))
-        return commands
-
-    def tool_inputs(self) -> str:
-        values: list[str] = []
-
-        def collect(value: Any) -> None:
-            if isinstance(value, dict):
-                for key, child in value.items():
-                    if key in {"command", "file_path", "path"} and isinstance(
-                        child, str
-                    ):
-                        values.append(child)
-                    elif not isinstance(child, str):
-                        collect(child)
-            elif isinstance(value, list):
-                for child in value:
-                    collect(child)
-
-        for line in self.tool_lines:
-            try:
-                collect(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-        return "\n".join(values)
+        return self.cli_lines
 
     def ordered_trace(self) -> str:
         return "\n".join(self.agent_lines or self.cli_lines or self.tool_lines)
@@ -194,9 +144,6 @@ def evaluate_predicate(predicate: dict[str, Any], evidence: Evidence) -> tuple[b
         source = predicate["source"]
         matched = bool(regex(predicate["pattern"]).search(evidence.source(source)))
         return matched, {"source": source, "matched": matched}
-    if op == "tool-input-regex":
-        matched = bool(regex(predicate["pattern"]).search(evidence.tool_inputs()))
-        return matched, {"source": "tool_input", "matched": matched}
     if op == "command-count":
         compiled = regex(predicate["pattern"])
         count = sum(bool(compiled.search(line)) for line in evidence.command_lines())
@@ -314,7 +261,6 @@ def invalid_reasons(
         "scenario_sha256",
         "scorer_version",
         "eval_spec_version",
-        "eval_spec_sha256",
         "permission_mode",
         "execution_started_at",
         "execution_finished_at",
@@ -342,10 +288,6 @@ def invalid_reasons(
         reasons.append("scorer_version_mismatch")
     if metadata.get("eval_spec_version") != spec.get("eval_spec_version"):
         reasons.append("eval_spec_version_mismatch")
-    if metadata.get("eval_spec_sha256") != hashlib.sha256(
-        EVAL_SPEC_PATH.read_bytes()
-    ).hexdigest():
-        reasons.append("eval_spec_sha256_mismatch")
     transcript = run_directory / "transcript.md"
     if transcript.is_file() and transcript.read_text(encoding="utf-8").strip() in {
         "",
@@ -457,59 +399,11 @@ def score_files(artifact_root: Path) -> Iterable[Path]:
     yield from sorted(artifact_root.glob("*/*/*/score.json"))
 
 
-def identity_mismatches(
-    metadata: dict[str, Any],
-    expected: dict[str, Any],
-) -> list[str]:
-    mismatches = [
-        field
-        for field in (
-            "skill_commit",
-            "skill_sha256",
-            "eval_spec_version",
-            "eval_spec_sha256",
-        )
-        if metadata.get(field) != expected.get(field)
-    ]
-    models = expected.get("models", {})
-    if metadata.get("requested_model") != models.get(metadata.get("agent")):
-        mismatches.append("requested_model")
-    return mismatches
-
-
-def aggregate_summary(
-    artifact_root: Path,
-    *,
-    selected_scenarios: list[str],
-    expected_identity: dict[str, Any],
-    evaluation_mode: str,
-) -> dict[str, Any]:
+def aggregate_summary(artifact_root: Path) -> dict[str, Any]:
     spec = read_json(EVAL_SPEC_PATH)
-    known_scenarios = scenario_paths()
-    scenarios = sorted(selected_scenarios)
-    if not scenarios or len(scenarios) != len(set(scenarios)):
-        raise ScoringError("selected scenarios must be non-empty and unique")
-    unknown = sorted(set(scenarios) - set(known_scenarios))
-    if unknown:
-        raise ScoringError(f"unknown selected scenarios: {unknown}")
-    if evaluation_mode not in {"affected_release", "full_benchmark"}:
-        raise ScoringError(f"unknown evaluation mode: {evaluation_mode}")
-    agents = tuple(spec["release_selection"]["agents"])
-    required = (
-        spec["release_selection"]["valid_adherent_runs_per_cell"]
-        if evaluation_mode == "affected_release"
-        else spec["full_benchmark"]["valid_runs_per_cell"]
-    )
-    identity_fields = (
-        "skill_commit",
-        "skill_sha256",
-        "eval_spec_version",
-        "eval_spec_sha256",
-        "models",
-    )
-    missing_identity = [field for field in identity_fields if field not in expected_identity]
-    if missing_identity:
-        raise ScoringError(f"incomplete expected identity: {missing_identity}")
+    scenarios = sorted(scenario_paths())
+    agents = ("codex", "claude")
+    minimum = spec["run_policy"]["minimum_valid_runs_per_agent_scenario"]
     rows = {
         (agent, scenario): {
             "agent": agent,
@@ -527,7 +421,6 @@ def aggregate_summary(
     failed_dimensions: dict[str, int] = {}
     invalid_reason_counts: dict[str, int] = {}
     nonadherent_cases: list[dict[str, Any]] = []
-    identity_mismatch_cases: list[dict[str, Any]] = []
     models: set[str] = set()
     skill_commits: set[str] = set()
     skill_hashes: set[str] = set()
@@ -538,30 +431,16 @@ def aggregate_summary(
     scored = 0
 
     for path in score_files(artifact_root):
-        score = read_json(path)
-        scenario_id = score.get("scenario_id")
-        if scenario_id not in scenarios:
-            continue
         discovered += 1
+        score = read_json(path)
         if score.get("status") != "complete":
             continue
         metadata_path = path.parent / "run-metadata.json"
         if not metadata_path.is_file():
             continue
         metadata = read_json(metadata_path)
-        key = (metadata.get("agent"), scenario_id)
+        key = (metadata.get("agent"), score.get("scenario_id"))
         if key not in rows:
-            continue
-        mismatches = identity_mismatches(metadata, expected_identity)
-        if mismatches:
-            identity_mismatch_cases.append(
-                {
-                    "agent": metadata.get("agent"),
-                    "scenario_id": scenario_id,
-                    "run_id": metadata.get("run_id"),
-                    "fields": mismatches,
-                }
-            )
             continue
         scored += 1
         row = rows[key]
@@ -619,43 +498,32 @@ def aggregate_summary(
     total_invalid = sum(row["invalid_runs"] for row in matrix)
     total_critical = sum(row["critical_violations"] for row in matrix)
     adherence = total_adherent / total_valid if total_valid else 0.0
-    matrix_complete = all(row["valid_runs"] >= required for row in matrix)
-    all_cells_adherent = all(
-        row["adherent_runs"] >= required and row["nonadherent_runs"] == 0
-        for row in matrix
-    )
-    diagnostic_threshold = spec["scoring"][
-        "aggregate_adherence_diagnostic_threshold"
-    ]
-    evaluation_pass = (
+    matrix_complete = all(row["valid_runs"] >= minimum for row in matrix)
+    threshold = spec["scoring"]["release_threshold"]
+    release_gate_pass = (
         matrix_complete
-        and all_cells_adherent
+        and adherence >= threshold
         and total_critical == spec["scoring"]["critical_violation_gate"]
-        and not identity_mismatch_cases
     )
     return {
-        "summary_version": 2,
-        "evaluation_mode": evaluation_mode,
+        "summary_version": 1,
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "measurement_period": {
             "started_at": min(started) if started else None,
             "finished_at": max(finished) if finished else None,
         },
         "agents": list(agents),
-        "selected_scenarios": scenarios,
         "models": sorted(models),
         "skill_commits": sorted(skill_commits),
         "skill_sha256": sorted(skill_hashes),
         "runtime_versions": sorted(runtime_versions),
-        "eval_spec_version": spec["eval_spec_version"],
         "eval_spec_sha256": hashlib.sha256(EVAL_SPEC_PATH.read_bytes()).hexdigest(),
-        "expected_identity": expected_identity,
         "scoring_rules_sha256": hashlib.sha256(
             SCORING_RULES_PATH.read_bytes()
         ).hexdigest(),
         "scenario_count": len(scenarios),
-        "required_valid_adherent_runs_per_cell": required,
-        "planned_valid_runs": len(agents) * len(scenarios) * required,
+        "minimum_valid_runs_per_agent_scenario": minimum,
+        "planned_minimum_valid_runs": len(agents) * len(scenarios) * minimum,
         "artifacts_discovered": discovered,
         "completed_scores": scored,
         "valid_runs": total_valid,
@@ -665,10 +533,8 @@ def aggregate_summary(
             "numerator": total_adherent,
             "denominator": total_valid,
             "rate": round(adherence, 6),
-            "diagnostic_threshold": diagnostic_threshold,
-            "diagnostic_passes": (
-                total_valid > 0 and adherence >= diagnostic_threshold
-            ),
+            "threshold": threshold,
+            "passes": total_valid > 0 and adherence >= threshold,
         },
         "critical_violations": {
             "count": total_critical,
@@ -689,52 +555,33 @@ def aggregate_summary(
                     str(item["run_id"]),
                 ),
             ),
-            "identity_mismatches": sorted(
-                identity_mismatch_cases,
-                key=lambda item: (
-                    str(item["agent"]),
-                    str(item["scenario_id"]),
-                    str(item["run_id"]),
-                ),
-            ),
         },
         "matrix_complete": matrix_complete,
-        "all_selected_cells_adherent": all_cells_adherent,
         "matrix": matrix,
-        "evaluation_pass": evaluation_pass,
-        "release_gate_pass": (
-            evaluation_pass if evaluation_mode == "affected_release" else None
-        ),
+        "release_gate_pass": release_gate_pass,
         "efficiency_can_offset_failure": False,
     }
 
 
 def summary_markdown(summary: dict[str, Any]) -> str:
-    gate = "PASS" if summary["evaluation_pass"] else "FAIL"
-    gate_label = (
-        "Release gate"
-        if summary["evaluation_mode"] == "affected_release"
-        else "Full benchmark"
-    )
+    gate = "PASS" if summary["release_gate_pass"] else "FAIL"
     adherence = summary["adherence"]
     critical = summary["critical_violations"]
     lines = [
         "# Agent eval summary",
         "",
-        f"- Evaluation mode: `{summary['evaluation_mode']}`",
-        f"- {gate_label}: **{gate}**",
+        f"- Release gate: **{gate}**",
         (
-            "- Aggregate adherence (diagnostic only): "
+            "- Adherence: "
             f"{adherence['numerator']}/{adherence['denominator']} "
-            f"({adherence['rate']:.1%}; diagnostic threshold "
-            f"{adherence['diagnostic_threshold']:.0%})"
+            f"({adherence['rate']:.1%}; threshold {adherence['threshold']:.0%})"
         ),
         f"- Critical Violations: {critical['count']} (required: {critical['gate']})",
         (
             "- Valid-run matrix: "
             f"{'complete' if summary['matrix_complete'] else 'incomplete'} "
-            f"(required {summary['required_valid_adherent_runs_per_cell']} per "
-            "selected Agent/scenario cell)"
+            f"(minimum {summary['minimum_valid_runs_per_agent_scenario']} per "
+            "Agent/scenario)"
         ),
         f"- Invalid runs: {summary['invalid_runs']}",
         "",
@@ -766,15 +613,6 @@ def summary_markdown(summary: dict[str, Any]) -> str:
             lines.append(f"- Invalid attempts: {reason} × {count}.")
     else:
         lines.append("- No invalid attempts.")
-    identity_mismatches = classification["identity_mismatches"]
-    if identity_mismatches:
-        for item in identity_mismatches:
-            lines.append(
-                f"- Identity mismatch: {item['agent']} / {item['scenario_id']} / "
-                f"{item['run_id']} ({', '.join(item['fields'])})."
-            )
-    else:
-        lines.append("- No identity mismatches.")
     lines.extend(
         [
             "",
@@ -799,13 +637,6 @@ def summary_parser() -> argparse.ArgumentParser:
         type=Path,
         default=ROOT / "eval-runs",
     )
-    selection = parser.add_mutually_exclusive_group(required=True)
-    selection.add_argument("--scenario", action="append", dest="scenarios")
-    selection.add_argument("--full-benchmark", action="store_true")
-    parser.add_argument("--skill-commit", required=True)
-    parser.add_argument("--skill-sha256", required=True)
-    parser.add_argument("--codex-model", required=True)
-    parser.add_argument("--claude-model", required=True)
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
     return parser
@@ -824,32 +655,7 @@ def score_main(argv: list[str] | None = None) -> int:
 def summary_main(argv: list[str] | None = None) -> int:
     arguments = summary_parser().parse_args(argv)
     try:
-        spec = read_json(EVAL_SPEC_PATH)
-        summary = aggregate_summary(
-            arguments.artifact_root.resolve(),
-            selected_scenarios=(
-                list(scenario_paths())
-                if arguments.full_benchmark
-                else arguments.scenarios
-            ),
-            expected_identity={
-                "skill_commit": arguments.skill_commit,
-                "skill_sha256": arguments.skill_sha256,
-                "eval_spec_version": spec["eval_spec_version"],
-                "eval_spec_sha256": hashlib.sha256(
-                    EVAL_SPEC_PATH.read_bytes()
-                ).hexdigest(),
-                "models": {
-                    "codex": arguments.codex_model,
-                    "claude": arguments.claude_model,
-                },
-            },
-            evaluation_mode=(
-                "full_benchmark"
-                if arguments.full_benchmark
-                else "affected_release"
-            ),
-        )
+        summary = aggregate_summary(arguments.artifact_root.resolve())
         if arguments.json_output:
             arguments.json_output.parent.mkdir(parents=True, exist_ok=True)
             write_json(arguments.json_output, summary)

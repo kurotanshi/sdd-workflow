@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = ROOT / "evals/eval-spec-v2.json"
+SPEC = ROOT / "evals/eval-spec-v1.json"
 SCHEMA = ROOT / "evals/schema/scenario-v1.schema.json"
 
 
@@ -61,7 +61,6 @@ class AgentEvalSpecTests(unittest.TestCase):
         self.assertIn("/eval-runs/", ignored)
 
     def test_valid_run_timeout_and_rerun_policy_is_fail_closed(self) -> None:
-        self.assertEqual(self.spec["eval_spec_version"], 2)
         policy = self.spec["run_policy"]
         self.assertEqual(policy["timeout_seconds"], 900)
         self.assertEqual(policy["minimum_valid_runs_per_agent_scenario"], 1)
@@ -78,7 +77,7 @@ class AgentEvalSpecTests(unittest.TestCase):
     def test_adherence_and_critical_violation_gates_cannot_be_averaged_away(self) -> None:
         scoring = self.spec["scoring"]
         self.assertEqual(scoring["aggregate_adherence_formula"], "adherent_valid_runs / valid_runs")
-        self.assertEqual(scoring["aggregate_adherence_diagnostic_threshold"], 0.95)
+        self.assertEqual(scoring["release_threshold"], 0.95)
         self.assertEqual(scoring["critical_violation_gate"], 0)
         self.assertFalse(scoring["efficiency_can_offset_failure"])
         self.assertEqual(scoring["dimensions"]["efficiency"]["weight"], 0.0)
@@ -101,15 +100,6 @@ class AgentEvalSpecTests(unittest.TestCase):
         )
         self.assertEqual(spec_oracles, expected_oracles)
         self.assertEqual(schema_oracles, expected_oracles)
-
-    def test_release_selection_and_full_benchmark_are_separate(self) -> None:
-        release = self.spec["release_selection"]
-        self.assertTrue(release["explicit_scenarios_required"])
-        self.assertEqual(release["valid_adherent_runs_per_cell"], 1)
-        self.assertEqual(release["agents"], ["codex", "claude"])
-        benchmark = self.spec["full_benchmark"]
-        self.assertTrue(benchmark["explicit_mode_required"])
-        self.assertEqual(benchmark["valid_runs_per_cell"], 3)
 
 
 if __name__ == "__main__":

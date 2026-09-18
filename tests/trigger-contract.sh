@@ -40,7 +40,7 @@ case "$description" in
     ;;
 esac
 
-grep -Fq 'Match this explicit command before its `提案` substring' "$skill_file" || {
+grep -Fq '自審提案` takes precedence over its substring `提案`' "$skill_file" || {
   echo "trigger-contract: 自審提案 must take precedence over 提案" >&2
   exit 1
 }
@@ -69,17 +69,17 @@ case "$description" in
     ;;
 esac
 
-grep -Fq 'A bare or ambiguous cancellation such as `取消剛才的變更`' "$skill_file" || {
+grep -Fq 'A bare `取消`, or a cancellation request whose target is unclear—including' "$skill_file" || {
   echo "trigger-contract: missing bare-cancel disambiguation rule" >&2
   exit 1
 }
 
-grep -Fq 'Explicit code rollback still requires exact-scope confirmation' "$skill_file" || {
+grep -Fq '`取消剛才的程式碼修改`' "$skill_file" || {
   echo "trigger-contract: missing explicit code-revert handling example" >&2
   exit 1
 }
 
-grep -Fq 'Never offer a bare `取消` as a phase-menu option' "$skill_file" || {
+grep -Fq 'Never offer a bare `取消` as a menu option' "$skill_file" || {
   echo "trigger-contract: phase menu must keep bare 取消 out of its options" >&2
   exit 1
 }
@@ -89,17 +89,17 @@ grep -Fq 'scripts/discover-runtime.py' "$skill_file" || {
   exit 1
 }
 
-grep -Fq '## CLI contract' "$skill_file" || {
+grep -Fq '## Deterministic command contract' "$skill_file" || {
   echo "trigger-contract: missing deterministic CLI command contract" >&2
   exit 1
 }
 
-grep -Fq 'python3 <skill-dir>/scripts/sdd.py' "$skill_file" || {
+grep -Fq '`python3 <skill-dir>/scripts/sdd.py`' "$skill_file" || {
   echo "trigger-contract: skill must invoke the bundled CLI through python3" >&2
   exit 1
 }
 
-grep -Fq 'never fall back to prose parsing' "$skill_file" || {
+grep -Fq 'do not fall back to prose parsing' "$skill_file" || {
   echo "trigger-contract: CLI execution failure must fail closed" >&2
   exit 1
 }

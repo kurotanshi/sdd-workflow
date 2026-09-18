@@ -4,6 +4,21 @@ Completed **6 pairs / 12 valid live runs** on 2026-09-18. Recommendation: **revi
 
 The candidate has one confirmed evidence-coverage overclaim, one frozen-oracle failure, and no observed reduction in extra blocking asks. Faster runs do not override those gates.
 
+## Landing scope
+
+PR #14 contains only research reports. The 23 Skill/eval/product-documentation
+files formerly mixed into it were extracted unchanged into
+[draft PR #15](https://github.com/kurotanshi/sdd-workflow/pull/15), with the
+`refresh_status`, Layer 3/authority-split, description-only selection, and
+governance-invariant checks still pending. Issue #13 remains open.
+Local `sdd/` proposal and machine records were untracked before merge; their
+contents and lifecycle were preserved locally, with snapshot `bc1aaa4` retained.
+
+**Comparison limit:** baseline commit `a48a224` includes the unmerged thinning.
+This pilot does not compare the candidate to unchanged `main`, and cannot justify
+adopting the thinning itself. Separation does not change the frozen experiment
+inputs, results, or the recommendation to revise.
+
 ## Observed outcomes
 
 | Measure | Baseline (6 runs) | Candidate (6 runs) |
@@ -278,8 +293,9 @@ a recoverable checkpoint, and fresh acceptance evidence where old task completio
 cannot establish it. Loss of a response requires inspecting authoritative state,
 not repeating irreversible effects. No migration or product adoption happened here.
 
-PR #14's earlier skill/reference thinning remains a separate review item. These
-pilot results are not a release gate for that diff and do not approve it.
+The earlier skill/reference thinning now lives in draft PR #15 for separate
+review. These pilot results are not a release gate for that diff and do not
+approve it.
 
 ## Reproducibility and handoff
 
@@ -290,4 +306,4 @@ pilot results are not a release gate for that diff and do not approve it.
 - Git contains sanitized results, spec and hash inventories, **not** the executable candidate or raw traces. Transfer the local bundles with future handoffs.
 - Frozen input verification: all 55 file hashes unchanged after collection. Disposable package bytes, Git HEAD and `.gitignore` remained unchanged.
 - Main research proposal machine records were absent on this Mac. With the user’s renewed instruction to finish the same approved plan, the installed package CLI established a fresh approval manifest; it does not claim to restore original operation history.
-- Product `skills/sdd-workflow` is unchanged from the pinned baseline by this continuation. No release, adoption or archive operation was performed.
+- During collection, product `skills/sdd-workflow` was unchanged from the pinned baseline. Before landing, the research PR restored all product paths to its `main` base and retained the thinning in draft PR #15. No release, adoption or proposal archive operation was performed.

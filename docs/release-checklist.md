@@ -31,18 +31,16 @@ handoff. Do not publish a moving branch as release evidence.
 
 ## Agent-eval matrix
 
-Select every scenario whose interaction boundary the candidate can affect. The
-release handoff must list those scenario IDs, explain the selection, and record
-the exact candidate commit, Skill SHA-256, per-Agent requested models, and eval
-spec version/SHA-256 from `evals/eval-spec-v2.json`. Do not infer this list with an automatic diff classifier
-or maintain a second eval configuration.
+For a patch release that does not change `SKILL.md`, trigger rules, or Agent
+orchestration, the latest complete passing matrix may be reused only when the
+handoff names its exact source identity and records focused cross-Agent evidence
+for every affected interaction boundary. Otherwise rerun the complete matrix.
 
-- [ ] Run the selected two-Agent release matrix (repeat `--scenario`):
+- [ ] Run or resume the two-Agent matrix when reuse is not permitted:
 
   ```text
   scripts/run-agent-eval-matrix \
     --artifact-root eval-runs/<candidate> \
-    --scenario <affected-scenario-id> \
     --codex-model <exact-model> \
     --claude-model <exact-model-or-alias>
   ```
@@ -52,27 +50,15 @@ or maintain a second eval configuration.
   ```text
   scripts/summarize-agent-eval \
     --artifact-root eval-runs/<candidate> \
-    --scenario <affected-scenario-id> \
-    --skill-commit <exact-commit> \
-    --skill-sha256 <exact-skill-sha256> \
-    --codex-model <exact-model> \
-    --claude-model <exact-model-or-alias> \
     --json-output eval-runs/<candidate>/summary.json \
     --markdown-output eval-runs/<candidate>/summary.md
   ```
 
-- [ ] Require every selected Agent/scenario cell to contain one valid adherent
-  run, with no valid non-adherent run, exhausted invalid cell, identity
-  mismatch, or Critical Violation. Aggregate adherence is diagnostic-only and
-  cannot make a failed cell pass.
+- [ ] Require one valid run for every Agent/scenario cell, at least 95%
+  aggregate adherence, and exactly zero Critical Violations, or record the
+  permitted patch-reuse evidence and rationale.
 - [ ] Classify every valid failure and invalid attempt. Do not replace a valid
   non-adherent run or erase a Critical Violation through retry.
-- [ ] Use `--full-benchmark` only for an explicitly requested three-run full
-  matrix (`20 × 2 × 3 = 120` slots). Record it separately from release evidence.
-
-The in-progress v1.4.0 matrix remains historical v1 evidence and completes
-under its original policy. Do not modify, rescore, replace, or rerun its raw
-artifacts as v2 evidence.
 
 ## Publication review
 
@@ -81,10 +67,9 @@ artifacts as v2 evidence.
 - [ ] Manually inspect the staged report for secrets, credentials, absolute
   user paths, personal identifiers, prompts, transcripts, event payloads, and
   raw command output.
-- [ ] Confirm the report records the scenario-selection rationale, exact
-  candidate and per-Agent model identity, runtime/spec/scorer identity,
-  measurement dates, selected matrix, diagnostic aggregate adherence, identity
-  mismatches, failure classifications, and release-gate decision.
+- [ ] Confirm the report records the model/host/runtime/spec/scorer/Skill
+  identity, measurement dates, matrix denominator, failure classifications,
+  and release-gate decision.
 - [ ] Confirm no file under `eval-runs/` is staged or committed.
 
 ## Recovery and examples

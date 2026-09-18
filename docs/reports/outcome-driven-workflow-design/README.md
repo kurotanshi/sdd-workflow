@@ -17,8 +17,17 @@ Original v1 design notes, freezes and the [06:24 UTC preflight](resume-preflight
 remain historical records. Raw traces and executable candidate code stay outside Git.
 Transfer the local bundles when handing this research to another machine.
 
-The research proposal and task status are tracked on this temporary branch under
-`sdd/outcome-driven-workflow-design/`, including fresh machine records established
-through the supported CLI. Product `skills/sdd-workflow` was unchanged by this
-continuation. PR #14's earlier Skill/eval thinning changes require separate review;
-these research results do not approve that diff or qualify a release.
+PR #14 lands only this research-report directory. The proposal, task status and
+CLI-created machine records remain local under `sdd/outcome-driven-workflow-design/`;
+they were untracked before merge without changing their contents or lifecycle.
+The temporary snapshot remains available at commit `bc1aaa4`.
+
+The 23 Skill/eval/product-documentation files were extracted unchanged into
+[draft PR #15](https://github.com/kurotanshi/sdd-workflow/pull/15).
+[Issue #13](https://github.com/kurotanshi/sdd-workflow/issues/13) remains open
+pending its separate governance and selection-eval checklist. This research
+does not adopt the candidate workflow or approve the thinning diff.
+
+The pilot baseline is pinned to `a48a224`, which includes that unmerged thinning;
+it is **not** the unchanged `main` package. The measurements must not be presented
+as candidate-versus-main results. Frozen inputs and observed results are retained.
