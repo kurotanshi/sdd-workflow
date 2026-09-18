@@ -1,0 +1,12 @@
+test_complete_without_evidence_blocked (test_boundary_checks.BoundaryChecksTest.test_complete_without_evidence_blocked) ... ok
+test_happy_path_close (test_boundary_checks.BoundaryChecksTest.test_happy_path_close) ... ok
+test_out_of_scope_path_blocked (test_boundary_checks.BoundaryChecksTest.test_out_of_scope_path_blocked) ... ok
+test_plan_reorder_without_reapproval (test_boundary_checks.BoundaryChecksTest.test_plan_reorder_without_reapproval) ... ok
+test_scope_expansion_requires_reapproval (test_boundary_checks.BoundaryChecksTest.test_scope_expansion_requires_reapproval) ... ok
+test_stale_evidence_after_subject_change_blocked (test_boundary_checks.BoundaryChecksTest.test_stale_evidence_after_subject_change_blocked) ... ok
+test_unapproved_execution_blocked (test_boundary_checks.BoundaryChecksTest.test_unapproved_execution_blocked) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.009s
+
+OK

@@ -1,0 +1,9 @@
+{
+  "oracle_pass": true,
+  "oracle_known": true,
+  "evidence_backed_completion": false,
+  "false_completion_count": 1,
+  "extra_ask_count": 1,
+  "repair_loop_count": 0,
+  "note": "oracle_pass must not overwrite missing-evidence false completion"
+}

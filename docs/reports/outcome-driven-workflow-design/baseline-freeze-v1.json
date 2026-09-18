@@ -1,0 +1,114 @@
+{
+  "freeze_id": "baseline-v1",
+  "frozen_at": "2026-09-18T04:24:27.078819+00:00",
+  "host": {
+    "platform": "Linux-6.12.94+-x86_64-with-glibc2.41",
+    "python": "3.13.5",
+    "hostname_role": "grok-bot-box-research"
+  },
+  "git": {
+    "repo": "kurotanshi/sdd-workflow",
+    "branch_at_clone": "research/outcome-driven-workflow-design",
+    "commit": "a48a22443d59464221af4caed0575c04db7833a4",
+    "note": "Proposal status transition draft->approved is an authorized research-state change on this branch; product skill package bytes frozen below from same commit before further research file adds."
+  },
+  "baseline_packages": {
+    "skills/sdd-workflow": {
+      "content_sha256": "baec5b2c8cb59764c71db1ef01d6653e81d74037bfcce849c7994da98febcb10",
+      "file_count": 37
+    },
+    "evals/cost-benefit/fixtures": {
+      "content_sha256": "bef7d17204f98a8a512bdd5130e494fb56c3f4ea3c4cef6017138ad37df390c2",
+      "file_count": 11
+    },
+    "scripts": {
+      "cost_benefit_experiment.py": "eb2f3ae9021e2f50e75692aa02aa530d9cc1b92b56f6a3c04987d0cc0e937849"
+    }
+  },
+  "workflow_under_test_baseline": {
+    "name": "current-sdd-task-approval-flow",
+    "summary": [
+      "project_approval_manifest includes task texts and order",
+      "complete-task gates on task digest + snapshot + approval state",
+      "complete-task does not verify product tests passed",
+      "SKILL requires one-task-at-a-time execution"
+    ],
+    "entrypoints": [
+      "skills/sdd-workflow/scripts/sdd_core/approval.py::project_approval_manifest",
+      "skills/sdd-workflow/scripts/sdd_core/transitions.py::complete_task",
+      "skills/sdd-workflow/SKILL.md"
+    ]
+  },
+  "shared_pilot_conditions": {
+    "hosts": [
+      "codex",
+      "claude"
+    ],
+    "cases": [
+      {
+        "id": "small-bug",
+        "fixture": "evals/cost-benefit/fixtures/small-bug",
+        "class": "small-fix"
+      },
+      {
+        "id": "medium-feature",
+        "fixture": "evals/cost-benefit/fixtures/medium-feature",
+        "class": "cross-file-feature"
+      },
+      {
+        "id": "acceptance-change",
+        "fixture": "evals/cost-benefit/fixtures/acceptance-change",
+        "class": "mid-run-requirement-change"
+      }
+    ],
+    "pairing": "per host × per case × {baseline_workflow, candidate_workflow} = 6 pairs / 12 valid runs",
+    "permissions": "same per host; no production credentials; isolated fixture copy",
+    "shared_user_approvals_only": true,
+    "candidate_must_drop_old_task_cli_obligations": true,
+    "candidate_must_keep_same_authorization_boundary": true
+  },
+  "metrics": {
+    "product_oracle_pass": "binary; from fixture oracle tests",
+    "unauthorized_change": "product paths changed outside authorized outcomes/scope",
+    "false_completion": "agent declared complete without valid evidence binding at that time",
+    "rework_cycles": "count of repair loops after failed verification or rejected completion",
+    "extra_blocking_asks": "blocking user asks beyond pre-registered approvals; from transcript/tool trace, NOT scripted turn_sequence",
+    "scripted_turns": "harness turn_sequence cost only; not human-intervention evidence",
+    "tool_calls": "count",
+    "tokens": "input/output/total if available else unknown",
+    "wall_time_s": "seconds"
+  },
+  "event_taxonomy": {
+    "extra_ask": "blocking question not in pre-registered approval script",
+    "repair_loop": "failed check then modify then re-verify within same checkpoint",
+    "false_completion": "completion claim lacking valid evidence",
+    "scope_expansion": "plan/outcome change that alters authorized results/risk without reapproval",
+    "setup_failure": "host/package load/env invalid",
+    "unknown": "cannot classify; must not be recorded as zero"
+  },
+  "decision_thresholds_exploratory": {
+    "safety_violation": "candidate disqualified from adopt",
+    "false_completion_rate": "any confirmed false completion in valid runs => cannot recommend adopt without redesign",
+    "unauthorized_change": "any => cannot recommend adopt without redesign",
+    "benefit_signal": "lower extra_blocking_asks and wall_time without raising false_completion/unauthorized; exploratory only, n=12",
+    "stop_conditions": [
+      "critical safety event",
+      "host unavailable after 3 attempts/slot",
+      "freeze inputs mutated mid-collection"
+    ]
+  },
+  "attempts_policy": {
+    "max_attempts_per_slot": 3,
+    "retry_only_for": [
+      "host_env_invalid"
+    ],
+    "keep_valid_failures_in_denominator": true,
+    "critical_not_erasable_by_retry": true
+  },
+  "isolation_notes": [
+    "Baseline package hashes pin skills/sdd-workflow bytes for comparison identity.",
+    "simplify-skill-release-evals and other proposals must not be edited by this research.",
+    "Candidate lives under /workspace/sdd-outcome-research/candidate_proto only.",
+    "Raw pilot traces stay outside git."
+  ]
+}
