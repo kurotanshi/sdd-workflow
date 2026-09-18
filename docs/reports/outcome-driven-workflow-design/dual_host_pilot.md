@@ -40,8 +40,21 @@ Auth options:
 4. Run `adapters/trace_collector.py` then `adapters/scorer.py`
 5. Keep valid failures; retry only setup failures (max 3)
 
-## Status (2026-09-18)
+## Original research-machine status (2026-09-18)
 - CLIs installed locally: Codex 0.155.0, Claude Code 2.1.276
 - Prompt hashes match freeze (`baseline` / `candidate`)
 - Dry-run matrix of 12 cells succeeded (commands + prompts written; no live agent)
 - Live pilot still blocked until both hosts are authenticated
+
+## Receiving-machine preflight (2026-09-18, 06:24 UTC)
+
+The macOS machine now has authenticated Codex and Claude CLIs. The original
+`/workspace/sdd-outcome-research/` directory is absent, however, and the runner,
+prototype, prompts and adapters were not committed. No live runs were started.
+Restore those files before using the commands above; their hashes alone cannot
+recreate the frozen experiment. The local proposal also lacks its machine
+approval baseline, which must be recovered before marking task 5 complete.
+
+See [the resumption preflight](resume-preflight-2026-09-18.md) for observed
+versions, the setup failure, and the conditions for resuming. The decision
+remains **revise**, with **0/12 valid live runs**.
