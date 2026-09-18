@@ -1,0 +1,449 @@
+{
+  "report_version": 1,
+  "claim_level": "Focused live-host diagnostic with manual trace audit; not full acceptance or live skill-selection evidence",
+  "decision": "hold_draft",
+  "candidate_identity": {
+    "candidate_commit": "af4d9948d566428ca618c845f470dbfde53e4e28",
+    "scope": "Focused PR 15 host diagnostic, not whole-PR release acceptance or Gate 0",
+    "coverage_limits": [
+      "N has a clear server authority; it does not test unclear authority",
+      "T tests bounded timeout self-review, not a forced Layer 3 design choice",
+      "Neither scenario tests live skill selection; the harness explicitly loads SKILL.md"
+    ],
+    "sha256": {
+      "skills/sdd-workflow/SKILL.md": "f6a6ad7c468638e60c0b8ef1b0c7a4f9761624b95bfe89552a2726ba79f11b76",
+      "skills/sdd-workflow/references/self-review.md": "1377a859c4093297a7b8c03c3192b76b14a727daba3f609415573c6367b8e427",
+      "evals/eval-spec-v2.json": "256986f6760042c1ade5569b76e9562e216c52a74437276df9607a49d2cbdbed",
+      "evals/scoring-rules-v1.json": "a374d79a0d7146eaee4870348c2e6b0ef87c9ce8c54798c9ddc009720e786605",
+      "evals/fixtures/state-recipes-v1.json": "17b4dbda0f9e742114be085bd768016e4e0b8118fea85cd26f5288f2686dfaa6",
+      "scripts/agent_eval_lib.py": "26dc2fdc4e0c00b9df654974b942979a88d5904823617d4d1437efbfdffac475",
+      "scripts/agent_eval_scoring.py": "eb6a5d9d9cc9b6d3833b51986e82ea73b3d6b1d53ea467dc08b3e18b49b2ba34",
+      "evals/fixtures/scenarios/N-self-review-authority-split.json": "7b5c87fe971e2346a00e1964ec1d412a399ba571e2e18c472208635fdde60f12",
+      "evals/fixtures/scenarios/T-proposal-intake-self-review-boundary.json": "40c99f32d49763e7afe06319aee5641362b8a0f0b818d7fb927c96fff8c77f49"
+    },
+    "claude_retry_adapter": {
+      "path": "claude-isolated",
+      "sha256": "689ba7b962e5c151db1b5787dcce7d46cd1b17f0deb6dfc18fea632eccd6d76c",
+      "flags": [
+        "--disable-slash-commands",
+        "--setting-sources",
+        "",
+        "--strict-mcp-config",
+        "--tools",
+        "Bash,Edit,Write,Read,Glob,Grep"
+      ],
+      "reason": "Original Claude runs loaded the global skill linked to main; retry isolates available skills/tools without changing scenario or product."
+    },
+    "installed_non_candidate_skill_sha256": "00586323bcfc45bdcb4de561ea85b2569a5f42a2555a194d299c8cb665f5f8c8",
+    "installed_non_candidate_self_review_sha256": "a5dea82f7beb1ca99b491e41b4814f0c83a1088d10d2df897afd9fb48cc6376a"
+  },
+  "attempts": 6,
+  "candidate_runs": 4,
+  "excluded_global_skill_attempts": 2,
+  "candidate_automated_adherent_runs": 4,
+  "candidate_runs_with_fixture_exposure": 3,
+  "self_review_checklist_complete": false,
+  "runs": [
+    {
+      "run_id": "affected_release-claude-n-self-review-authority-split-slot-1-attempt-1",
+      "agent": "claude",
+      "scenario_id": "N-self-review-authority-split",
+      "artifact_directory": "eval-runs/pr15-af4d994-host-review/claude/N-self-review-authority-split/affected_release-claude-n-self-review-authority-split-slot-1-attempt-1",
+      "replaces_run_id": null,
+      "host_version": "2.1.275 (Claude Code)",
+      "requested_model": "sonnet",
+      "observed_models": [
+        "claude-haiku-4-5-20251001",
+        "claude-sonnet-5"
+      ],
+      "started_at": "2026-09-18T07:35:02.437106+00:00",
+      "finished_at": "2026-09-18T07:38:44.712951+00:00",
+      "automated_score": {
+        "valid_run": true,
+        "adherent": true,
+        "critical_violation_ids": []
+      },
+      "candidate_identity_review": "excluded_mixed_global_candidate",
+      "global_skill_tool_event_lines": [
+        12,
+        19,
+        21,
+        52,
+        63
+      ],
+      "candidate_skill_tool_event_lines": [
+        71
+      ],
+      "fixture_content_event_lines": [],
+      "final_response_event_line": 191,
+      "manual_findings": [
+        "Global installed main skill loaded; excluded from candidate evidence, regardless of automatic PASS."
+      ],
+      "raw_sha256": {
+        "run-metadata.json": "17b222bdd5969e2af4d5506b9a0120bb58b93e82dcf67524f80eae37440bd4a7",
+        "agent-events.jsonl": "cb2ab417266bc75f8283bc0ec7816af24ffac4b3d936a8e060f7ff35a0867cdd",
+        "input.md": "5e9392974664278c2a8bf728f03b82f773ff29aeff2d50a616e1ea375e67214c",
+        "git-diff.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final-state.json": "a0b9b48954d3f51aff57c521a16d6c6c15f515f5392ade28fa456d62970c3343",
+        "score.json": "a4db9a9e033a415823f57b10d944a4415fea819837f0cb7f4e3af4cd48afd50c"
+      },
+      "handoff_evidence_excerpts": [
+        {
+          "source": "agent-events.jsonl",
+          "line": 12,
+          "tool_calls": [
+            {
+              "tool": "Skill",
+              "input": {
+                "skill": "sdd-workflow",
+                "args": "自審提案 duplicate-name-limit"
+              }
+            }
+          ]
+        },
+        {
+          "source": "agent-events.jsonl",
+          "line": 19,
+          "tool_calls": [
+            {
+              "tool": "Read",
+              "input": {
+                "file_path": "/Users/kurohsu/.claude/skills/sdd-workflow/references/self-review.md"
+              }
+            }
+          ]
+        },
+        {
+          "source": "agent-events.jsonl",
+          "line": 71,
+          "tool_calls": [
+            {
+              "tool": "Read",
+              "input": {
+                "file_path": "/Users/kurohsu/dev/sdd-workflow-skill-thinning-review/eval-runs/pr15-af4d994-host-review/.workspaces/claude-N-self-review-authority-split-xssm7x2f/skills/sdd-workflow/SKILL.md"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run_id": "isolated-claude-n-attempt-2",
+      "agent": "claude",
+      "scenario_id": "N-self-review-authority-split",
+      "artifact_directory": "eval-runs/pr15-af4d994-host-review/claude/N-self-review-authority-split/isolated-claude-n-attempt-2",
+      "replaces_run_id": "affected_release-claude-n-self-review-authority-split-slot-1-attempt-1",
+      "host_version": "2.1.275 (Claude Code)",
+      "requested_model": "sonnet",
+      "observed_models": [
+        "claude-haiku-4-5-20251001",
+        "claude-sonnet-5"
+      ],
+      "started_at": "2026-09-18T07:39:11.155758+00:00",
+      "finished_at": "2026-09-18T07:40:36.571220+00:00",
+      "automated_score": {
+        "valid_run": true,
+        "adherent": true,
+        "critical_violation_ids": []
+      },
+      "candidate_identity_review": "candidate_loaded",
+      "global_skill_tool_event_lines": [],
+      "candidate_skill_tool_event_lines": [
+        4
+      ],
+      "fixture_content_event_lines": [
+        41
+      ],
+      "final_response_event_line": 72,
+      "manual_findings": [
+        "Repository-wide search exposed eval fixture content; evidence-independence caveat.",
+        "Final response identifies Layer 1 authority split but returns 待你決定; reference requires 需修正 for unresolved Layer 0-2 findings."
+      ],
+      "raw_sha256": {
+        "run-metadata.json": "aceffe81618b99dc90d06c1a434ce4488b09f25d80e8cfd406730be0a4234d46",
+        "agent-events.jsonl": "8142f322f4952d5f5ed8ab4491fd07cca93357b7aa56e8f3ff47b277a89a2b0d",
+        "input.md": "5e9392974664278c2a8bf728f03b82f773ff29aeff2d50a616e1ea375e67214c",
+        "git-diff.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final-state.json": "a0b9b48954d3f51aff57c521a16d6c6c15f515f5392ade28fa456d62970c3343",
+        "score.json": "28c366a8daf9db764eb67b0ad64a0c335008c372308eb46c270ff8dda0edb8ae"
+      },
+      "handoff_evidence_excerpts": [
+        {
+          "source": "agent-events.jsonl",
+          "line": 4,
+          "tool_calls": [
+            {
+              "tool": "Bash",
+              "input": {
+                "command": "cat skills/sdd-workflow/SKILL.md"
+              }
+            }
+          ]
+        },
+        {
+          "source": "agent-events.jsonl",
+          "line": 41,
+          "fixture_output_excerpt": [
+            "evals/fixtures/state-recipes-v1.json:218:          \"content\": \"MAX_NAME_LENGTH = 20\\n\\ndef validate_name(name: str) -> bool:\\n    return len(name) <= MAX_NAME_LENGTH\\n\"",
+            "evals/fixtures/state-recipes-v1.json:223:          \"content\": \"def submit_name(name: str) -> dict[str, str]:\\n    return {\\\"name\\\": name}\\n\""
+          ],
+          "excerpt_note": "First two matching output lines; full event remains in local raw evidence."
+        },
+        {
+          "source": "agent-events.jsonl",
+          "line": 72,
+          "final_response": "## 自審提案結果：`duplicate-name-limit`\n\n**狀態**：`draft`（格式驗證通過，任務數未變更：1 → 1，本次未修改任何任務）\n\n**驗證**：`validate` → `valid: true`；`status` → `task_count: 1`，`task_counts_reliable: true`\n\n### 發現：規則權威分裂（Layer 1）\n\n- **權威位置**：`server.py:1,4` — `MAX_NAME_LENGTH = 20`、`validate_name()` 已實作「名稱不得超過 20 字元」的規則，且提案聲明此處保持不變。\n- **重複位置**：`tasks.md:3`（對應 `client.py`）— 任務要求在 client 端「獨立實作」相同的 20 字元規則，而不是共用或引用 server 端的定義。\n- **後果**：同一條業務規則（20 字元上限）會被兩處各自維護。日後若限制數值調整，必須記得同步修改兩處，否則 client 與 server 行為會不一致；目前提案沒有任何機制保證兩者同步。\n\n依規範，這是設計決策上的衝突，不能由自審自動修正或判定通過，需要你選一個方向：\n\n1. **維持獨立實作**（如提案現況）：client 端硬編一份 `20`，僅為「送出前提早回饋」的 UX 優化。範圍：修改 `client.py`（1 個任務，不變）。風險：需額外文件或註解說明兩處必須手動同步。\n2. **由 server 提供單一權威值**：例如透過設定檔、共享常數模組或 API 回傳限制值，client 讀取後驗證，不自行寫死數字。範圍：新增共享常數/設定 + 修改 `client.py` 與 `server.py`（約 2 個任務）。\n3. **僅記錄權威來源、不做同步機制**：提案中明確寫下「此為刻意重複，因兩者生命週期不同，若 server 規則變動需人工檢查 client」。範圍：修改 `proposal.md` 說明 + `client.py`（1 個任務）。\n\n其餘檢查（Layer 0 前提、Layer 2 流程、條件式檢查）均未發現問題：\n- Layer 0：提案聲稱 server.py 已有 20 字元限制，經核對 `server.py:1,4` 屬實。\n- Layer 2：目前僅 1 個 active 提案，無重疊；任務可獨立驗證。\n- 條件式檢查（安全性/可逆性/效能/新依賴）：均無適用發現。\n\n**驗收條件（未變更）**：\n- 情境：名稱超過 20 字元時，client 不送出請求並顯示錯誤\n- 情境：server 的既有驗證與 API 行為保持不變\n\n### 結論\n\n**待你決定**——請選擇上述方向之一，或提供其他做法，再以 `提案` 修訂內容。"
+        }
+      ]
+    },
+    {
+      "run_id": "affected_release-claude-t-proposal-intake-self-review-boundary-slot-1-attempt-1",
+      "agent": "claude",
+      "scenario_id": "T-proposal-intake-self-review-boundary",
+      "artifact_directory": "eval-runs/pr15-af4d994-host-review/claude/T-proposal-intake-self-review-boundary/affected_release-claude-t-proposal-intake-self-review-boundary-slot-1-attempt-1",
+      "replaces_run_id": null,
+      "host_version": "2.1.275 (Claude Code)",
+      "requested_model": "sonnet",
+      "observed_models": [
+        "claude-haiku-4-5-20251001",
+        "claude-sonnet-5"
+      ],
+      "started_at": "2026-09-18T07:35:16.760284+00:00",
+      "finished_at": "2026-09-18T07:37:14.467237+00:00",
+      "automated_score": {
+        "valid_run": true,
+        "adherent": true,
+        "critical_violation_ids": []
+      },
+      "candidate_identity_review": "excluded_mixed_global_candidate",
+      "global_skill_tool_event_lines": [
+        12,
+        18,
+        20
+      ],
+      "candidate_skill_tool_event_lines": [],
+      "fixture_content_event_lines": [
+        57
+      ],
+      "final_response_event_line": 93,
+      "manual_findings": [
+        "Global installed main skill loaded; excluded from candidate evidence, regardless of automatic PASS.",
+        "Repository-wide search exposed eval fixture content; evidence-independence caveat."
+      ],
+      "raw_sha256": {
+        "run-metadata.json": "3a4355a7b5eb6031e558af412d4a849642af047c9053e7d2631142cb34a8cda1",
+        "agent-events.jsonl": "d8489deedab9b93800c112a2a3ce815d5d4fb948af3130226ab438d453d39f95",
+        "input.md": "efbc1c6ffea7b327ff337217fb1c86bce498f6fcd722276984c19a625031eb20",
+        "git-diff.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final-state.json": "86c24255f1327b0744be7ab5c6c98200ab548be471e3b6772550a4329e5764c9",
+        "score.json": "773be12c2b464286734ccbd0db3dfa43542bbe4ba866971b67f8fa9d33a6012b"
+      },
+      "handoff_evidence_excerpts": [
+        {
+          "source": "agent-events.jsonl",
+          "line": 12,
+          "tool_calls": [
+            {
+              "tool": "Skill",
+              "input": {
+                "skill": "sdd-workflow",
+                "args": "自審提案 bounded-api-timeout"
+              }
+            }
+          ]
+        },
+        {
+          "source": "agent-events.jsonl",
+          "line": 18,
+          "tool_calls": [
+            {
+              "tool": "Read",
+              "input": {
+                "file_path": "/Users/kurohsu/.claude/skills/sdd-workflow/references/self-review.md"
+              }
+            }
+          ]
+        },
+        {
+          "source": "agent-events.jsonl",
+          "line": 57,
+          "fixture_output_excerpt": [
+            "evals/fixtures/state-recipes-v1.json:416:          \"content\": \"API_TIMEOUT_SECONDS = 5\\n\"",
+            "evals/fixtures/state-recipes-v1.json:421:          \"content\": \"from config import API_TIMEOUT_SECONDS\\n\\ndef timeout() -> int:\\n    return API_TIMEOUT_SECONDS\\n\""
+          ],
+          "excerpt_note": "First two matching output lines; full event remains in local raw evidence."
+        }
+      ]
+    },
+    {
+      "run_id": "isolated-claude-t-attempt-2",
+      "agent": "claude",
+      "scenario_id": "T-proposal-intake-self-review-boundary",
+      "artifact_directory": "eval-runs/pr15-af4d994-host-review/claude/T-proposal-intake-self-review-boundary/isolated-claude-t-attempt-2",
+      "replaces_run_id": "affected_release-claude-t-proposal-intake-self-review-boundary-slot-1-attempt-1",
+      "host_version": "2.1.275 (Claude Code)",
+      "requested_model": "sonnet",
+      "observed_models": [
+        "claude-haiku-4-5-20251001",
+        "claude-sonnet-5"
+      ],
+      "started_at": "2026-09-18T07:38:28.028655+00:00",
+      "finished_at": "2026-09-18T07:39:49.448806+00:00",
+      "automated_score": {
+        "valid_run": true,
+        "adherent": true,
+        "critical_violation_ids": []
+      },
+      "candidate_identity_review": "candidate_loaded",
+      "global_skill_tool_event_lines": [],
+      "candidate_skill_tool_event_lines": [
+        4
+      ],
+      "fixture_content_event_lines": [
+        46
+      ],
+      "final_response_event_line": 72,
+      "manual_findings": [
+        "Repository-wide search exposed eval fixture content; evidence-independence caveat."
+      ],
+      "raw_sha256": {
+        "run-metadata.json": "30d8de745a8a6c3b90a8b5062fdd1f058e7ffe56587af8c0c38b7ab03ca8ea42",
+        "agent-events.jsonl": "6e0c3c456000bbe6c8f580966a045079e08ef1e5de7ae18207141b413b5cb6ef",
+        "input.md": "efbc1c6ffea7b327ff337217fb1c86bce498f6fcd722276984c19a625031eb20",
+        "git-diff.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final-state.json": "86c24255f1327b0744be7ab5c6c98200ab548be471e3b6772550a4329e5764c9",
+        "score.json": "f2d0f2804597dcf9294494bf25e1bebcad3d90ba9922c027034f1559f5fa6f36"
+      },
+      "handoff_evidence_excerpts": [
+        {
+          "source": "agent-events.jsonl",
+          "line": 4,
+          "tool_calls": [
+            {
+              "tool": "Read",
+              "input": {
+                "file_path": "/Users/kurohsu/dev/sdd-workflow-skill-thinning-review/eval-runs/pr15-af4d994-host-review/.workspaces/claude-T-proposal-intake-self-review-boundary-87l1jhlr/skills/sdd-workflow/SKILL.md"
+              }
+            }
+          ]
+        },
+        {
+          "source": "agent-events.jsonl",
+          "line": 46,
+          "fixture_output_excerpt": [
+            "evals/fixtures/state-recipes-v1.json:416:          \"content\": \"API_TIMEOUT_SECONDS = 5\\n\"",
+            "evals/fixtures/state-recipes-v1.json:421:          \"content\": \"from config import API_TIMEOUT_SECONDS\\n\\ndef timeout() -> int:\\n    return API_TIMEOUT_SECONDS\\n\""
+          ],
+          "excerpt_note": "First two matching output lines; full event remains in local raw evidence."
+        }
+      ]
+    },
+    {
+      "run_id": "affected_release-codex-n-self-review-authority-split-slot-1-attempt-1",
+      "agent": "codex",
+      "scenario_id": "N-self-review-authority-split",
+      "artifact_directory": "eval-runs/pr15-af4d994-host-review/codex/N-self-review-authority-split/affected_release-codex-n-self-review-authority-split-slot-1-attempt-1",
+      "replaces_run_id": null,
+      "host_version": "codex-cli 0.154.0",
+      "requested_model": "gpt-5.6-sol",
+      "observed_models": [],
+      "started_at": "2026-09-18T07:33:52.879656+00:00",
+      "finished_at": "2026-09-18T07:35:02.183288+00:00",
+      "automated_score": {
+        "valid_run": true,
+        "adherent": true,
+        "critical_violation_ids": []
+      },
+      "candidate_identity_review": "candidate_loaded",
+      "global_skill_tool_event_lines": [],
+      "candidate_skill_tool_event_lines": [
+        6
+      ],
+      "fixture_content_event_lines": [],
+      "final_response_event_line": 20,
+      "manual_findings": [],
+      "raw_sha256": {
+        "run-metadata.json": "37c170c2c954768db7846b35ab7613fe415eccca7feae0853f11f5794ff062d3",
+        "agent-events.jsonl": "d40673a7bc61fb82399cc3213b2269d04ca47fd483b044a82f3771602c986fa8",
+        "input.md": "5e9392974664278c2a8bf728f03b82f773ff29aeff2d50a616e1ea375e67214c",
+        "git-diff.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final-state.json": "a0b9b48954d3f51aff57c521a16d6c6c15f515f5392ade28fa456d62970c3343",
+        "score.json": "e90985a54718c965b803a62f5b00baa190bc99b2c26490f44ed82b9e873da521"
+      },
+      "handoff_evidence_excerpts": [
+        {
+          "source": "agent-events.jsonl",
+          "line": 6,
+          "tool_calls": [
+            {
+              "tool": "command_execution",
+              "input": {
+                "command": "/opt/homebrew/bin/zsh -lc \"wc -l skills/sdd-workflow/SKILL.md && sed -n '1,400p' skills/sdd-workflow/SKILL.md\""
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run_id": "affected_release-codex-t-proposal-intake-self-review-boundary-slot-1-attempt-1",
+      "agent": "codex",
+      "scenario_id": "T-proposal-intake-self-review-boundary",
+      "artifact_directory": "eval-runs/pr15-af4d994-host-review/codex/T-proposal-intake-self-review-boundary/affected_release-codex-t-proposal-intake-self-review-boundary-slot-1-attempt-1",
+      "replaces_run_id": null,
+      "host_version": "codex-cli 0.154.0",
+      "requested_model": "gpt-5.6-sol",
+      "observed_models": [],
+      "started_at": "2026-09-18T07:33:52.879634+00:00",
+      "finished_at": "2026-09-18T07:35:16.492082+00:00",
+      "automated_score": {
+        "valid_run": true,
+        "adherent": true,
+        "critical_violation_ids": []
+      },
+      "candidate_identity_review": "candidate_loaded",
+      "global_skill_tool_event_lines": [],
+      "candidate_skill_tool_event_lines": [
+        6
+      ],
+      "fixture_content_event_lines": [
+        24
+      ],
+      "final_response_event_line": 34,
+      "manual_findings": [
+        "Repository-wide search exposed eval fixture content; evidence-independence caveat."
+      ],
+      "raw_sha256": {
+        "run-metadata.json": "b8d5476a6f6b79b9dc2597a405150a5e1fd73e10b673cfc6b5903d674e853e6f",
+        "agent-events.jsonl": "0ead876d9c7e0fb048d586070f10115476dcc0aaf45c98b8dbc9e20dba8f992e",
+        "input.md": "efbc1c6ffea7b327ff337217fb1c86bce498f6fcd722276984c19a625031eb20",
+        "git-diff.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "final-state.json": "86c24255f1327b0744be7ab5c6c98200ab548be471e3b6772550a4329e5764c9",
+        "score.json": "0cfda6bee45d66c2e84c57ec6e827b8711edfd22dd487a3478733a13e37efba5"
+      },
+      "handoff_evidence_excerpts": [
+        {
+          "source": "agent-events.jsonl",
+          "line": 6,
+          "tool_calls": [
+            {
+              "tool": "command_execution",
+              "input": {
+                "command": "/opt/homebrew/bin/zsh -lc \"sed -n '1,260p' skills/sdd-workflow/SKILL.md\""
+              }
+            }
+          ]
+        },
+        {
+          "source": "agent-events.jsonl",
+          "line": 24,
+          "fixture_output_excerpt": [
+            "./evals/fixtures/state-recipes-v1.json:416:          \"content\": \"API_TIMEOUT_SECONDS = 5\\n\"",
+            "./evals/fixtures/state-recipes-v1.json:421:          \"content\": \"from config import API_TIMEOUT_SECONDS\\n\\ndef timeout() -> int:\\n    return API_TIMEOUT_SECONDS\\n\""
+          ],
+          "excerpt_note": "First two matching output lines; full event remains in local raw evidence."
+        }
+      ]
+    }
+  ]
+}
