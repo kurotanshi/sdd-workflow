@@ -1,0 +1,23 @@
+{
+  "freeze_id": "candidate-v1",
+  "frozen_at": "2026-09-18T04:26:45.021381+00:00",
+  "host_probe": {
+    "platform": "Linux-6.12.94+-x86_64-with-glibc2.41",
+    "python": "3.13.5",
+    "codex_cli_present": false,
+    "claude_cli_present": false,
+    "dual_host_load_verified": false,
+    "setup_failure": "Neither Codex nor Claude host CLIs are authenticated/available in this research environment; live 12-run pilot blocked. Boundary tests + collector/scorer simulation completed."
+  },
+  "artifacts": {
+    "candidate_proto_sha256": "8e23b1de61ed6b47ef0acf1f8f058832668be3b9e3018108dc925717e78c108d",
+    "adapters_sha256": "1e23f861d7a8386c1d7196c329ab6e2080881c72a5ecf2f00a0ba357ff504df0",
+    "candidate_prompt_sha256": "f9fd5331860966c15f12a9906de839f2e6c714be99847c66f4d844fb6dabf3cf",
+    "baseline_prompt_sha256": "ee92bdc19278cb4e4cb095c007abf7eeeb0daba98e79d35ca38dd026856d0423"
+  },
+  "boundary_unittest": "boundary_results/unittest.txt",
+  "notes": [
+    "Product skills/sdd-workflow package was not modified by candidate prototype.",
+    "Raw live traces not collected due to host setup failure."
+  ]
+}

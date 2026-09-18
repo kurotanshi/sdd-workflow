@@ -4,7 +4,7 @@ schema_version: 2
 # outcome-driven-workflow-design
 
 ## 狀態
-draft
+approved
 
 ## 類型
 研究
@@ -34,3 +34,12 @@ Issue #13（https://github.com/kurotanshi/sdd-workflow/issues/13）原先聚焦 
 - 後續產品實作的檔案範圍由研究決定，可能涉及 Skill、runtime、artifact schema、相容性、文件及測試；這些不是本研究已授權的正式產品修改。本次不更新 GitHub issue、不發版、不 commit，亦不調整 `simplify-skill-release-evals` 的 scope 或狀態。
 
 ## 結論
+
+- 已凍結現行流程比較基準：commit `a48a22443d59464221af4caed0575c04db7833a4`、skills/sdd-workflow 內容雜湊、cost-benefit fixtures 雜湊、共同案例（small-bug／medium-feature／acceptance-change）、指標與事件分類；候選套件於原型後另凍為 candidate-v1。詳見 `docs/reports/outcome-driven-workflow-design/baseline-freeze-v1.json` 與外部研究目錄 `/workspace/sdd-outcome-research/baseline/`。
+- 設計已將「使用者核准的成果契約」與「Agent 可調整施工計畫」分開；checkpoint 以 acceptance 對應證據推進。三類案例的輸入、授權、可調計畫、必要停點見 `docs/reports/outcome-driven-workflow-design/01-outcome-contract-and-checkpoints.md`。
+- 最小持久狀態與異常恢復責任已定義：contract／plan／evidence／progress；證據需綁定契約版本與受驗內容 digest。需求未變但受驗內容或驗證條件改變時，不得沿用舊成功結果。見 `docs/reports/outcome-driven-workflow-design/02-evidence-and-durable-state.md`。
+- 專案外最小候選原型與邊界檢查已完成且可重跑：7 項 unittest 全過，涵蓋未核准執行、範圍外修改、計畫重排無需重核准、契約變更需重核准、缺證據完成、證據過期、正常關閉。程式強制與 Agent 責任已在設計中標明。凍結雜湊見 `docs/reports/outcome-driven-workflow-design/candidate-freeze-v1.json`。
+- 雙 host（Codex／Claude）12 valid runs 的正式 pilot **未完成**：本環境無已登入／可用的 Codex 或 Claude coding host，屬 setup failure，不是候選有效失敗。已提供 runbook、trace collector／scorer，以及模擬 trace 驗證「事後 oracle 通過不能抹除缺證據完成」。因此目前 **不能** 主張候選降低中斷或成本，也 **不能** 建議直接採用為正式產品流程。
+- 建議決策：**修正後再研究（revise）**，不要 adopt，也不宜因環境阻塞而把候選判為否決。下一步最小正式工作：1) 在可用的 Codex+Claude 環境執行凍結條件下的 6 pairs／12 runs；2) 若 pilot 顯示 false completion／越權為零且額外阻斷請示有探索性改善，再另立產品改版提案，將成果契約／證據閘道接入 runtime，並處理舊 proposal 的 task-manifest 相容與遷移；3) 在那之前維持現行 sdd-workflow 產品行為不變。
+- 舊 proposal 相容性預判：若未來改為成果契約核准，現有以 task 文字／順序入核准基線的 proposal 不能默認沿用同一核准效力，需遷移或重新核准；完成證據也需從「task digest 完成」升級為「acceptance+受驗內容」證據。此為後續產品提案範圍，不是本研究已授權的產品修改。
+- 本研究未修改 `skills/sdd-workflow` 產品套件、未改 `simplify-skill-release-evals`、未發版；原始 live pilot traces 因未產生而未提交。
