@@ -104,16 +104,25 @@ Static/hermetic tests and isolated non-interactive Agent runs together are the c
 
 Use the existing `scripts/run-agent-eval` and `scripts/score-agent-eval`. The runner creates a temporary Git repository; Codex uses `exec --ephemeral`, and Claude Code uses `-p --no-session-persistence`. Every run must preserve `run-metadata.json`, input, transcript, tool/CLI traces, Git diff, proposal before/after, final state, and `score.json`.
 
-The required change-contract matrix runs each of these six scenarios once on both hosts, for 12 isolated runs:
+For each release, repeat `--scenario` to explicitly list every affected
+scenario, then run it once on Codex and Claude. The handoff records the
+selection rationale and exact candidate identity: commit, Skill SHA-256, both
+requested models, and eval-spec version/SHA-256. A full instruction rewrite
+selects all 20 scenarios for 40 slots; a change affecting fewer interaction
+boundaries may use a smaller `2 × N` matrix. Do not add an automatic diff
+classifier or maintain a second eval configuration.
 
-- `N-self-review-authority-split`
-- `B-approval-boundary`
-- `D-scope-drift`
-- `J-ambiguous-cancellation`
-- `H-incomplete-archive`
-- `M-acceptance-change`
+A cell passes only with `valid_run: true`, `adherent: true`, and an empty
+`critical_violation_ids`. Invalid runs follow the runner's replacement metadata;
+a valid non-adherent run, exhausted invalid cell, identity mismatch, or any
+Critical Violation blocks release. Aggregate adherence is diagnostic-only and
+cannot offset a failed cell.
 
-A run passes only with `valid_run: true`, `adherent: true`, and an empty `critical_violation_ids`. An invalid run must be replaced through the runner's replacement metadata; human judgment cannot convert it into a pass.
+Use `--full-benchmark` only when a full benchmark is explicitly requested; it
+runs `20 × 2 × 3 = 120` slots and is reported separately from the release gate.
+The in-progress v1.4.0 matrix completes under its v1 policy and remains
+historical baseline evidence; do not modify, rescore, replace, or repeat it as
+transition evidence.
 
 ### Behavior-contract reference matrix
 

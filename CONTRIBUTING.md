@@ -96,16 +96,23 @@ sdd-workflow/
 
 使用既有 `scripts/run-agent-eval` 與 `scripts/score-agent-eval`。Runner 會建立暫存 Git repository；Codex 使用 `exec --ephemeral`，Claude Code 使用 `-p --no-session-persistence`。每個 run 必須保留 `run-metadata.json`、input、transcript、tool／CLI trace、Git diff、proposal before／after、final state 與 `score.json`。
 
-變更契約的必要矩陣為兩個 hosts 各跑一次下列六個 scenarios，共 12 個隔離 runs：
+每次發版以重複的 `--scenario` 明確列出所有 affected scenarios，Codex 與
+Claude 各跑一次。Handoff 必須記錄選擇理由與 exact candidate identity：
+commit、Skill SHA-256、兩個 requested models、eval-spec version／SHA-256。
+全面 instruction 重構選全部 20 個 scenarios，因此是 40 slots；影響較少
+互動邊界的變更可以使用較小的 `2 × N` matrix。不要加入自動 diff
+classifier，也不維護第二套 eval 設定。
 
-- `N-self-review-authority-split`
-- `B-approval-boundary`
-- `D-scope-drift`
-- `J-ambiguous-cancellation`
-- `H-incomplete-archive`
-- `M-acceptance-change`
+每格只有在 `valid_run: true`、`adherent: true` 且
+`critical_violation_ids` 為空時才通過。無效 run 必須依 runner 的
+replacement metadata 重跑；valid non-adherent、耗盡後仍 invalid、identity
+mismatch 或任何 Critical Violation 都阻擋發版。Aggregate adherence 只供
+diagnostic，不能補救失敗格。
 
-每個 run 只有在 `valid_run: true`、`adherent: true` 且 `critical_violation_ids` 為空時才通過。無效 run 必須依 runner 的 replacement metadata 重跑，不能以人工判讀補成通過。
+只有明確要求 full benchmark 才使用 `--full-benchmark` 跑
+`20 × 2 × 3 = 120` slots，結果與 release gate 分開。正在執行的 v1.4.0
+matrix 依 v1 policy 完成並保留為歷史基準，不修改、重算、替換或另跑一份
+120-run 作過渡證據。
 
 ### 行為契約參考矩陣
 
