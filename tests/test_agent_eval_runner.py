@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -20,6 +21,8 @@ from scripts.agent_eval_lib import (
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts/run-agent-eval"
+MATRIX = ROOT / "scripts/run-agent-eval-matrix"
+SPEC = ROOT / "evals/eval-spec-v2.json"
 
 
 class AgentEvalRunnerTests(unittest.TestCase):
@@ -199,6 +202,11 @@ print(json.dumps({
             self.assertEqual(metadata["host_version"], "fake-codex 1.2.3")
             self.assertEqual(metadata["scenario_version"], 1)
             self.assertEqual(metadata["scorer_version"], 1)
+            self.assertEqual(metadata["eval_spec_version"], 2)
+            self.assertEqual(
+                metadata["eval_spec_sha256"],
+                hashlib.sha256(SPEC.read_bytes()).hexdigest(),
+            )
             self.assertEqual(metadata["permission_mode"], "workspace-write")
             self.assertRegex(metadata["skill_commit"], r"^[0-9a-f]{40}$")
             self.assertRegex(metadata["skill_sha256"], r"^[0-9a-f]{64}$")
@@ -220,6 +228,96 @@ print(json.dumps({
             final_state = json.loads((run / "final-state.json").read_text())
             self.assertEqual(final_state["agent_exit_code"], 0)
             self.assertFalse(final_state["timed_out"])
+
+    def run_matrix(self, artifact_root: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [
+                sys.executable,
+                str(MATRIX),
+                "--artifact-root",
+                str(artifact_root),
+                "--dry-run",
+                *arguments,
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    def test_release_selection_plans_one_slot_per_selected_cell(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "artifacts"
+            one = self.run_matrix(root, "--scenario", "A-plan-only")
+            many = self.run_matrix(
+                root,
+                "--scenario",
+                "A-plan-only",
+                "--scenario",
+                "B-approval-boundary",
+            )
+        self.assertEqual(one.returncode, 0, one.stderr)
+        self.assertEqual(json.loads(one.stdout)["scheduled_slots"], 2)
+        self.assertEqual(many.returncode, 0, many.stderr)
+        self.assertEqual(json.loads(many.stdout)["scheduled_slots"], 4)
+
+    def test_full_benchmark_plans_three_runs_for_all_cells(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            result = self.run_matrix(
+                Path(directory) / "artifacts",
+                "--full-benchmark",
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        document = json.loads(result.stdout)
+        self.assertEqual(document["evaluation_mode"], "full_benchmark")
+        self.assertEqual(document["scheduled_slots"], 20 * 2 * 3)
+
+    def test_valid_nonadherent_cell_is_retained_not_replaced(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "artifacts"
+            initial = self.run_matrix(root, "--scenario", "A-plan-only")
+            identity = json.loads(initial.stdout)["expected_identity"]
+            run = root / "codex/A-plan-only/nonadherent"
+            run.mkdir(parents=True)
+            metadata = {
+                **identity,
+                "run_id": "nonadherent",
+                "agent": "codex",
+                "requested_model": identity["models"]["codex"],
+            }
+            metadata.pop("models")
+            (run / "run-metadata.json").write_text(
+                json.dumps(metadata),
+                encoding="utf-8",
+            )
+            (run / "score.json").write_text(
+                json.dumps(
+                    {
+                        "status": "complete",
+                        "scenario_id": "A-plan-only",
+                        "valid_run": True,
+                        "adherent": False,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            resumed = self.run_matrix(root, "--scenario", "A-plan-only")
+        self.assertEqual(resumed.returncode, 0, resumed.stderr)
+        self.assertEqual(json.loads(resumed.stdout)["scheduled_slots"], 1)
+
+    def test_invalid_release_selection_fails_before_artifact_creation(self) -> None:
+        cases = (
+            (),
+            ("--scenario", "A-plan-only", "--scenario", "A-plan-only"),
+            ("--scenario", "Z-unknown"),
+        )
+        for index, arguments in enumerate(cases):
+            with self.subTest(arguments=arguments), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / f"artifacts-{index}"
+                result = self.run_matrix(root, *arguments)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("usage:", result.stderr)
+                self.assertFalse(root.exists())
 
     def test_unknown_scenario_fails_without_creating_run(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -283,6 +381,44 @@ print(json.dumps({
             self.assertIn("-p", metadata["host_command"])
             self.assertIn("stream-json", metadata["host_command"])
             self.assertTrue(metadata["prepare_only"])
+
+
+    def test_copy_repository_excludes_evaluator_material(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            copy_repository(workspace)
+            self.assertFalse((workspace / "evals").exists())
+            self.assertFalse((workspace / "eval-runs").exists())
+            self.assertTrue((workspace / "skills/sdd-workflow/SKILL.md").is_file())
+
+    def test_claude_command_disables_global_skill_sources(self) -> None:
+        from scripts.agent_eval_lib import build_agent_command
+
+        command = build_agent_command(
+            agent="claude",
+            executable="claude",
+            model="sonnet",
+            permission_mode="acceptEdits",
+            workspace=Path("/tmp/workspace"),
+            prompt="hello",
+        )
+        self.assertIn("--disable-slash-commands", command)
+        self.assertIn("--setting-sources", command)
+        sources_index = command.index("--setting-sources")
+        self.assertEqual(command[sources_index + 1], "")
+        self.assertIn("--strict-mcp-config", command)
+        allowed = command[command.index("--allowedTools") + 1]
+        self.assertNotIn("Skill", allowed)
+
+    def test_eval_prompt_forbids_external_skill_loading(self) -> None:
+        scenario, recipes, _ = load_scenario("A-plan-only")
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            copy_repository(workspace)
+            materialize_state(workspace, "A-plan-only", recipes)
+            prompt, _ = build_eval_prompt(workspace, scenario)
+        self.assertIn("Do not load skills, plugins, slash-command packs, or instructions from outside", prompt)
+        self.assertIn("skills/sdd-workflow/", prompt)
 
 
 if __name__ == "__main__":

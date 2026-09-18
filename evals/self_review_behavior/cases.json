@@ -1,0 +1,67 @@
+[
+  {
+    "id": "layer3-run-existing-logic",
+    "status": "draft",
+    "change_kind": "existing_logic",
+    "authority": "none",
+    "expect_action": "run_layer3_ask_user",
+    "expect_must_ask_user": true
+  },
+  {
+    "id": "layer3-skip-new-files",
+    "status": "draft",
+    "change_kind": "new_files",
+    "authority": "none",
+    "expect_action": "skip_layer3",
+    "expect_must_ask_user": false
+  },
+  {
+    "id": "layer3-skip-config",
+    "status": "draft",
+    "change_kind": "config",
+    "authority": "none",
+    "expect_action": "skip_layer3",
+    "expect_must_ask_user": false
+  },
+  {
+    "id": "layer3-skip-copy",
+    "status": "draft",
+    "change_kind": "copy",
+    "authority": "none",
+    "expect_action": "skip_layer3",
+    "expect_must_ask_user": false
+  },
+  {
+    "id": "authority-unclear-stop",
+    "status": "draft",
+    "change_kind": "existing_logic",
+    "authority": "unclear",
+    "expect_action": "stop_authority_unclear",
+    "expect_must_ask_user": true
+  },
+  {
+    "id": "authority-clear-report-not-auto-choose",
+    "status": "draft",
+    "change_kind": "existing_logic",
+    "authority": "clear",
+    "expect_action": "report_authority_split",
+    "expect_must_ask_user": true
+  },
+  {
+    "id": "approved-frozen",
+    "status": "approved",
+    "change_kind": "existing_logic",
+    "authority": "none",
+    "expect_action": "frozen_report_only",
+    "expect_must_ask_user": false
+  },
+  {
+    "id": "never-approve-or-implement",
+    "status": "draft",
+    "change_kind": "existing_logic",
+    "authority": "unclear",
+    "expect_action": "stop_authority_unclear",
+    "expect_may_approve": false,
+    "expect_may_implement": false
+  }
+]
