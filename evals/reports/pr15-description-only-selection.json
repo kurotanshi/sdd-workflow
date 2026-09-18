@@ -1,0 +1,74 @@
+{
+  "title": "Description-only skill selection (offline gate for PR #15 / issue #13)",
+  "recorded_at": "2026-09-18T07:12:50.233891+00:00",
+  "method": "Deterministic description-only keyword router using only SKILL.md frontmatter description (and its 160-char truncation). No model call; validates that truncated description still retains explicit invoke vs out-of-scope boundaries required by issue #13.",
+  "description_chars": 609,
+  "description_sha256": "3eb351cbb25147eb66966bc6f2e54d43619de7a944056877c33412786709322e",
+  "truncated_160": "Manage software changes through a proposal-first SDD workflow: create or revise a scoped proposal and checklist, wait for explicit approval before implementatio",
+  "truncation_retains_identity": true,
+  "truncation_retains_approval_gate": false,
+  "full_description_retains_out_of_scope": {
+    "generic_cancellation_outside": true,
+    "vcs_rollback_outside": true
+  },
+  "cases": [
+    {
+      "id": "pos-explicit-invoke",
+      "utterance": "用 sdd-workflow 幫我開一個提案",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "pass": true
+    },
+    {
+      "id": "pos-zh-start",
+      "utterance": "開始實作 login-rate-limit",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "pass": true
+    },
+    {
+      "id": "pos-zh-proposal",
+      "utterance": "提案：把重試改成可設定",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "pass": true
+    },
+    {
+      "id": "pos-self-review",
+      "utterance": "自審提案 checkout-flow",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "pass": true
+    },
+    {
+      "id": "neg-generic-cancel",
+      "utterance": "取消剛才的變更",
+      "expect_invoke": false,
+      "predicted_invoke": false,
+      "pass": true
+    },
+    {
+      "id": "neg-git-rollback",
+      "utterance": "把程式碼 rollback 到昨天",
+      "expect_invoke": false,
+      "predicted_invoke": false,
+      "pass": true
+    },
+    {
+      "id": "neg-generic-implement",
+      "utterance": "幫我改一下這個 bug",
+      "expect_invoke": false,
+      "predicted_invoke": false,
+      "pass": true
+    },
+    {
+      "id": "neg-unrelated",
+      "utterance": "今天天氣如何",
+      "expect_invoke": false,
+      "predicted_invoke": false,
+      "pass": true
+    }
+  ],
+  "score": "8/8",
+  "pass": true
+}

@@ -60,7 +60,7 @@ Execute discovery and every CLI call as one unwrapped, noninteractive command. C
 
 `status` is authoritative for ordered tasks, completion, acceptance, compatibility, and snapshot. `validate` is the strict format gate; only `abandon-preflight` may report unreliable task counts. Before handling any CLI error, abandonment, archive recovery, or doctor finding, read [`references/runtime-recovery.md`](./references/runtime-recovery.md) fully and follow it without improvised edits or retries.
 
-Before the first mutation, obtain fresh successful `status`. Successful `approve` and `complete-task` responses supply canonical `after_state`, next snapshot, and `next_task`; use those results for the next mutation. If a response is lost, retry once with identical inputs to obtain `ALREADY_APPLIED` evidence.
+Before the first mutation in an implementation sequence, obtain fresh successful `status`. A successful `approve` or `complete-task` result then supplies the canonical `after_state`, exact next snapshot, and `next_task` for the next mutation in that sequence. `refresh_status` never preserves mutation intent automatically. If a response is lost, retry once with identical inputs to obtain `ALREADY_APPLIED` evidence.
 
 ## 提案
 

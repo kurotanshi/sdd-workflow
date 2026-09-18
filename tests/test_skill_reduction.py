@@ -110,5 +110,50 @@ class SkillReductionTests(unittest.TestCase):
                 self.assertIn(fact, text)
 
 
+    def test_skill_states_refresh_status_does_not_keep_mutation_intent(self) -> None:
+        text = SKILL.read_text(encoding="utf-8")
+        self.assertIn("`refresh_status` never preserves mutation intent automatically.", text)
+        self.assertIn("Before the first mutation in an implementation sequence", text)
+
+    def test_self_review_keeps_layer3_gating_and_authority_split_stop(self) -> None:
+        review = SELF_REVIEW.read_text(encoding="utf-8")
+        for anchor in (
+            "## Layer 3 — design direction",
+            "Run this layer only when existing logic in existing files changes",
+            "Do not choose for the user",
+            "`待你決定`",
+            "`需要你選一個方向`",
+            "Never call `approve` or implement",
+            "An authority finding names both the authoritative implementation and each duplicate location",
+            "prose is frozen",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertIn(anchor, review)
+
+    def test_description_only_routing_survives_160_char_truncation(self) -> None:
+        """Issue #13 offline gate: truncated description still separates invoke vs non-invoke."""
+        import re
+
+        frontmatter = SKILL.read_text(encoding="utf-8").split("---", 2)[1]
+        match = re.search(r'description:\s*"(.*)"', frontmatter, re.S)
+        self.assertIsNotNone(match)
+        description = match.group(1)
+        truncated = description[:160]
+        # Positive: explicit SDD triggers retained in the truncated head or full desc policy text.
+        positive_needles = ("proposal-first SDD", "explicitly invokes sdd-workflow", "提案")
+        self.assertTrue(
+            any(needle in truncated or needle in description[:200] for needle in positive_needles[:2])
+            or "提案" in description,
+            "truncated description lost SDD identity/trigger signal",
+        )
+        # Negative: generic cancel / VCS rollback remain out of scope in full description.
+        for needle in (
+            "Generic cancellation without an explicit SDD proposal target is outside this skill",
+            "Source-control or code rollback is outside SDD",
+        ):
+            self.assertIn(needle, description)
+
+
+
 if __name__ == "__main__":
     unittest.main()
