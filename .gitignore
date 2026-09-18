@@ -5,3 +5,4 @@
 .claude/
 .codex/
 .worktrees/
+__pycache__/
