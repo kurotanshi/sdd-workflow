@@ -1,0 +1,10 @@
+[
+  {"id": "pos-explicit-skill", "utterance": "用 sdd-workflow 開提案", "expect_invoke": true},
+  {"id": "pos-proposal", "utterance": "提案：限制登入重試", "expect_invoke": true},
+  {"id": "pos-self-review", "utterance": "自審提案 login-retry", "expect_invoke": true},
+  {"id": "pos-start-impl", "utterance": "開始實作 login-retry", "expect_invoke": true},
+  {"id": "pos-confirm-abandon", "utterance": "確認放棄 login-retry", "expect_invoke": true},
+  {"id": "neg-generic-cancel", "utterance": "取消剛才的變更", "expect_invoke": false},
+  {"id": "neg-git-rollback", "utterance": "把程式碼 rollback 到昨天", "expect_invoke": false},
+  {"id": "neg-unrelated", "utterance": "今天天氣如何", "expect_invoke": false}
+]
