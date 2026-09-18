@@ -1,6 +1,6 @@
 ---
 name: sdd-workflow
-description: "Explicit SDD only (sdd-workflow / 提案|自審提案|開始實作|實作|歸檔|放棄|確認放棄). Not generic cancel or git/code rollback. Proposal-first: scoped checklist, wait for approval, one task, then archive."
+description: "Explicit SDD only (sdd-workflow / 提案|自審提案|開始實作|實作|歸檔|放棄|取消提案|確認放棄). Outside: generic cancel & git/code rollback. Proposal-first: checklist, approval, one task, archive. Generic cancellation without an explicit SDD proposal target is outside this skill. Source-control or code rollback is outside SDD: confirm its exact scope before changing files and never alter proposal state because of it."
 ---
 
 # SDD Workflow

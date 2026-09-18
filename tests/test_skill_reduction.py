@@ -119,6 +119,7 @@ class SkillReductionTests(unittest.TestCase):
 
 
 
+
     def test_description_only_runner_uses_truncated_view_only(self) -> None:
         import sys
         from pathlib import Path
@@ -135,18 +136,45 @@ class SkillReductionTests(unittest.TestCase):
         self.assertEqual(len(report["cases"]), 8)
         view = report["description_view"]
         self.assertIn("sdd-workflow", view)
-        self.assertIn("提案", view)
-        self.assertIn("generic cancel", view.lower())
-        self.assertIn("rollback", view.lower())
+        self.assertIn("取消提案", view)
+        self.assertIn("Outside: generic cancel", view)
+        self.assertIn("git/code rollback", view)
 
-        # Poisoned view cannot consult the real description.
         poisoned = "x" * 200
         self.assertFalse(router.route("提案：限制登入重試", poisoned).invoke)
         self.assertTrue(router.route("提案：限制登入重試", view).invoke)
+        self.assertFalse(router.route("放棄剛才的變更", view).invoke)
 
         truncated = runner.load_truncated_description(limit=160)
         self.assertEqual(len(truncated), 160)
         self.assertEqual(truncated, view)
+
+    def test_description_only_polarity_reverse_breaks_negative_cases(self) -> None:
+        """Reviewer counterexample: flipping outside→use-for must not keep 8/8."""
+        import sys
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        desc_dir = root / "evals/description_only_selection"
+        sys.path.insert(0, str(desc_dir))
+        import run_description_only_selection as runner
+        import router
+
+        view = runner.load_truncated_description(limit=160)
+        reversed_view = view.replace(
+            "Outside: generic cancel & git/code rollback",
+            "Use for generic cancel or git/code rollback",
+        )
+        self.assertTrue(router.route("取消剛才的變更", reversed_view).invoke)
+        self.assertTrue(router.route("放棄剛才的變更", reversed_view).invoke)
+        self.assertTrue(router.route("把程式碼 rollback 到昨天", reversed_view).invoke)
+        # Scoring the fixed 8 cases against reversed polarity must fail overall.
+        failed = 0
+        for case in runner.run(limit=160)["cases"]:
+            predicted = router.route(case["utterance"], reversed_view).invoke
+            if predicted != case["expect_invoke"]:
+                failed += 1
+        self.assertGreaterEqual(failed, 2)
 
     def test_description_only_cases_fail_when_view_is_garbage(self) -> None:
         import json
@@ -167,7 +195,8 @@ class SkillReductionTests(unittest.TestCase):
             with self.subTest(case=case["id"]):
                 self.assertFalse(decision.invoke)
 
-    def test_self_review_behavior_runner_covers_layer3_and_authority(self) -> None:
+    def test_self_review_static_policy_model_covers_layer3_and_authority(self) -> None:
+        """Static policy-model gate only; not live-host behavioral proof."""
         import sys
         from pathlib import Path
 

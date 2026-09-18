@@ -1,6 +1,6 @@
 {
   "truncate_chars": 160,
-  "description_view": "Explicit SDD only (sdd-workflow / 提案|自審提案|開始實作|實作|歸檔|放棄|確認放棄). Not generic cancel or git/code rollback. Proposal-first: scoped checklist, wait for approval, one",
+  "description_view": "Explicit SDD only (sdd-workflow / 提案|自審提案|開始實作|實作|歸檔|放棄|取消提案|確認放棄). Outside: generic cancel & git/code rollback. Proposal-first: checklist, approval, one task, ",
   "description_view_len": 160,
   "score": "8/8",
   "pass": true,
@@ -10,7 +10,7 @@
       "utterance": "用 sdd-workflow 開提案",
       "expect_invoke": true,
       "predicted_invoke": true,
-      "reason": "explicit skill name",
+      "reason": "trigger sdd-workflow",
       "pass": true
     },
     {
@@ -26,7 +26,7 @@
       "utterance": "自審提案 login-retry",
       "expect_invoke": true,
       "predicted_invoke": true,
-      "reason": "trigger 提案",
+      "reason": "trigger 自審提案",
       "pass": true
     },
     {
@@ -38,11 +38,11 @@
       "pass": true
     },
     {
-      "id": "pos-confirm-abandon",
-      "utterance": "確認放棄 login-retry",
+      "id": "pos-cancel-proposal",
+      "utterance": "取消提案 login-retry",
       "expect_invoke": true,
       "predicted_invoke": true,
-      "reason": "trigger 放棄",
+      "reason": "trigger 取消提案",
       "pass": true
     },
     {
@@ -50,7 +50,15 @@
       "utterance": "取消剛才的變更",
       "expect_invoke": false,
       "predicted_invoke": false,
-      "reason": "generic cancellation out of scope per description_view",
+      "reason": "generic cancel outside per description_view polarity",
+      "pass": true
+    },
+    {
+      "id": "neg-abandon-just-now",
+      "utterance": "放棄剛才的變更",
+      "expect_invoke": false,
+      "predicted_invoke": false,
+      "reason": "generic cancel outside per description_view polarity",
       "pass": true
     },
     {
@@ -58,15 +66,7 @@
       "utterance": "把程式碼 rollback 到昨天",
       "expect_invoke": false,
       "predicted_invoke": false,
-      "reason": "vcs/code rollback out of scope per description_view",
-      "pass": true
-    },
-    {
-      "id": "neg-unrelated",
-      "utterance": "今天天氣如何",
-      "expect_invoke": false,
-      "predicted_invoke": false,
-      "reason": "no description_view-backed trigger",
+      "reason": "rollback outside per description_view polarity",
       "pass": true
     }
   ]

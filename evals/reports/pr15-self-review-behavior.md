@@ -1,12 +1,22 @@
-# Self-review behavioral gate (PR #15 / issue #13)
+# Self-review static policy model (PR #15 / issue #13)
 
-Recorded: `2026-09-18T07:22:56.549966+00:00`
+Recorded: `2026-09-18T07:31:47.340022+00:00`
 Score: **8/8** (PASS)
 
-## Method
-Rerunnable runner: `python3 evals/self_review_behavior/run_self_review_behavior.py`
-Executable policy in `evals/self_review_behavior/policy.py` decides Layer 3 run/skip and authority stop/report.
-Conformance fails if required phrases are removed or reversed (e.g. auto-choose authority and continue).
+## Claim level (important)
+
+This is a **static contract + executable policy-model test**, not live-host behavioral evidence.
+`policy.py` checks required/forbidden phrases in `self-review.md`, then runs an explicit decision table.
+Passing 8/8 shows the model matches the written rules and rejects reverse-rule mutations.
+
+It does **not** prove that a coding host reading the thinned skill will obey Layer 3 / authority-split stops.
+That checklist item remains open pending existing host-eval scenarios.
+
+## Rerun
+
+```bash
+python3 evals/self_review_behavior/run_self_review_behavior.py
+```
 
 ## Cases
 
@@ -21,6 +31,3 @@ Conformance fails if required phrases are removed or reversed (e.g. auto-choose 
 | `approved-frozen` | frozen_report_only | frozen_report_only | True |
 | `never-approve-or-implement` | stop_authority_unclear | stop_authority_unclear | True |
 
-## Counterexample
-
-Reversing the authority-split rule to auto-choose authority makes `assert_conformance` fail, even if older string-presence anchors remain.

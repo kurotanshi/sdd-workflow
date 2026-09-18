@@ -26,6 +26,10 @@ Line-by-line mapping of fail-closed governance invariants after skill thinning. 
 - `tests/test_skill_reduction.py` — budget, lifecycle anchors, `refresh_status`, Layer 3 / authority-split stop, description-only truncation gate
 - Existing runtime suites (unchanged by this PR’s intent): transition/recovery tests still assert `refresh_status` actions on snapshot/identity mismatches
 
+## Claim level
+
+Static skill/reference line mapping only. Complements, but does not replace, live host-eval behavioral evidence for issue #13.
+
 ## Verdict
 
 **PASS** — all listed invariants have explicit skill/reference anchors on this branch.
