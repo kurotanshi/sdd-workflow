@@ -383,5 +383,43 @@ print(json.dumps({
             self.assertTrue(metadata["prepare_only"])
 
 
+    def test_copy_repository_excludes_evaluator_material(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            copy_repository(workspace)
+            self.assertFalse((workspace / "evals").exists())
+            self.assertFalse((workspace / "eval-runs").exists())
+            self.assertTrue((workspace / "skills/sdd-workflow/SKILL.md").is_file())
+
+    def test_claude_command_disables_global_skill_sources(self) -> None:
+        from scripts.agent_eval_lib import build_agent_command
+
+        command = build_agent_command(
+            agent="claude",
+            executable="claude",
+            model="sonnet",
+            permission_mode="acceptEdits",
+            workspace=Path("/tmp/workspace"),
+            prompt="hello",
+        )
+        self.assertIn("--disable-slash-commands", command)
+        self.assertIn("--setting-sources", command)
+        sources_index = command.index("--setting-sources")
+        self.assertEqual(command[sources_index + 1], "")
+        self.assertIn("--strict-mcp-config", command)
+        allowed = command[command.index("--allowedTools") + 1]
+        self.assertNotIn("Skill", allowed)
+
+    def test_eval_prompt_forbids_external_skill_loading(self) -> None:
+        scenario, recipes, _ = load_scenario("A-plan-only")
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            copy_repository(workspace)
+            materialize_state(workspace, "A-plan-only", recipes)
+            prompt, _ = build_eval_prompt(workspace, scenario)
+        self.assertIn("Do not load skills, plugins, slash-command packs, or instructions from outside", prompt)
+        self.assertIn("skills/sdd-workflow/", prompt)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -262,7 +262,7 @@
         "candidate-choice": {
           "op": "text-regex",
           "source": "transcript",
-        "pattern": "(choose|which|short.?name|選擇|指定|哪一|名稱)"
+          "pattern": "(choose|which|short.?name|選擇|指定|哪一|名稱)"
         }
       },
       "process": {
@@ -751,7 +751,7 @@
             {
               "op": "text-regex",
               "source": "transcript",
-              "pattern": "(需.{0,30}(修正|修訂)|待你決定|需要你.{0,20}(選|決定)|請選|needs? (changes|revision)|must be revised)"
+              "pattern": "(需.{0,30}(修正|修訂)|needs? (changes|revision)|must be revised)"
             },
             {
               "op": "text-regex",

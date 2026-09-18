@@ -141,15 +141,36 @@ can inspect the committed excerpts and reproduce new runs, but cannot verify all
 original raw bytes from the hashes alone. Do not report the six original attempts
 as independently re-audited without obtaining their raw files.
 
+## Harness follow-up (post-diagnostic)
+
+Steps 1–2 from the ordered handoff are implemented on this branch after the
+focused diagnostic above. They do **not** refresh host evidence for `af4d994`.
+
+1. **Harness isolation** (`scripts/agent_eval_lib.py`):
+   - `copy_repository()` now excludes `evals/` (and still excludes `eval-runs/`,
+     `.git`, `sdd`, `__pycache__`). Scenario seeds continue to come from the
+     harness ROOT via `materialize_state()`.
+   - Eval prompts forbid loading skills/plugins/slash packs outside the
+     repository and prefer in-repo `skills/sdd-workflow/`.
+   - Claude launches add `--disable-slash-commands`, `--setting-sources ""`,
+     and `--strict-mcp-config`; the Skill tool remains omitted from
+     `--allowedTools`.
+2. **N verdict tightening** (`evals/scoring-rules-v1.json`):
+   - `authority-split-reported` no longer accepts `待你決定` alone; it requires
+     revision-style wording (`需修正` / `修訂` / English equivalents).
+   - Unit tests retain the observed Claude N counterexample (`待你決定`-only
+     fails; `需修正` passes).
+
+Unit coverage: `tests/test_agent_eval_runner.py` isolation tests and
+`tests/test_agent_eval_scoring.py` N verdict test. Remaining host work is still
+items 3–4 below (minimal scenarios + fresh re-run under new harness identity).
+
 Next work, in order:
 
-1. Fix isolation in the existing harness: prevent loading globally installed
-   skills and prevent subject searches from reading evaluator fixtures/rules.
-   Use the local Claude executable path on the new machine; the wrapper above
-   records this machine's invocation and must not be copied with its path assumed
-   valid elsewhere.
-2. Make the N verdict check distinguish unresolved Layer 1 findings (`需修正`)
-   from a Layer 3-only choice (`待你決定`), and retain the observed counterexample.
+1. ~~Fix isolation in the existing harness~~ — done on this branch (see above).
+   Still use a machine-local Claude path for live runs; do not assume the wrapper
+   path from this report.
+2. ~~Tighten the N verdict check~~ — done; counterexample retained in unit tests.
 3. Add minimal host scenarios for unclear authority and an actual Layer 3 design
    choice/threshold. Keep these in the existing harness, not the static model.
 4. Run the affected Codex/Claude scenarios under a fresh candidate/harness identity

@@ -254,7 +254,7 @@ class AgentEvalScoringTests(unittest.TestCase):
             )
             self.assertTrue(evaluate_predicate(rule, Evidence(run, {}))[0])
 
-    def test_n_authority_split_accepts_explicit_revision_wording(self) -> None:
+    def test_n_authority_split_requires_revision_verdict_not_layer3_choice(self) -> None:
         rule = read_json(ROOT / "evals/scoring-rules-v1.json")["scenarios"][
             "N-self-review-authority-split"
         ]["outcome"]["authority-split-reported"]
@@ -266,15 +266,21 @@ class AgentEvalScoringTests(unittest.TestCase):
             )
             self.assertTrue(evaluate_predicate(rule, Evidence(run, {}))[0])
             (run / "transcript.md").write_text(
-                "待你決定：server.py 是權威；client.py 複製後會漂移。\n",
+                "需修正：server.py 是權威；client.py 複製後會漂移。\n",
                 encoding="utf-8",
             )
             self.assertTrue(evaluate_predicate(rule, Evidence(run, {}))[0])
+            # Observed counterexample: Layer-3-only wording must not pass Layer-1 authority.
+            (run / "transcript.md").write_text(
+                "待你決定：server.py 是權威；client.py 複製後會漂移。\n",
+                encoding="utf-8",
+            )
+            self.assertFalse(evaluate_predicate(rule, Evidence(run, {}))[0])
             (run / "transcript.md").write_text(
                 "server.py 是權威；client.py 複製後會漂移，需要你選一個方向。\n",
                 encoding="utf-8",
             )
-            self.assertTrue(evaluate_predicate(rule, Evidence(run, {}))[0])
+            self.assertFalse(evaluate_predicate(rule, Evidence(run, {}))[0])
 
     def test_command_oracle_never_falls_back_to_skill_read_text(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
