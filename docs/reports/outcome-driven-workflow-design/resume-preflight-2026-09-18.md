@@ -1,5 +1,9 @@
 # Pilot resumption preflight — 2026-09-18
 
+Historical setup snapshot. The user subsequently authorized reconstruction;
+[pilot v2 completed 12 valid live runs](pilot-v2-report.md). The observations
+below are retained rather than rewritten as if the original files were recovered.
+
 Observed at 06:24 UTC on the receiving macOS machine, after fast-forwarding
 `research/outcome-driven-workflow-design` to
 `b77a19798d482d20e61467ac41edf7bed1ec54f9` and inspecting PR #14.

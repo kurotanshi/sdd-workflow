@@ -1,5 +1,34 @@
 # Dual-host pilot runbook
 
+## Current result: reconstructed v2 complete
+
+The original external Linux directory was unavailable. With user authorization,
+a new harness was frozen and executed under
+`/Users/kurohsu/dev/sdd-outcome-research-v2/`. **6 pairs / 12 valid live runs**
+are complete; the recommendation remains **revise** based on measured results.
+See [the report](pilot-v2-report.md) and [bundle handoff](pilot-v2-handoff.json).
+
+To inspect/resume the existing collection, use `REPRODUCE.md` in that directory
+or its `source-v2.tar.gz`. The matrix runner skips all existing valid runs,
+including failures. Do not remove a valid result or change frozen inputs to seek
+a pass. A new experiment requires a new identity and output directory.
+
+```sh
+cd /Users/kurohsu/dev/sdd-outcome-research-v2
+export PATH=/Users/kurohsu/.nvm/versions/node/v24.15.0/bin:$PATH
+export PYTHONDONTWRITEBYTECODE=1
+python3 scripts/cost_benefit_experiment.py matrix --spec pilot-spec-v2.json --agents codex --artifact-root runs --keep-workspace
+python3 scripts/cost_benefit_experiment.py matrix --spec pilot-spec-v2.json --agents claude --artifact-root runs --keep-workspace
+python3 audit/summarize.py
+```
+
+Codex 0.155.0 and Claude 2.1.275 must match the spec. Homebrew Codex 0.154.0 is
+not the pinned executable. The old aggregate `summarize` command is not used for
+v2; its skill-thinning thresholds do not answer this research question.
+
+The sections below preserve **historical v1 instructions and setup observations**;
+their old 0/12 status is superseded by the v2 result above.
+
 ## Intended matrix
 Hosts: Codex, Claude  
 Cases: small-bug, medium-feature, acceptance-change  

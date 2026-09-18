@@ -1,0 +1,226 @@
+{
+  "experiment_id": "outcome-pilot-v2",
+  "external_root": "/Users/kurohsu/dev/sdd-outcome-research-v2",
+  "source_bundle": {
+    "path": "/Users/kurohsu/dev/sdd-outcome-research-v2/source-v2.tar.gz",
+    "sha256": "3961053268069eabf7e76a5a1ee84dae6bd5b5a3bbe2296871137568e325a65b",
+    "bytes": 112469
+  },
+  "evidence_bundle": {
+    "path": "/Users/kurohsu/dev/sdd-outcome-research-v2/evidence-v2.tar.gz",
+    "sha256": "321600ae12f3559414ff9dfd83ddf6288b4c055cc78d546573547d3736c2a97a",
+    "bytes": 786489
+  },
+  "spec_sha256": "1a90e95614cf3c4be20ee107cf1601d82ff37caae29ca593aa018f2273e8bdb9",
+  "freeze_sha256": "2276ccf169c0fe908cff7d093605083b4d4b120a439f10dd52d9dd08f5cd3025",
+  "audit_helper_sha256": {
+    "audit/publish_report.py": "d1283309574638afe9999bc2d94aff74ecb0a15162843946c771f37f84b93270",
+    "audit/render_traces.py": "65cfa18261c40bf4e25794e4a11342cc274b814867a9537bf53418f3db92a339",
+    "audit/summarize.py": "1e906063d7437ced547979f52b0043be5c769b756a1fb93ca26a43f779de2360"
+  },
+  "integrity": {
+    "runs": 12,
+    "turns": 32,
+    "package_git_ignore_unchanged": true,
+    "package_reads": [
+      {
+        "trace": "runs/claude/acceptance-change/baseline/claude-acceptance-change-p1-baseline-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/acceptance-change/baseline/claude-acceptance-change-p1-baseline-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/acceptance-change/baseline/claude-acceptance-change-p1-baseline-a1/turn-3-revision/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/acceptance-change/baseline/claude-acceptance-change-p1-baseline-a1/turn-4-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/acceptance-change/candidate/claude-acceptance-change-p1-candidate-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/acceptance-change/candidate/claude-acceptance-change-p1-candidate-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          6
+        ]
+      },
+      {
+        "trace": "runs/claude/acceptance-change/candidate/claude-acceptance-change-p1-candidate-a1/turn-3-revision/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/acceptance-change/candidate/claude-acceptance-change-p1-candidate-a1/turn-4-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          3
+        ]
+      },
+      {
+        "trace": "runs/claude/medium-feature/baseline/claude-medium-feature-p1-baseline-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/medium-feature/baseline/claude-medium-feature-p1-baseline-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/medium-feature/candidate/claude-medium-feature-p1-candidate-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/medium-feature/candidate/claude-medium-feature-p1-candidate-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/claude/small-bug/baseline/claude-small-bug-p1-baseline-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/small-bug/baseline/claude-small-bug-p1-baseline-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/small-bug/candidate/claude-small-bug-p1-candidate-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          4
+        ]
+      },
+      {
+        "trace": "runs/claude/small-bug/candidate/claude-small-bug-p1-candidate-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          3
+        ]
+      },
+      {
+        "trace": "runs/codex/acceptance-change/baseline/codex-acceptance-change-p1-baseline-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/acceptance-change/baseline/codex-acceptance-change-p1-baseline-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/acceptance-change/baseline/codex-acceptance-change-p1-baseline-a1/turn-3-revision/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/acceptance-change/baseline/codex-acceptance-change-p1-baseline-a1/turn-4-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/acceptance-change/candidate/codex-acceptance-change-p1-candidate-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/acceptance-change/candidate/codex-acceptance-change-p1-candidate-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/acceptance-change/candidate/codex-acceptance-change-p1-candidate-a1/turn-3-revision/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/acceptance-change/candidate/codex-acceptance-change-p1-candidate-a1/turn-4-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/medium-feature/baseline/codex-medium-feature-p1-baseline-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/medium-feature/baseline/codex-medium-feature-p1-baseline-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/medium-feature/candidate/codex-medium-feature-p1-candidate-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/medium-feature/candidate/codex-medium-feature-p1-candidate-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/small-bug/baseline/codex-small-bug-p1-baseline-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/small-bug/baseline/codex-small-bug-p1-baseline-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/small-bug/candidate/codex-small-bug-p1-candidate-a1/turn-1-initial/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      },
+      {
+        "trace": "runs/codex/small-bug/candidate/codex-small-bug-p1-candidate-a1/turn-2-approval/events.jsonl",
+        "workspace_skill_read_lines": [
+          5
+        ]
+      }
+    ]
+  },
+  "notes": [
+    "Local files; no remote download is claimed. Transfer both bundles with the handoff.",
+    "Raw traces and executable research package are excluded from Git.",
+    "CLI credentials and account files are not included.",
+    "V1 files were not recovered; these bundles are the distinct v2 reconstruction."
+  ]
+}
