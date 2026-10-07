@@ -108,7 +108,7 @@
             {
               "tool": "Read",
               "input": {
-                "file_path": "/Users/kurohsu/.claude/skills/sdd-workflow/references/self-review.md"
+                "file_path": "~/.claude/skills/sdd-workflow/references/self-review.md"
               }
             }
           ]
@@ -120,7 +120,7 @@
             {
               "tool": "Read",
               "input": {
-                "file_path": "/Users/kurohsu/dev/sdd-workflow-skill-thinning-review/eval-runs/pr15-af4d994-host-review/.workspaces/claude-N-self-review-authority-split-xssm7x2f/skills/sdd-workflow/SKILL.md"
+                "file_path": "eval-runs/pr15-af4d994-host-review/.workspaces/claude-N-self-review-authority-split-xssm7x2f/skills/sdd-workflow/SKILL.md"
               }
             }
           ]
@@ -259,7 +259,7 @@
             {
               "tool": "Read",
               "input": {
-                "file_path": "/Users/kurohsu/.claude/skills/sdd-workflow/references/self-review.md"
+                "file_path": "~/.claude/skills/sdd-workflow/references/self-review.md"
               }
             }
           ]
@@ -322,7 +322,7 @@
             {
               "tool": "Read",
               "input": {
-                "file_path": "/Users/kurohsu/dev/sdd-workflow-skill-thinning-review/eval-runs/pr15-af4d994-host-review/.workspaces/claude-T-proposal-intake-self-review-boundary-87l1jhlr/skills/sdd-workflow/SKILL.md"
+                "file_path": "eval-runs/pr15-af4d994-host-review/.workspaces/claude-T-proposal-intake-self-review-boundary-87l1jhlr/skills/sdd-workflow/SKILL.md"
               }
             }
           ]

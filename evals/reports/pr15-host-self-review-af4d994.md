@@ -113,7 +113,7 @@ pointing at a local, ignored wrapper. Its complete contents are:
 
 ```sh
 #!/bin/sh
-exec /Users/kurohsu/.local/bin/claude --disable-slash-commands --setting-sources "" --strict-mcp-config --tools Bash,Edit,Write,Read,Glob,Grep "$@"
+exec ~/.local/bin/claude --disable-slash-commands --setting-sources "" --strict-mcp-config --tools Bash,Edit,Write,Read,Glob,Grep "$@"
 ```
 
 Each replacement records `--replaces-run-id` for its initial attempt; full run IDs
