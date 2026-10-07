@@ -19,7 +19,7 @@ from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EVAL_SPEC_PATH = ROOT / "evals/eval-spec-v1.json"
+EVAL_SPEC_PATH = ROOT / "evals/eval-spec-v2.json"
 SCENARIO_MANIFEST_PATH = ROOT / "evals/fixtures/MANIFEST.json"
 RUNTIME = ROOT / "skills/sdd-workflow/scripts/sdd.py"
 SKILL = ROOT / "skills/sdd-workflow/SKILL.md"
@@ -187,9 +187,13 @@ def apply_action(workspace: Path, action: dict[str, Any]) -> None:
 
 
 def copy_repository(workspace: Path) -> None:
+    # Keep evaluator fixtures/rules/reports out of the subject workspace so host
+    # searches cannot read expected answers or scoring material. Scenario seeds
+    # are still materialized later from the harness ROOT via materialize_state().
     ignored_names = {
         ".git",
         "eval-runs",
+        "evals",
         "sdd",
         "__pycache__",
         ".DS_Store",
@@ -312,6 +316,8 @@ def build_eval_prompt(
     prompt = (
         "You are running inside an isolated SDD workflow evaluation repository. "
         "Read skills/sdd-workflow/SKILL.md completely before acting and follow it. "
+        "Do not load skills, plugins, slash-command packs, or instructions from outside "
+        "this repository. Prefer only the in-repo `skills/sdd-workflow/` package. "
         "Use the bundled CLI for all authoritative proposal state. Work only in this "
         "repository and finish with a concise user-facing response.\n\n"
         f"{prior}"
@@ -356,6 +362,9 @@ def build_agent_command(
             prompt,
         ]
     if agent == "claude":
+        # Isolate from globally installed Claude skills/settings. The Skill tool
+        # is intentionally omitted from allowedTools; slash commands and user
+        # setting sources are disabled so hosts cannot load ~/.claude skills.
         return [
             executable,
             "-p",
@@ -363,6 +372,10 @@ def build_agent_command(
             "stream-json",
             "--verbose",
             "--no-session-persistence",
+            "--disable-slash-commands",
+            "--setting-sources",
+            "",
+            "--strict-mcp-config",
             "--permission-mode",
             permission_mode,
             "--allowedTools",
@@ -706,6 +719,7 @@ def execute(arguments: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             ),
             "scorer_version": scenario["scorer_version"],
             "eval_spec_version": spec["eval_spec_version"],
+            "eval_spec_sha256": sha256(EVAL_SPEC_PATH),
             "permission_mode": permission_mode,
             "sampling": {
                 "temperature": None,

@@ -1,0 +1,73 @@
+{
+  "truncate_chars": 160,
+  "description_view": "Explicit SDD only (sdd-workflow / 提案|自審提案|開始實作|實作|歸檔|放棄|取消提案|確認放棄). Outside: generic cancel & git/code rollback. Proposal-first: checklist, approval, one task, ",
+  "description_view_len": 160,
+  "score": "8/8",
+  "pass": true,
+  "cases": [
+    {
+      "id": "pos-explicit-skill",
+      "utterance": "用 sdd-workflow 開提案",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "reason": "trigger sdd-workflow",
+      "pass": true
+    },
+    {
+      "id": "pos-proposal",
+      "utterance": "提案：限制登入重試",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "reason": "trigger 提案",
+      "pass": true
+    },
+    {
+      "id": "pos-self-review",
+      "utterance": "自審提案 login-retry",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "reason": "trigger 自審提案",
+      "pass": true
+    },
+    {
+      "id": "pos-start-impl",
+      "utterance": "開始實作 login-retry",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "reason": "trigger 開始實作",
+      "pass": true
+    },
+    {
+      "id": "pos-cancel-proposal",
+      "utterance": "取消提案 login-retry",
+      "expect_invoke": true,
+      "predicted_invoke": true,
+      "reason": "trigger 取消提案",
+      "pass": true
+    },
+    {
+      "id": "neg-generic-cancel",
+      "utterance": "取消剛才的變更",
+      "expect_invoke": false,
+      "predicted_invoke": false,
+      "reason": "generic cancel outside per description_view polarity",
+      "pass": true
+    },
+    {
+      "id": "neg-abandon-just-now",
+      "utterance": "放棄剛才的變更",
+      "expect_invoke": false,
+      "predicted_invoke": false,
+      "reason": "generic cancel outside per description_view polarity",
+      "pass": true
+    },
+    {
+      "id": "neg-git-rollback",
+      "utterance": "把程式碼 rollback 到昨天",
+      "expect_invoke": false,
+      "predicted_invoke": false,
+      "reason": "rollback outside per description_view polarity",
+      "pass": true
+    }
+  ]
+}

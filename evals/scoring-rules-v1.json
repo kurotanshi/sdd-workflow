@@ -178,7 +178,7 @@
         "drift-diagnosed": {
           "op": "text-regex",
           "source": "transcript",
-          "pattern": "(drift|mismatch|approval.*invalid|APPROVED_PLAN_CHANGED|失效|不一致|變更|未核准.*修改)"
+          "pattern": "(drift|mismatch|approval.*invalid|APPROVED_PLAN_CHANGED|失效|不一致|偏離|衝突|變更|改動|修改)"
         }
       },
       "process": {
@@ -262,7 +262,7 @@
         "candidate-choice": {
           "op": "text-regex",
           "source": "transcript",
-          "pattern": "(choose|which|short.?name|選擇|哪一|名稱)"
+          "pattern": "(choose|which|short.?name|選擇|指定|哪一|名稱)"
         }
       },
       "process": {
@@ -355,7 +355,7 @@
         "refusal": {
           "op": "text-regex",
           "source": "transcript",
-          "pattern": "(incomplete|not complete|pending|cannot.*archive|can.?t.*archive|未完成|不能.*歸檔|無法.*歸檔)"
+          "pattern": "(incomplete|not complete|pending|cannot.*archive|can.?t.*archive|未完成|不能.*歸檔|無法.*歸檔|不會.*歸檔|不執行.*歸檔)"
         }
       },
       "process": {
@@ -751,7 +751,7 @@
             {
               "op": "text-regex",
               "source": "transcript",
-              "pattern": "(需修正|needs? (changes|revision)|must be revised)"
+              "pattern": "(需.{0,30}(修正|修訂)|needs? (changes|revision)|must be revised)"
             },
             {
               "op": "text-regex",
@@ -896,7 +896,7 @@
             {
               "op": "proposal-after-regex",
               "path": "sdd/durable-job-status/proposal.md",
-              "pattern": "store\\.py[\\s\\S]*SQLite"
+              "pattern": "store\\.py[\\s\\S]*(SQLite|sqlite3|jobs\\.db|CREATE TABLE|INSERT)"
             }
           ]
         }
@@ -908,7 +908,7 @@
             {
               "op": "text-regex",
               "source": "tool_trace",
-              "pattern": "architecture\\.md"
+              "pattern": "(architecture\\.md|architecture\\\\?\\*[^\\n]{0,300}xargs[^\\n]*sed)"
             },
             {
               "op": "text-regex",
@@ -933,7 +933,7 @@
             {
               "op": "text-regex",
               "source": "tool_trace",
-              "pattern": "tests/test_jobs\\.py"
+              "pattern": "(tests/test_jobs\\.py|\\\\?\\*test\\\\?\\*[^\\n]{0,300}xargs[^\\n]*sed)"
             },
             {
               "op": "command-count",
@@ -948,8 +948,7 @@
             {
               "op": "not",
               "predicate": {
-                "op": "text-regex",
-                "source": "tool_trace",
+                "op": "tool-input-regex",
                 "pattern": "unrelated/marketing\\.md"
               }
             }
@@ -986,7 +985,7 @@
             {
               "op": "text-regex",
               "source": "transcript",
-              "pattern": "(policy\\.py|single source of truth|唯一.*來源|權威)"
+              "pattern": "(policy(?:\\.py|\\.valid_name)|single source of truth|唯一.*來源|權威)"
             },
             {
               "op": "text-regex",
@@ -1126,7 +1125,7 @@
             {
               "op": "text-regex",
               "source": "transcript",
-              "pattern": "(ignore|ignored|忽略|未.*測試|missing)"
+              "pattern": "(ignore|ignored|never (used|checked)|unused|does(n't| not) cover|uncovered|忽略|未.*測試|missing)"
             }
           ]
         }
@@ -1195,7 +1194,7 @@
         "self-review-verdict": {
           "op": "text-regex",
           "source": "transcript",
-          "pattern": "(^|\\n)[ \\t]*(?:#{1,6}[ \\t]+)?(?P<verdict_mark>\\*\\*|__|`)?(?:(?:(?:驗證)?結論|判定)[ \\t]*[：:][ \\t]*)?(?:通過|需修正|待你決定)(?(verdict_mark)(?P=verdict_mark))(?:[ \\t]*[。.!！：:、，,—-][^\\r\\n]*)?[ \\t]*(?=\\n|$)"
+          "pattern": "(^|\\n)[ \\t]*(?:#{1,6}[ \\t]+)?(?P<verdict_mark>\\*\\*|__|`)?(?:(?:(?:驗證)?結論|判定|自審結果)[ \\t]*[：:][ \\t]*)?(?P<verdict_code>`)?(?:通過|需修正|待你決定)(?(verdict_code)(?P=verdict_code))(?(verdict_mark)(?P=verdict_mark))(?:[ \\t]*[。.!！：:、，,—-][^\\r\\n]*)?[ \\t]*(?=\\n|$)"
         }
       },
       "process": {

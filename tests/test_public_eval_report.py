@@ -34,6 +34,29 @@ class PublicEvalReportTests(unittest.TestCase):
             )
             self.assertEqual(validate_report_directory(Path(directory)), [report])
 
+    def test_v2_summary_reports_selected_gate_and_diagnostic_aggregate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "v2.0-agent-eval-summary.md"
+            report.write_text(
+                "# v2\n"
+                "- Eval specification version: **2**\n"
+                "- Evaluation mode: **affected release**\n"
+                "- Release gate: **PASS**\n"
+                "- Selected matrix: **2/2 cells passed**\n"
+                "- Aggregate adherence (diagnostic only): **2/2 (100.0%)**\n"
+                "- Identity mismatches: **0**\n"
+                "- Critical Violations: **0**\n"
+                "| Candidate commit | `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` |\n"
+                "| Skill content SHA-256 | `bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb` |\n"
+                "| Eval specification SHA-256 | `cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc` |\n"
+                "| Requested models | Codex `model-a`; Claude `model-b` |\n"
+                "- Secret scan: PASS\n"
+                "- Anonymization review: PASS\n"
+                "- Manual review: PASS\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(validate_report_directory(Path(directory)), [report])
+
     def test_sensitive_and_raw_identifiers_are_rejected(self) -> None:
         unsafe = {
             "home": "source: /Users/example/private/run.json",

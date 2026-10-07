@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "evals/fixtures"
 MANIFEST = FIXTURES / "MANIFEST.json"
-SPEC = ROOT / "evals/eval-spec-v1.json"
+SPEC = ROOT / "evals/eval-spec-v2.json"
 REGISTRY = ROOT / "conformance/protocol-rules-v1.json"
 
 
